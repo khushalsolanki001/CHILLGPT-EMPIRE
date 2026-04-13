@@ -4,2035 +4,220 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ChillGPT Empire – Build the Chillest AI</title>
-  <meta name="description" content="An idle tycoon game where you build ChillGPT — the most powerful and chillest AI in the world. Start in a garage in 2016 and rise to global AI dominance by 2026." />
+  <meta name="description" content="An idle tycoon where you build ChillGPT — the world's chillest AI. Start in a garage in 2016, dominate by 2026." />
+
+  <!-- Pixel / retro fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap"
+    rel="stylesheet"
+  />
 
-  <style>
-    /* ============================================================
-       DESIGN TOKENS & RESET
-    ============================================================ */
-    :root {
-      --bg-deep:      #060914;
-      --bg-panel:     #0c1228;
-      --bg-card:      #111a35;
-      --bg-hover:     #162040;
-      --neon-blue:    #00d4ff;
-      --neon-green:   #39ff85;
-      --neon-purple:  #b44fff;
-      --neon-yellow:  #ffd93d;
-      --neon-red:     #ff4b6e;
-      --neon-orange:  #ff8c42;
-      --text-primary: #e8f4ff;
-      --text-muted:   #6a85b0;
-      --border:       rgba(0, 212, 255, 0.15);
-      --glow-blue:    0 0 18px rgba(0, 212, 255, 0.5);
-      --glow-green:   0 0 18px rgba(57, 255, 133, 0.5);
-      --glow-purple:  0 0 18px rgba(180, 79, 255, 0.5);
-      --radius:       12px;
-      --radius-sm:    8px;
-      --transition:   0.2s ease;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html, body {
-      height: 100%;
-      background: var(--bg-deep);
-      color: var(--text-primary);
-      font-family: 'Inter', sans-serif;
-      overflow: hidden;
-      user-select: none;
-    }
-
-    /* ============================================================
-       SCROLLBAR
-    ============================================================ */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg-panel); }
-    ::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 3px; }
-
-    /* ============================================================
-       LAYOUT WRAPPER
-    ============================================================ */
-    #app {
-      display: grid;
-      grid-template-rows: 64px 1fr 52px;
-      grid-template-columns: 1fr 320px;
-      grid-template-areas:
-        "topbar  topbar"
-        "factory shop"
-        "footer  footer";
-      height: 100vh;
-      gap: 0;
-    }
-
-    /* ============================================================
-       TOP BAR
-    ============================================================ */
-    #topbar {
-      grid-area: topbar;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 0 20px;
-      background: var(--bg-panel);
-      border-bottom: 1px solid var(--border);
-      position: relative;
-      z-index: 10;
-    }
-
-    .logo {
-      font-family: 'Orbitron', monospace;
-      font-size: 1rem;
-      font-weight: 900;
-      background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      white-space: nowrap;
-      letter-spacing: 1px;
-      flex-shrink: 0;
-    }
-
-    .stat-pills {
-      display: flex;
-      gap: 10px;
-      flex: 1;
-      flex-wrap: nowrap;
-      overflow: hidden;
-    }
-
-    .stat-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      padding: 4px 14px;
-      font-size: 0.78rem;
-      white-space: nowrap;
-      transition: border-color var(--transition);
-    }
-    .stat-pill .icon { font-size: 0.9rem; }
-    .stat-pill .label { color: var(--text-muted); font-size: 0.7rem; }
-    .stat-pill .value {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.82rem;
-      font-weight: 600;
-    }
-    .stat-pill.money  .value { color: var(--neon-yellow); }
-    .stat-pill.compute .value { color: var(--neon-blue); }
-    .stat-pill.electricity .value { color: var(--neon-green); }
-    .stat-pill.electricity.danger .value { color: var(--neon-red); }
-    .stat-pill.electricity.danger { border-color: rgba(255,75,110,0.4); animation: pulse-red 1.5s infinite; }
-
-    @keyframes pulse-red {
-      0%, 100% { box-shadow: none; }
-      50%       { box-shadow: 0 0 10px rgba(255,75,110,0.4); }
-    }
-
-    .year-badge {
-      margin-left: auto;
-      font-family: 'Orbitron', monospace;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--neon-purple);
-      text-shadow: var(--glow-purple);
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    /* ============================================================
-       FACTORY AREA
-    ============================================================ */
-    #factory {
-      grid-area: factory;
-      position: relative;
-      overflow: hidden;
-      background: radial-gradient(ellipse at 50% 80%, #0a1535 0%, var(--bg-deep) 70%);
-    }
-
-    /* Factory background layers */
-    .factory-bg {
-      position: absolute;
-      inset: 0;
-      transition: opacity 1.2s ease;
-    }
-
-    /* Floor grid */
-    .floor-grid {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 200px;
-      background:
-        linear-gradient(transparent 0%, rgba(0,212,255,0.04) 100%),
-        repeating-linear-gradient(90deg, rgba(0,212,255,0.06) 0, rgba(0,212,255,0.06) 1px, transparent 1px, transparent 60px),
-        repeating-linear-gradient(0deg,  rgba(0,212,255,0.06) 0, rgba(0,212,255,0.06) 1px, transparent 1px, transparent 40px);
-    }
-
-    /* Background glow orbs */
-    .glow-orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(60px);
-      opacity: 0.15;
-      pointer-events: none;
-    }
-    .orb-1 { width: 300px; height: 300px; background: var(--neon-blue);   top: 10%;  left: 15%;  }
-    .orb-2 { width: 200px; height: 200px; background: var(--neon-purple); top: 30%;  right: 20%; }
-    .orb-3 { width: 250px; height: 250px; background: var(--neon-green);  bottom: 5%; left: 40%; opacity: 0.08; }
-
-    /* Stars background */
-    .stars {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-      pointer-events: none;
-    }
-    .star {
-      position: absolute;
-      width: 2px;
-      height: 2px;
-      background: #fff;
-      border-radius: 50%;
-      animation: twinkle var(--dur, 3s) ease-in-out infinite;
-    }
-    @keyframes twinkle {
-      0%, 100% { opacity: 0.1; }
-      50%       { opacity: 0.8; }
-    }
-
-    /* ---- MACHINES DISPLAY ---- */
-    #machines-container {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      top: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 0;
-      padding: 20px 40px 20px;
-    }
-
-    .machine-row {
-      display: flex;
-      gap: 12px;
-      align-items: flex-end;
-      justify-content: center;
-      flex-wrap: wrap;
-      width: 100%;
-    }
-
-    /* Location Sign */
-    .location-sign {
-      position: absolute;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-family: 'Orbitron', monospace;
-      font-size: 0.85rem;
-      font-weight: 600;
-      padding: 6px 20px;
-      border: 1px solid var(--neon-blue);
-      border-radius: 100px;
-      color: var(--neon-blue);
-      background: rgba(0,212,255,0.08);
-      box-shadow: var(--glow-blue);
-      letter-spacing: 1px;
-      transition: all 0.6s ease;
-      white-space: nowrap;
-    }
-
-    /* Machine Card */
-    .machine-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      animation: rise-in 0.5s ease backwards;
-    }
-    @keyframes rise-in {
-      from { transform: translateY(30px); opacity: 0; }
-      to   { transform: translateY(0);    opacity: 1; }
-    }
-
-    .machine-body {
-      position: relative;
-      width: 56px;
-      height: 72px;
-      border-radius: 8px 8px 4px 4px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      transition: transform 0.2s ease;
-      cursor: default;
-    }
-    .machine-body:hover { transform: translateY(-4px) scale(1.05); }
-
-    /* GPU */
-    .machine-gpu { background: linear-gradient(180deg, #1a3a5c, #0d2040); border: 1px solid rgba(0,212,255,0.4); }
-    .machine-gpu .led { width: 8px; height: 8px; border-radius: 50%; background: var(--neon-blue); box-shadow: 0 0 8px var(--neon-blue); animation: blink 1.2s infinite; }
-    .machine-gpu::after { content: 'GPU'; font-family: 'Orbitron',monospace; font-size: 0.45rem; color: var(--neon-blue); position: absolute; bottom: 4px; }
-
-    /* GPU Cluster */
-    .machine-cluster { background: linear-gradient(180deg, #1a2e5c, #0d1840); border: 1px solid rgba(0,212,255,0.6); width: 72px; height: 90px; }
-    .machine-cluster::after { content: 'CLUSTER'; font-family: 'Orbitron',monospace; font-size: 0.4rem; color: var(--neon-blue); position: absolute; bottom: 4px; }
-
-    /* Server Rack */
-    .machine-rack { background: linear-gradient(180deg, #1e2a50, #111830); border: 1px solid rgba(180,79,255,0.5); width: 80px; height: 110px; }
-    .machine-rack .rack-strip { width: 60%; height: 4px; border-radius: 2px; background: var(--neon-purple); box-shadow: 0 0 6px var(--neon-purple); animation: blink 0.8s infinite alternate; }
-    .machine-rack::after { content: 'SERVER'; font-family: 'Orbitron',monospace; font-size: 0.4rem; color: var(--neon-purple); position: absolute; bottom: 4px; }
-
-    /* Mega Data Center */
-    .machine-mega { background: linear-gradient(180deg, #1a1a40, #0a0a28); border: 2px solid rgba(57,255,133,0.5); width: 100px; height: 130px; box-shadow: 0 0 20px rgba(57,255,133,0.2); }
-    .machine-mega::after { content: 'MEGA DC'; font-family: 'Orbitron',monospace; font-size: 0.4rem; color: var(--neon-green); position: absolute; bottom: 4px; }
-    .machine-mega .led { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
-
-    /* Quantum Datacenter */
-    .machine-quantum { background: linear-gradient(180deg, #28102a, #140818); border: 2px solid rgba(180,79,255,0.8); width: 120px; height: 150px; box-shadow: 0 0 30px rgba(180,79,255,0.3); }
-    .machine-quantum::after { content: 'QUANTUM'; font-family: 'Orbitron',monospace; font-size: 0.4rem; color: var(--neon-purple); position: absolute; bottom: 4px; }
-    .machine-quantum .led { background: var(--neon-purple); box-shadow: 0 0 12px var(--neon-purple); animation: blink 0.5s infinite alternate; }
-
-    @keyframes blink {
-      0%   { opacity: 1; }
-      50%  { opacity: 0.3; }
-      100% { opacity: 1; }
-    }
-
-    .machine-label {
-      font-size: 0.6rem;
-      color: var(--text-muted);
-      font-family: 'Orbitron', monospace;
-      letter-spacing: 0.5px;
-    }
-
-    /* ---- MASCOT ---- */
-    #mascot {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      width: 80px;
-      cursor: pointer;
-      z-index: 20;
-      transition: transform 0.3s ease;
-    }
-    #mascot:hover { transform: scale(1.1) rotate(-5deg); }
-    #mascot-face {
-      width: 64px;
-      height: 64px;
-      background: linear-gradient(135deg, #1a3a5c, #0d2040);
-      border: 2px solid var(--neon-blue);
-      border-radius: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      box-shadow: var(--glow-blue), inset 0 0 20px rgba(0,212,255,0.1);
-      position: relative;
-      gap: 4px;
-    }
-    .mascot-eyes {
-      display: flex;
-      gap: 10px;
-    }
-    .mascot-eye {
-      width: 14px;
-      height: 8px;
-      background: var(--neon-blue);
-      border-radius: 3px;
-      box-shadow: 0 0 6px var(--neon-blue);
-      position: relative;
-    }
-    /* Sunglasses bar */
-    .mascot-glasses {
-      position: absolute;
-      top: 18px;
-      width: 50px;
-      height: 3px;
-      background: rgba(0,212,255,0.5);
-      border-radius: 2px;
-    }
-    .mascot-mouth {
-      width: 28px;
-      height: 8px;
-      border-bottom: 3px solid var(--neon-green);
-      border-radius: 0 0 14px 14px;
-      box-shadow: 0 4px 8px rgba(57,255,133,0.4);
-      margin-top: 2px;
-    }
-    .mascot-antenna {
-      position: absolute;
-      top: -18px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 3px;
-      height: 16px;
-      background: var(--neon-blue);
-      border-radius: 2px;
-    }
-    .mascot-antenna::after {
-      content: '';
-      position: absolute;
-      top: -5px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 9px;
-      height: 9px;
-      background: var(--neon-blue);
-      border-radius: 50%;
-      box-shadow: var(--glow-blue);
-      animation: blink 2s infinite;
-    }
-    #mascot-speech {
-      position: absolute;
-      bottom: 70px;
-      left: 60px;
-      background: var(--bg-panel);
-      border: 1px solid var(--neon-blue);
-      border-radius: var(--radius);
-      padding: 8px 12px;
-      font-size: 0.72rem;
-      white-space: nowrap;
-      color: var(--neon-blue);
-      opacity: 0;
-      transform: translateY(10px);
-      transition: all 0.3s ease;
-      pointer-events: none;
-      max-width: 200px;
-      white-space: normal;
-    }
-    #mascot-speech.show { opacity: 1; transform: translateY(0); }
-
-    /* ---- COLLECT BUTTON ---- */
-    #collect-section {
-      position: absolute;
-      bottom: 24px;
-      right: 24px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 8px;
-      z-index: 20;
-    }
-
-    #collect-btn {
-      background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
-      border: none;
-      border-radius: var(--radius);
-      padding: 14px 28px;
-      font-family: 'Orbitron', monospace;
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: #fff;
-      cursor: pointer;
-      box-shadow: var(--glow-blue), var(--glow-purple);
-      transition: all 0.15s ease;
-      letter-spacing: 1px;
-      white-space: nowrap;
-      position: relative;
-      overflow: hidden;
-    }
-    #collect-btn:hover  { transform: scale(1.05); box-shadow: 0 0 30px rgba(0,212,255,0.7), 0 0 30px rgba(180,79,255,0.5); }
-    #collect-btn:active { transform: scale(0.97); }
-    #collect-btn::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-      transform: translateX(-100%);
-      transition: transform 0.4s;
-    }
-    #collect-btn:hover::before { transform: translateX(100%); }
-
-    #train-progress-wrap {
-      width: 200px;
-      height: 8px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 100px;
-      overflow: hidden;
-    }
-    #train-progress {
-      height: 100%;
-      background: linear-gradient(90deg, var(--neon-blue), var(--neon-green));
-      border-radius: 100px;
-      transition: width 0.5s ease;
-      box-shadow: var(--glow-blue);
-    }
-    .progress-label {
-      font-size: 0.65rem;
-      color: var(--text-muted);
-      text-align: right;
-      font-family: 'Orbitron', monospace;
-    }
-
-    /* ---- NOTIFICATIONS / PARTICLES ---- */
-    #notif-layer {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 30;
-      overflow: hidden;
-    }
-
-    .money-pop {
-      position: absolute;
-      font-family: 'Orbitron', monospace;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--neon-yellow);
-      text-shadow: 0 0 10px rgba(255,217,61,0.8);
-      animation: money-float 1.2s ease-out forwards;
-      pointer-events: none;
-      white-space: nowrap;
-    }
-    @keyframes money-float {
-      0%   { opacity: 1; transform: translateY(0) scale(1); }
-      100% { opacity: 0; transform: translateY(-80px) scale(1.3); }
-    }
-
-    .particle {
-      position: absolute;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      animation: particle-burst 0.8s ease-out forwards;
-      pointer-events: none;
-    }
-    @keyframes particle-burst {
-      0%   { opacity: 1; transform: scale(1); }
-      100% { opacity: 0; transform: translate(var(--px), var(--py)) scale(0); }
-    }
-
-    /* Flash on big upgrade */
-    #upgrade-flash {
-      position: fixed;
-      inset: 0;
-      background: var(--neon-blue);
-      opacity: 0;
-      pointer-events: none;
-      z-index: 100;
-      transition: opacity 0.1s;
-    }
-
-    /* ============================================================
-       SHOP PANEL
-    ============================================================ */
-    #shop {
-      grid-area: shop;
-      background: var(--bg-panel);
-      border-left: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .shop-tabs {
-      display: flex;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .shop-tab {
-      flex: 1;
-      padding: 12px;
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      font-family: 'Orbitron', monospace;
-      font-size: 0.7rem;
-      font-weight: 600;
-      cursor: pointer;
-      letter-spacing: 0.5px;
-      transition: all var(--transition);
-      position: relative;
-    }
-    .shop-tab.active { color: var(--neon-blue); }
-    .shop-tab.active::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 20%;
-      right: 20%;
-      height: 2px;
-      background: var(--neon-blue);
-      border-radius: 2px;
-      box-shadow: var(--glow-blue);
-    }
-    .shop-tab:hover { color: var(--text-primary); }
-
-    .shop-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .section-title {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.65rem;
-      color: var(--text-muted);
-      letter-spacing: 1px;
-      padding: 4px 0;
-      text-transform: uppercase;
-    }
-
-    /* Shop item card */
-    .shop-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 10px 12px;
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      transition: all var(--transition);
-      position: relative;
-      overflow: hidden;
-    }
-    .shop-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    .shop-card.hardware::before  { background: radial-gradient(ellipse at top left, rgba(0,212,255,0.06), transparent); }
-    .shop-card.ai-tech::before   { background: radial-gradient(ellipse at top left, rgba(180,79,255,0.06), transparent); }
-    .shop-card:hover::before     { opacity: 1; }
-    .shop-card:hover { border-color: rgba(0,212,255,0.3); transform: translateX(-2px); }
-    .shop-card.locked { opacity: 0.45; pointer-events: none; }
-    .shop-card.maxed  { border-color: rgba(57,255,133,0.3); }
-
-    .card-icon {
-      font-size: 1.6rem;
-      flex-shrink: 0;
-      width: 36px;
-      text-align: center;
-    }
-    .card-body { flex: 1; min-width: 0; }
-    .card-name {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.72rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .card-desc {
-      font-size: 0.65rem;
-      color: var(--text-muted);
-      margin-top: 2px;
-      line-height: 1.4;
-    }
-    .card-stats {
-      display: flex;
-      gap: 8px;
-      margin-top: 5px;
-      flex-wrap: wrap;
-    }
-    .card-stat {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.58rem;
-      padding: 2px 6px;
-      border-radius: 100px;
-      border: 1px solid;
-    }
-    .stat-compute { color: var(--neon-blue);   border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.07); }
-    .stat-cost    { color: var(--neon-red);    border-color: rgba(255,75,110,0.3); background: rgba(255,75,110,0.07); }
-    .stat-money   { color: var(--neon-yellow); border-color: rgba(255,217,61,0.3); background: rgba(255,217,61,0.07); }
-    .stat-special { color: var(--neon-purple); border-color: rgba(180,79,255,0.3); background: rgba(180,79,255,0.07); }
-    .stat-green   { color: var(--neon-green);  border-color: rgba(57,255,133,0.3); background: rgba(57,255,133,0.07); }
-
-    .card-right {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 6px;
-      flex-shrink: 0;
-    }
-    .card-count {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.65rem;
-      color: var(--text-muted);
-    }
-    .card-count span { color: var(--neon-blue); }
-
-    .buy-btn {
-      background: transparent;
-      border: 1px solid var(--neon-blue);
-      border-radius: var(--radius-sm);
-      color: var(--neon-blue);
-      font-family: 'Orbitron', monospace;
-      font-size: 0.62rem;
-      font-weight: 700;
-      padding: 5px 10px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      white-space: nowrap;
-      letter-spacing: 0.5px;
-    }
-    .buy-btn:hover  { background: var(--neon-blue); color: var(--bg-deep); box-shadow: var(--glow-blue); }
-    .buy-btn:active { transform: scale(0.95); }
-    .buy-btn.disabled { border-color: var(--text-muted); color: var(--text-muted); cursor: not-allowed; }
-    .buy-btn.disabled:hover { background: transparent; color: var(--text-muted); box-shadow: none; }
-    .buy-btn.ai { border-color: var(--neon-purple); color: var(--neon-purple); }
-    .buy-btn.ai:hover { background: var(--neon-purple); color: #fff; box-shadow: var(--glow-purple); }
-    .buy-btn.maxed { border-color: var(--neon-green); color: var(--neon-green); cursor: default; font-size: 0.58rem; }
-    .buy-btn.maxed:hover { background: transparent; color: var(--neon-green); box-shadow: none; }
-
-    /* ============================================================
-       FOOTER / LEADERBOARD BAR
-    ============================================================ */
-    #footer {
-      grid-area: footer;
-      background: var(--bg-panel);
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      padding: 0 20px;
-      gap: 20px;
-      overflow: hidden;
-    }
-
-    .footer-label {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.62rem;
-      color: var(--text-muted);
-      white-space: nowrap;
-      letter-spacing: 1px;
-    }
-
-    .lb-entries {
-      display: flex;
-      gap: 20px;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    .lb-entry {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.7rem;
-      white-space: nowrap;
-    }
-    .lb-rank {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.65rem;
-      font-weight: 700;
-      width: 18px;
-      text-align: center;
-    }
-    .lb-rank.r1 { color: var(--neon-yellow); }
-    .lb-rank.r2 { color: #c0c0c0; }
-    .lb-rank.r3 { color: #cd7f32; }
-    .lb-rank.r4 { color: var(--text-muted); }
-    .lb-name { font-size: 0.68rem; color: var(--text-primary); }
-    .lb-name.you { color: var(--neon-green); font-weight: 600; }
-    .lb-score {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.6rem;
-      color: var(--neon-blue);
-    }
-
-    .next-comp {
-      margin-left: auto;
-      font-family: 'Orbitron', monospace;
-      font-size: 0.6rem;
-      color: var(--neon-purple);
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    /* ============================================================
-       MODAL OVERLAY (Arena / Events / Toast)
-    ============================================================ */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.75);
-      backdrop-filter: blur(4px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 200;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-    }
-    .modal-overlay.show { opacity: 1; pointer-events: all; }
-
-    .modal-box {
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 32px 36px;
-      max-width: 480px;
-      width: 90%;
-      box-shadow: 0 0 60px rgba(0,212,255,0.2);
-      transform: scale(0.9);
-      transition: transform 0.3s;
-    }
-    .modal-overlay.show .modal-box { transform: scale(1); }
-
-    .modal-title {
-      font-family: 'Orbitron', monospace;
-      font-size: 1.1rem;
-      font-weight: 900;
-      text-align: center;
-      margin-bottom: 6px;
-    }
-    .modal-subtitle {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      text-align: center;
-      margin-bottom: 24px;
-    }
-
-    .arena-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 24px;
-    }
-    .arena-table th {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.6rem;
-      color: var(--text-muted);
-      letter-spacing: 1px;
-      padding: 6px 8px;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-    }
-    .arena-table td {
-      padding: 10px 8px;
-      font-size: 0.75rem;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-    }
-    .arena-table tr:last-child td { border-bottom: none; }
-    .arena-rank-cell {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.8rem;
-      font-weight: 700;
-    }
-    .arena-you td { background: rgba(57,255,133,0.05); }
-    .arena-you .arena-rank-cell { color: var(--neon-green); }
-
-    .modal-close-btn {
-      display: block;
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: var(--radius);
-      background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
-      color: #fff;
-      font-family: 'Orbitron', monospace;
-      font-size: 0.85rem;
-      font-weight: 700;
-      cursor: pointer;
-      letter-spacing: 1px;
-      transition: all 0.15s;
-    }
-    .modal-close-btn:hover { transform: scale(1.02); box-shadow: var(--glow-blue); }
-
-    /* Toast */
-    #toast-container {
-      position: fixed;
-      top: 76px;
-      right: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 150;
-      pointer-events: none;
-    }
-    .toast {
-      background: var(--bg-panel);
-      border: 1px solid var(--neon-blue);
-      border-radius: var(--radius-sm);
-      padding: 10px 16px;
-      font-size: 0.75rem;
-      color: var(--text-primary);
-      box-shadow: var(--glow-blue);
-      animation: toast-in 3.5s ease forwards;
-      max-width: 260px;
-      line-height: 1.4;
-    }
-    .toast.purple { border-color: var(--neon-purple); box-shadow: var(--glow-purple); }
-    .toast.green  { border-color: var(--neon-green);  box-shadow: var(--glow-green); }
-    @keyframes toast-in {
-      0%   { opacity: 0; transform: translateX(30px); }
-      10%  { opacity: 1; transform: translateX(0); }
-      80%  { opacity: 1; }
-      100% { opacity: 0; transform: translateX(30px); }
-    }
-
-    /* ============================================================
-       RESPONSIVE
-    ============================================================ */
-    @media (max-width: 700px) {
-      #app {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr auto 300px 40px;
-        grid-template-areas:
-          "topbar"
-          "factory"
-          "collect"
-          "shop"
-          "footer";
-        overflow-y: auto;
-        height: auto;
-        min-height: 100vh;
-      }
-      html, body { overflow: auto; }
-      #factory { min-height: 260px; }
-      #collect-section { position: relative; grid-area: collect; right: auto; bottom: auto; padding: 12px; background: var(--bg-panel); flex-direction: row; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); }
-      .stat-pills { gap: 6px; }
-      .stat-pill { padding: 4px 8px; }
-      .logo { font-size: 0.8rem; }
-    }
-
-    /* ============================================================
-       UTILITY
-    ============================================================ */
-    .hidden { display: none !important; }
-
-    /* === YEAR TRANSITION OVERLAY === */
-    #year-transition {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,20,0.92);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 190;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.6s;
-    }
-    #year-transition.show { opacity: 1; pointer-events: all; }
-    .year-splash {
-      font-family: 'Orbitron', monospace;
-      font-size: 4rem;
-      font-weight: 900;
-      background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: year-pulse 0.6s ease-in-out;
-    }
-    @keyframes year-pulse {
-      0%   { transform: scale(0.5); opacity: 0; }
-      60%  { transform: scale(1.1); }
-      100% { transform: scale(1);   opacity: 1; }
-    }
-    .year-splash-sub {
-      font-size: 1rem;
-      color: var(--text-muted);
-      margin-top: 8px;
-      font-family: 'Orbitron', monospace;
-    }
-
-    /* Scan-line effect on factory */
-    #factory::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 3px,
-        rgba(0,0,0,0.03) 3px,
-        rgba(0,0,0,0.03) 4px
-      );
-      pointer-events: none;
-    }
-
-  </style>
+  <!-- All styles -->
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+
 <!-- ================================================================
-     HTML STRUCTURE
+     ROOT APP LAYOUT
 ================================================================ -->
 <div id="app">
 
-  <!-- TOP BAR -->
+  <!-- ── TOP BAR ──────────────────────────────────────────────── -->
   <header id="topbar">
-    <div class="logo">⚡ ChillGPT Empire</div>
+    <div class="logo">
+      <span class="logo-icon">⚡</span>
+      <span class="logo-text">ChillGPT<br><span class="logo-sub">EMPIRE</span></span>
+    </div>
 
     <div class="stat-pills">
+      <!-- Money -->
       <div class="stat-pill money">
-        <span class="icon">💰</span>
-        <span class="label">Cash</span>
-        <span class="value" id="stat-money">$0</span>
+        <span class="pill-icon">💰</span>
+        <div class="pill-body">
+          <div class="pill-label">CASH</div>
+          <div class="pill-value" id="stat-money">$0</div>
+        </div>
       </div>
+
+      <!-- Compute -->
       <div class="stat-pill compute">
-        <span class="icon">🖥️</span>
-        <span class="label">Compute</span>
-        <span class="value" id="stat-compute">0 TF/s</span>
+        <span class="pill-icon">🖥️</span>
+        <div class="pill-body">
+          <div class="pill-label">COMPUTE</div>
+          <div class="pill-value" id="stat-compute">0 TF/s</div>
+        </div>
       </div>
+
+      <!-- Electricity -->
       <div class="stat-pill electricity" id="elec-pill">
-        <span class="icon">⚡</span>
-        <span class="label">Power Cost</span>
-        <span class="value" id="stat-electricity">$0/s</span>
+        <span class="pill-icon">⚡</span>
+        <div class="pill-body">
+          <div class="pill-label">POWER COST</div>
+          <div class="pill-value" id="stat-electricity">$0/s</div>
+        </div>
       </div>
-      <div class="stat-pill compute" style="border-color:rgba(180,79,255,0.2)">
-        <span class="icon">👥</span>
-        <span class="label">Users</span>
-        <span class="value" style="color:var(--neon-purple)" id="stat-users">0</span>
+
+      <!-- Users -->
+      <div class="stat-pill users">
+        <span class="pill-icon">👥</span>
+        <div class="pill-body">
+          <div class="pill-label">USERS</div>
+          <div class="pill-value" id="stat-users">0</div>
+        </div>
+      </div>
+
+      <!-- Net income -->
+      <div class="stat-pill income">
+        <span class="pill-icon">📈</span>
+        <div class="pill-body">
+          <div class="pill-label">NET/SEC</div>
+          <div class="pill-value" id="stat-net">$0/s</div>
+        </div>
       </div>
     </div>
 
-    <div class="year-badge" id="year-badge">📅 2016</div>
+    <div class="year-badge" id="year-badge">
+      <span class="year-label">YEAR</span>
+      <span class="year-value" id="year-value">2016</span>
+    </div>
   </header>
 
-  <!-- FACTORY -->
-  <main id="factory">
-    <!-- Background elements -->
-    <div class="factory-bg">
-      <div class="stars" id="stars-container"></div>
-      <div class="glow-orb orb-1"></div>
-      <div class="glow-orb orb-2"></div>
-      <div class="glow-orb orb-3"></div>
-      <div class="floor-grid"></div>
-    </div>
+  <!-- ── FACTORY AREA ──────────────────────────────────────────── -->
+  <main id="factory" aria-label="Factory Area">
 
-    <!-- Location sign -->
+    <!-- CRT scanline overlay -->
+    <div class="scanlines" aria-hidden="true"></div>
+
+    <!-- Background glow orbs -->
+    <div class="glow-orb orb-blue"  aria-hidden="true"></div>
+    <div class="glow-orb orb-purple" aria-hidden="true"></div>
+    <div class="glow-orb orb-green" aria-hidden="true"></div>
+
+    <!-- Star field -->
+    <div id="stars-container" aria-hidden="true"></div>
+
+    <!-- Floor grid -->
+    <div class="floor-grid" aria-hidden="true"></div>
+
+    <!-- Location sign (changes each year) -->
     <div class="location-sign" id="location-sign">🏠 GARAGE SETUP</div>
 
-    <!-- Machines -->
-    <div id="machines-container">
+    <!-- Machine display rows -->
+    <div id="machines-container" aria-label="Machines">
       <div class="machine-row" id="machine-row-back"></div>
       <div class="machine-row" id="machine-row-front"></div>
     </div>
 
-    <!-- Mascot -->
-    <div id="mascot" onclick="triggerMascotSpeech()">
-      <div id="mascot-face">
-        <div class="mascot-antenna"></div>
-        <div class="mascot-glasses"></div>
-        <div class="mascot-eyes">
-          <div class="mascot-eye"></div>
-          <div class="mascot-eye"></div>
+    <!-- ChillGPT Mascot robot -->
+    <div id="mascot" role="button" tabindex="0" aria-label="ChillGPT Mascot – click for a message"
+         onclick="UI.mascotSpeak()" onkeydown="if(event.key==='Enter')UI.mascotSpeak()">
+      <div id="mascot-body">
+        <div class="mascot-antenna"><div class="antenna-tip"></div></div>
+        <div class="mascot-head">
+          <div class="mascot-visor"></div>
+          <div class="mascot-eyes">
+            <div class="mascot-eye left-eye"></div>
+            <div class="mascot-eye right-eye"></div>
+          </div>
+          <div class="mascot-mouth" id="mascot-mouth"></div>
         </div>
-        <div class="mascot-mouth" id="mascot-mouth"></div>
+        <div class="mascot-torso">
+          <div class="torso-led led-1"></div>
+          <div class="torso-led led-2"></div>
+          <div class="torso-led led-3"></div>
+        </div>
+        <div class="mascot-feet">
+          <div class="foot left-foot"></div>
+          <div class="foot right-foot"></div>
+        </div>
       </div>
-      <div id="mascot-speech"></div>
+      <!-- Speech bubble -->
+      <div id="mascot-speech" role="status" aria-live="polite"></div>
     </div>
 
-    <!-- Collect Section -->
+    <!-- Train / Collect section -->
     <div id="collect-section">
-      <div class="progress-label" id="progress-label">ChillGPT v1.0 training...</div>
-      <div id="train-progress-wrap">
-        <div id="train-progress" style="width: 0%"></div>
+      <div class="progress-wrap">
+        <div class="progress-label" id="progress-label">CHILLGPT v1.0 — TRAINING</div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="train-progress"></div>
+          <div class="progress-percent" id="progress-percent">0%</div>
+        </div>
       </div>
-      <button id="collect-btn" onclick="collectMoney()">
-        💰 Collect Revenue
+      <button id="collect-btn" onclick="Game.collectMoney()" aria-label="Collect accumulated revenue">
+        <span class="btn-icon">💰</span>
+        <span id="collect-label">COLLECT REVENUE</span>
       </button>
     </div>
 
-    <!-- Notification Layer -->
-    <div id="notif-layer"></div>
+    <!-- Floating notifications layer -->
+    <div id="notif-layer" aria-hidden="true"></div>
 
-    <!-- Flash -->
-    <div id="upgrade-flash"></div>
+    <!-- Screen flash overlay -->
+    <div id="upgrade-flash" aria-hidden="true"></div>
   </main>
 
-  <!-- SHOP PANEL -->
-  <aside id="shop">
-    <div class="shop-tabs">
-      <button class="shop-tab active" id="tab-hardware" onclick="switchTab('hardware')">⚙️ Hardware</button>
-      <button class="shop-tab" id="tab-ai" onclick="switchTab('ai')">🧠 AI Tech</button>
+  <!-- ── SHOP PANEL ────────────────────────────────────────────── -->
+  <aside id="shop" aria-label="Shop Panel">
+    <div class="shop-tabs" role="tablist">
+      <button class="shop-tab active" id="tab-hardware" role="tab" aria-selected="true"
+              onclick="UI.switchTab('hardware')">⚙️ HARDWARE</button>
+      <button class="shop-tab" id="tab-ai" role="tab" aria-selected="false"
+              onclick="UI.switchTab('ai')">🧠 AI TECH</button>
     </div>
-    <div class="shop-content" id="shop-content">
-      <!-- Dynamically populated -->
-    </div>
+    <!-- Shop items injected here by ui.js -->
+    <div class="shop-content" id="shop-content"></div>
   </aside>
 
-  <!-- FOOTER LEADERBOARD -->
+  <!-- ── FOOTER LEADERBOARD ────────────────────────────────────── -->
   <footer id="footer">
     <div class="footer-label">🏆 GLOBAL AI ARENA</div>
-    <div class="lb-entries" id="lb-entries">
-      <!-- Dynamic -->
-    </div>
-    <div class="next-comp" id="next-comp">Next Arena: --:--</div>
+    <div class="lb-entries" id="lb-entries"></div>
+    <div class="next-comp" id="next-comp">NEXT ARENA: --:--</div>
   </footer>
-
 </div>
 
-<!-- ARENA MODAL -->
-<div class="modal-overlay" id="arena-modal">
-  <div class="modal-box">
-    <div class="modal-title" style="color:var(--neon-yellow)">⚔️ Global AI Arena</div>
-    <div class="modal-subtitle" id="arena-year-label">Year 2016 Results</div>
-    <table class="arena-table" id="arena-table">
+<!-- ================================================================
+     ARENA MODAL
+================================================================ -->
+<div class="modal-overlay" id="arena-modal" role="dialog" aria-modal="true" aria-label="Global AI Arena Results">
+  <div class="modal-box pixel-border">
+    <div class="modal-title">⚔️ GLOBAL AI ARENA</div>
+    <div class="modal-subtitle" id="arena-year-label">YEAR 2016 RESULTS</div>
+    <table class="arena-table" aria-label="Competition Results">
       <thead>
         <tr>
           <th>RANK</th>
           <th>COMPANY</th>
           <th>SCORE</th>
-          <th>TREND</th>
+          <th>STATUS</th>
         </tr>
       </thead>
       <tbody id="arena-body"></tbody>
     </table>
-    <button class="modal-close-btn" onclick="closeArena()">CONTINUE TO <span id="next-year-btn">2017</span> →</button>
+    <button class="modal-close-btn" id="arena-close-btn" onclick="UI.closeArena()">
+      CONTINUE TO <span id="next-year-label">2017</span> →
+    </button>
   </div>
 </div>
 
-<!-- YEAR TRANSITION -->
-<div id="year-transition">
-  <div class="year-splash" id="year-splash-text">2017</div>
+<!-- Year transition overlay -->
+<div id="year-transition" aria-live="assertive" aria-label="Year change announcement">
+  <div class="year-splash" id="year-splash-num">2017</div>
   <div class="year-splash-sub" id="year-splash-sub">A new year begins...</div>
 </div>
 
-<!-- TOAST CONTAINER -->
-<div id="toast-container"></div>
-
+<!-- Toast notifications -->
+<div id="toast-container" aria-live="polite"></div>
 
 <!-- ================================================================
-     JAVASCRIPT GAME ENGINE
+     SCRIPTS  (order matters — data first, then logic, then UI)
 ================================================================ -->
-<script>
-/* ================================================================
-   GAME STATE
-================================================================ */
-const SAVE_KEY = 'chillgpt_empire_v2';
-
-const GAME_DEFAULTS = {
-  money:              50,        // starting cash $
-  compute:            0,         // teraflops
-  users:              0,         // active users
-  electricityCost:    0,         // per second
-  year:               2016,
-  secondsInYear:      0,         // progress in current year
-  yearDuration:       210,       // 3.5 minutes per year (real seconds)
-  lastSave:           Date.now(),
-  lastTick:           Date.now(),
-  totalMoneyEarned:   50,
-  trainProgress:      0,         // 0-100% for current model
-  currentTab:         'hardware',
-  unlockedUpgrades:   [],        // ids of purchased AI upgrades
-  hardware: {
-    gpu:        0,
-    cluster:    0,
-    rack:       0,
-    megaDC:     0,
-    quantumDC:  0,
-  },
-  // AI Tech multipliers (applied to money per second)
-  multipliers: {
-    moneyPerUser:   0.01,  // $ per user per second
-    computeToUsers: 0.5,   // users per TF
-    elecReduction:  1.0,   // multiplier (lower = cheaper)
-  },
-  pendingRevenue: 0,       // accumulated money waiting to collect
-};
-
-let G = JSON.parse(JSON.stringify(GAME_DEFAULTS)); // deep clone
-
-/* ================================================================
-   HARDWARE DEFINITIONS
-================================================================ */
-const HARDWARE = [
-  {
-    id:       'gpu',
-    name:     'Basic GPU',
-    icon:     '🖥️',
-    desc:     'Your first NVIDIA GPU. Small but mighty for 2016.',
-    compute:  0.5,      // TF/s added per unit
-    elec:     0.05,     // $/ per second per unit (electricity)
-    baseCost: 30,
-    costMult: 1.12,     // each purchase gets more expensive
-    maxCount: 999,
-    class:    'machine-gpu',
-    row:      'front',
-  },
-  {
-    id:       'cluster',
-    name:     'GPU Cluster',
-    icon:     '🔋',
-    desc:     '8x GPUs in a rack. Serious compute power.',
-    compute:  5,
-    elec:     0.4,
-    baseCost: 400,
-    costMult: 1.14,
-    maxCount: 999,
-    requireYear: 2017,
-    class:    'machine-cluster',
-    row:      'front',
-  },
-  {
-    id:       'rack',
-    name:     'Server Rack',
-    icon:     '🗄️',
-    desc:     'A proper server rack. Your garage grows up.',
-    compute:  30,
-    elec:     2,
-    baseCost: 3000,
-    costMult: 1.15,
-    maxCount: 999,
-    requireYear: 2018,
-    class:    'machine-rack',
-    row:      'back',
-  },
-  {
-    id:       'megaDC',
-    name:     'Mega Data Center',
-    icon:     '🏭',
-    desc:     'An entire data center. Now we\'re talking.',
-    compute:  250,
-    elec:     15,
-    baseCost: 40000,
-    costMult: 1.18,
-    maxCount: 99,
-    requireYear: 2020,
-    class:    'machine-mega',
-    row:      'back',
-  },
-  {
-    id:       'quantumDC',
-    name:     'Quantum Data Center',
-    icon:     '⚛️',
-    desc:     'Bleeding-edge quantum-accelerated compute cluster.',
-    compute:  2000,
-    elec:     100,
-    baseCost: 600000,
-    costMult: 1.2,
-    maxCount: 20,
-    requireYear: 2023,
-    class:    'machine-quantum',
-    row:      'back',
-  },
-];
-
-/* ================================================================
-   AI UPGRADES DEFINITIONS
-================================================================ */
-const AI_UPGRADES = [
-  {
-    id:       'advanced_text',
-    name:     'Advanced Text AI',
-    icon:     '📝',
-    desc:     'Improve ChillGPT\'s language abilities. 3× money multiplier.',
-    cost:     200,
-    effect:   (g) => { g.multipliers.moneyPerUser *= 3; },
-    statLine: '3× Money multiplier',
-    requireYear: 2016,
-    color:    'neon-blue',
-  },
-  {
-    id:       'image_gen',
-    name:     'Image Generation',
-    icon:     '🎨',
-    desc:     'ChillGPT can now generate images! 2× users from compute.',
-    cost:     2000,
-    effect:   (g) => { g.multipliers.computeToUsers *= 2; },
-    statLine: '2× Users per compute',
-    requireYear: 2018,
-    color:    'neon-purple',
-  },
-  {
-    id:       'efficient_power',
-    name:     'Efficient Power',
-    icon:     '🔋',
-    desc:     'Better cooling & power management. 40% electricity saved.',
-    cost:     5000,
-    effect:   (g) => { g.multipliers.elecReduction *= 0.6; },
-    statLine: '40% less electricity',
-    requireYear: 2019,
-    color:    'neon-green',
-  },
-  {
-    id:       'video_gen',
-    name:     'Video Generation',
-    icon:     '🎬',
-    desc:     'ChillGPT creates videos. Huge user surge. 5× money.',
-    cost:     25000,
-    effect:   (g) => { g.multipliers.moneyPerUser *= 5; },
-    statLine: '5× Money multiplier',
-    requireYear: 2021,
-    color:    'neon-yellow',
-  },
-  {
-    id:       'voice_mode',
-    name:     'Voice Mode',
-    icon:     '🎙️',
-    desc:     'Real-time voice conversations. 3× users per compute.',
-    cost:     80000,
-    effect:   (g) => { g.multipliers.computeToUsers *= 3; },
-    statLine: '3× Users per compute',
-    requireYear: 2022,
-    color:    'neon-purple',
-  },
-  {
-    id:       'multimodal',
-    name:     'Multimodal AI',
-    icon:     '🌐',
-    desc:     'Text + Image + Video + Voice unified. 10× money!',
-    cost:     300000,
-    effect:   (g) => { g.multipliers.moneyPerUser *= 10; },
-    statLine: '10× Money multiplier',
-    requireYear: 2023,
-    color:    'neon-blue',
-  },
-  {
-    id:       'agents',
-    name:     'AI Agents',
-    icon:     '🤖',
-    desc:     'Autonomous AI agents can run tasks 24/7. 4× compute.',
-    cost:     1000000,
-    effect:   (g) => { g.multipliers.computeToUsers *= 4; },
-    statLine: '4× Users per compute',
-    requireYear: 2024,
-    color:    'neon-green',
-  },
-];
-
-/* ================================================================
-   COMPETITORS & ARENA
-================================================================ */
-const COMPETITORS = [
-  { name: 'AetherMind',   icon: '🔵', growth: 1.45, base: 8  },
-  { name: 'LuminaAI',     icon: '🟡', growth: 1.38, base: 12 },
-  { name: 'QuantumForge', icon: '🟣', growth: 1.52, base: 6  },
-];
-
-/* ================================================================
-   LOCATION LABELS
-================================================================ */
-const LOCATIONS = [
-  { year: 2016, label: '🏠 GARAGE SETUP' },
-  { year: 2017, label: '🏢 SMALL OFFICE' },
-  { year: 2018, label: '🏗️  STARTUP FLOOR' },
-  { year: 2019, label: '🖥️  SERVER ROOM' },
-  { year: 2020, label: '🏭 MICRO DATA CENTER' },
-  { year: 2021, label: '⚙️  REGIONAL DC' },
-  { year: 2022, label: '🌐 NATIONAL DC' },
-  { year: 2023, label: '🌍 MEGA DATA CENTER' },
-  { year: 2024, label: '🚀 GALACTIC HQ' },
-  { year: 2025, label: '🌌 THE MOTHERSHIP' },
-  { year: 2026, label: '👑 CHILLGPT EMPIRE' },
-];
-
-/* ================================================================
-   MASCOT QUIPS
-================================================================ */
-const QUIPS = [
-  "Vibes and teraflops, bro 😎",
-  "Training... and chilling 🧊",
-  "We do compute different here 🤙",
-  "GPUs don't sleep, neither do I 💪",
-  "More servers, more chill 🏖️",
-  "The AI is real. The stress is not. ✌️",
-  "Buy the dip... in GPUs 📈",
-  "We gonna win the Arena fr fr 🏆",
-  "Electricity costs? Skill issue 🔥",
-  "ChillGPT is inevitable 🤖",
-];
-
-/* ================================================================
-   HELPERS
-================================================================ */
-function fmt(n, decimals = 0) {
-  if (n === undefined || n === null || isNaN(n)) return '0';
-  if (n >= 1e15) return (n / 1e15).toFixed(2) + 'Q';
-  if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
-  if (n >= 1e9)  return (n / 1e9).toFixed(2)  + 'B';
-  if (n >= 1e6)  return (n / 1e6).toFixed(2)  + 'M';
-  if (n >= 1e3)  return (n / 1e3).toFixed(1)  + 'K';
-  return n.toFixed(decimals);
-}
-function fmtMoney(n) { return '$' + fmt(n, 2); }
-function fmtCompute(n) { return fmt(n, 1) + ' TF/s'; }
-
-function getHardwareCost(hw) {
-  const count = G.hardware[hw.id] || 0;
-  return Math.floor(hw.baseCost * Math.pow(hw.costMult, count));
-}
-
-function getTotalCompute() {
-  let c = 0;
-  for (const hw of HARDWARE) c += (G.hardware[hw.id] || 0) * hw.compute;
-  return c;
-}
-
-function getTotalElectricity() {
-  let e = 0;
-  for (const hw of HARDWARE) e += (G.hardware[hw.id] || 0) * hw.elec;
-  return e * G.multipliers.elecReduction;
-}
-
-function getUsers() {
-  return Math.floor(getTotalCompute() * G.multipliers.computeToUsers);
-}
-
-function getMoneyPerSecond() {
-  const revenue = getUsers() * G.multipliers.moneyPerUser;
-  const cost    = getTotalElectricity();
-  return revenue - cost;
-}
-
-function getArenaScore() {
-  const hw  = Object.values(G.hardware).reduce((a, b) => a + b, 0);
-  const ai  = G.unlockedUpgrades.length;
-  const mps = Math.max(0, getMoneyPerSecond());
-  return Math.floor(getTotalCompute() * 10 + hw * 5 + ai * 100 + mps * 2);
-}
-
-function getCompetitorScore(comp, year) {
-  const yearOffset = year - 2016;
-  return Math.floor(comp.base * Math.pow(comp.growth, yearOffset) * 100);
-}
-
-/* ================================================================
-   SAVE & LOAD
-================================================================ */
-function saveGame() {
-  G.lastSave = Date.now();
-  localStorage.setItem(SAVE_KEY, JSON.stringify(G));
-}
-
-function loadGame() {
-  const data = localStorage.getItem(SAVE_KEY);
-  if (!data) return;
-  try {
-    const saved = JSON.parse(data);
-    // Merge saved into G carefully
-    G = Object.assign(JSON.parse(JSON.stringify(GAME_DEFAULTS)), saved);
-
-    // Offline progress calculation
-    const offlineSecs = Math.min((Date.now() - (saved.lastSave || Date.now())) / 1000, 3600); // cap 1hr
-    if (offlineSecs > 5) {
-      const offlineEarnings = getMoneyPerSecond() * offlineSecs * 0.5;
-      if (offlineEarnings > 0) {
-        G.money += offlineEarnings;
-        G.totalMoneyEarned += offlineEarnings;
-        showToast(`💤 Offline: +${fmtMoney(offlineEarnings)} while you were away!`, 'green');
-      }
-    }
-  } catch(e) {
-    console.warn('Save load failed', e);
-  }
-}
-
-/* ================================================================
-   TICK LOOP — runs every ~100ms
-================================================================ */
-let lastTickTime = Date.now();
-
-function gameTick() {
-  const now     = Date.now();
-  const dt      = Math.min((now - lastTickTime) / 1000, 1); // delta seconds, capped
-  lastTickTime  = now;
-
-  const mps = getMoneyPerSecond();
-  const compute = getTotalCompute();
-
-  // Accumulate revenue & cost
-  if (mps > 0) {
-    G.pendingRevenue += mps * dt;
-  } else {
-    // Paying more than earning — drain money directly
-    G.money = Math.max(0, G.money + mps * dt);
-  }
-
-  G.compute = compute;
-  G.users   = getUsers();
-  G.electricityCost = getTotalElectricity();
-
-  // Train progress bar
-  G.trainProgress = Math.min(100, G.trainProgress + (compute * 0.01 + 0.5) * dt);
-
-  // Year progress
-  G.secondsInYear += dt;
-  if (G.secondsInYear >= G.yearDuration && G.year < 2026) {
-    G.secondsInYear = 0;
-    advanceYear();
-  }
-
-  updateUI();
-
-  // Auto-save every 30 seconds
-  if ((now - G.lastSave) > 30000) saveGame();
-}
-
-/* ================================================================
-   YEAR ADVANCEMENT
-================================================================ */
-function advanceYear() {
-  const prevYear = G.year;
-  G.year++;
-
-  // Show transition overlay
-  const overlay = document.getElementById('year-transition');
-  const splashTxt = document.getElementById('year-splash-text');
-  const splashSub = document.getElementById('year-splash-sub');
-  splashTxt.textContent = G.year;
-  splashSub.textContent = getYearSubtitle(G.year);
-  overlay.classList.add('show');
-
-  setTimeout(() => {
-    overlay.classList.remove('show');
-    // Show arena after transition
-    showArena(prevYear);
-  }, 2000);
-
-  updateLocation();
-  reRenderMachines();
-  showToast(`🎉 Welcome to ${G.year}! New hardware may be available.`, 'purple');
-}
-
-function getYearSubtitle(year) {
-  const subs = {
-    2017: "Series A secured. Let's scale!",
-    2018: "Image generation is live!",
-    2019: "Competitors are catching up...",
-    2020: "Going full data center mode.",
-    2021: "Video AI is changing everything.",
-    2022: "Voice mode launches. Users explode!",
-    2023: "Multimodal era begins.",
-    2024: "AI Agents take over.",
-    2025: "The final stretch.",
-    2026: "ChillGPT Empire is complete!",
-  };
-  return subs[year] || "A new year begins...";
-}
-
-/* ================================================================
-   ARENA
-================================================================ */
-function showArena(year) {
-  const modal    = document.getElementById('arena-modal');
-  const yearLbl  = document.getElementById('arena-year-label');
-  const body     = document.getElementById('arena-body');
-  const nextBtn  = document.getElementById('next-year-btn');
-
-  yearLbl.textContent = `Year ${year} Results`;
-  nextBtn.textContent = G.year;
-
-  // Build rankings
-  const myScore = getArenaScore();
-  const entries = [
-    { name: 'ChillGPT', icon: '🤖', score: myScore, isYou: true },
-    ...COMPETITORS.map(c => ({ name: c.name, icon: c.icon, score: getCompetitorScore(c, year), isYou: false })),
-  ];
-  entries.sort((a, b) => b.score - a.score);
-
-  body.innerHTML = '';
-  entries.forEach((e, i) => {
-    const rank = i + 1;
-    const rankColors = ['r1','r2','r3','r4'];
-    const rankEmoji  = ['🥇','🥈','🥉','4️⃣'];
-    const tr = document.createElement('tr');
-    if (e.isYou) tr.className = 'arena-you';
-    tr.innerHTML = `
-      <td class="arena-rank-cell ${rankColors[i]}">${rankEmoji[i]}</td>
-      <td>${e.icon} <strong style="color:${e.isYou ? 'var(--neon-green)' : 'var(--text-primary)'}">${e.name}</strong>${e.isYou ? ' <span style="font-size:0.6rem;color:var(--text-muted)">(YOU)</span>' : ''}</td>
-      <td style="font-family:'Orbitron',monospace;font-size:0.7rem;color:var(--neon-blue)">${fmt(e.score)}</td>
-      <td style="color:${e.isYou ? 'var(--neon-green)' : 'var(--text-muted)'}">${e.isYou ? (rank === 1 ? '⬆️ LEADING' : `⚠️ #${rank}`) : getTrend(rank)}</td>
-    `;
-    body.appendChild(tr);
-  });
-
-  modal.classList.add('show');
-  updateLeaderboardBar(entries);
-}
-
-function getTrend(rank) {
-  const t = ['', '↑ Rising', '→ Stable', '↓ Falling'];
-  return t[rank] || '↓ Falling';
-}
-
-function closeArena() {
-  document.getElementById('arena-modal').classList.remove('show');
-  if (G.year >= 2026) showEndgame();
-}
-
-function showEndgame() {
-  showToast('🏆 You\'ve conquered 2026! ChillGPT is #1! Refresh to play again.', 'green');
-}
-
-/* ================================================================
-   MONEY COLLECTION
-================================================================ */
-function collectMoney() {
-  if (G.pendingRevenue < 0.01) {
-    showToast('No revenue to collect yet! Buy more GPUs.', '');
-    return;
-  }
-
-  const amount = G.pendingRevenue;
-  G.money += amount;
-  G.totalMoneyEarned += amount;
-  G.pendingRevenue = 0;
-  G.trainProgress = 0; // reset training progress
-
-  // Visual feedback
-  spawnMoneyPop(`+${fmtMoney(amount)}`);
-  spawnParticles();
-  flashScreen();
-  mascotReact();
-
-  showToast(`💰 Collected ${fmtMoney(amount)}!`, 'green');
-  updateUI();
-}
-
-/* ================================================================
-   BUY HARDWARE
-================================================================ */
-function buyHardware(hwId) {
-  const hw   = HARDWARE.find(h => h.id === hwId);
-  if (!hw) return;
-  const cost = getHardwareCost(hw);
-
-  if (G.money < cost) {
-    showToast(`💸 Need ${fmtMoney(cost)} to buy ${hw.name}!`, '');
-    return;
-  }
-  if (G.year < (hw.requireYear || 2016)) {
-    showToast(`🔒 ${hw.name} unlocks in ${hw.requireYear}!`, '');
-    return;
-  }
-
-  G.money  -= cost;
-  G.hardware[hwId] = (G.hardware[hwId] || 0) + 1;
-
-  flashScreen(hw.id === 'megaDC' || hw.id === 'quantumDC');
-  reRenderMachines();
-  renderShop();
-  showToast(`✅ Purchased ${hw.name}! Compute +${hw.compute} TF/s`, 'green');
-  mascotReact();
-}
-
-/* ================================================================
-   BUY AI UPGRADE
-================================================================ */
-function buyAIUpgrade(upgradeId) {
-  const upg = AI_UPGRADES.find(u => u.id === upgradeId);
-  if (!upg) return;
-
-  if (G.unlockedUpgrades.includes(upgradeId)) {
-    showToast(`Already unlocked: ${upg.name}!`, '');
-    return;
-  }
-  if (G.money < upg.cost) {
-    showToast(`💸 Need ${fmtMoney(upg.cost)} for ${upg.name}!`, '');
-    return;
-  }
-  if (G.year < (upg.requireYear || 2016)) {
-    showToast(`🔒 ${upg.name} unlocks in ${upg.requireYear}!`, '');
-    return;
-  }
-
-  G.money -= upg.cost;
-  G.unlockedUpgrades.push(upgradeId);
-  upg.effect(G);
-
-  flashScreen(true);
-  renderShop();
-  showToast(`🧠 Unlocked: ${upg.name}! ${upg.statLine}`, 'purple');
-  mascotReact(true);
-}
-
-/* ================================================================
-   UI UPDATES
-================================================================ */
-function updateUI() {
-  // Top bar stats
-  document.getElementById('stat-money').textContent         = fmtMoney(G.money);
-  document.getElementById('stat-compute').textContent       = fmtCompute(G.compute);
-  document.getElementById('stat-electricity').textContent   = fmtMoney(G.electricityCost) + '/s';
-  document.getElementById('stat-users').textContent         = fmt(G.users);
-  document.getElementById('year-badge').textContent         = `📅 ${G.year}`;
-
-  // Electricity pill danger
-  const elecPill = document.getElementById('elec-pill');
-  const mps = getMoneyPerSecond();
-  elecPill.classList.toggle('danger', mps < 0);
-
-  // Progress bar
-  document.getElementById('train-progress').style.width = G.trainProgress.toFixed(1) + '%';
-  document.getElementById('progress-label').textContent =
-    `ChillGPT v${(G.year - 2015)}.0 — Training ${G.trainProgress.toFixed(0)}%`;
-
-  // Collect button label (show pending)
-  const collectBtn = document.getElementById('collect-btn');
-  if (G.pendingRevenue > 0.01) {
-    collectBtn.textContent = `💰 Collect ${fmtMoney(G.pendingRevenue)}`;
-  } else {
-    collectBtn.textContent = `💰 Collect Revenue`;
-  }
-
-  // Year countdown
-  const remaining = Math.max(0, G.yearDuration - G.secondsInYear);
-  const mm = Math.floor(remaining / 60).toString().padStart(2, '0');
-  const ss = Math.floor(remaining % 60).toString().padStart(2, '0');
-  document.getElementById('next-comp').textContent = `Next Arena: ${mm}:${ss}`;
-
-  // Shop buy buttons state
-  updateShopButtons();
-}
-
-function updateShopButtons() {
-  document.querySelectorAll('.buy-btn[data-hw]').forEach(btn => {
-    const hwId = btn.dataset.hw;
-    const hw   = HARDWARE.find(h => h.id === hwId);
-    if (!hw) return;
-    const cost = getHardwareCost(hw);
-    const locked = G.year < (hw.requireYear || 2016);
-    const canAfford = G.money >= cost && !locked;
-    btn.classList.toggle('disabled', !canAfford);
-    btn.textContent = locked ? `🔒 ${hw.requireYear}` : fmtMoney(cost);
-  });
-
-  document.querySelectorAll('.buy-btn[data-ai]').forEach(btn => {
-    const id  = btn.dataset.ai;
-    const upg = AI_UPGRADES.find(u => u.id === id);
-    if (!upg) return;
-    const locked  = G.year < (upg.requireYear || 2016);
-    const owned   = G.unlockedUpgrades.includes(id);
-    const canAfford = G.money >= upg.cost && !locked && !owned;
-    btn.classList.toggle('disabled', !canAfford && !owned);
-    if (owned) {
-      btn.textContent = '✅ Owned';
-      btn.classList.add('maxed');
-    } else if (locked) {
-      btn.textContent = `🔒 ${upg.requireYear}`;
-    } else {
-      btn.textContent = fmtMoney(upg.cost);
-    }
-  });
-}
-
-/* ================================================================
-   LEADERBOARD BAR
-================================================================ */
-function updateLeaderboardBar(entries) {
-  if (!entries) {
-    const myScore = getArenaScore();
-    entries = [
-      { name: 'ChillGPT', icon: '🤖', score: myScore, isYou: true },
-      ...COMPETITORS.map(c => ({ name: c.name, icon: c.icon, score: getCompetitorScore(c, G.year - 1), isYou: false })),
-    ];
-    entries.sort((a, b) => b.score - a.score);
-  }
-
-  const container = document.getElementById('lb-entries');
-  const rankCls   = ['r1','r2','r3','r4'];
-  container.innerHTML = entries.map((e, i) => `
-    <div class="lb-entry">
-      <div class="lb-rank ${rankCls[i]}">#${i + 1}</div>
-      <div class="lb-name ${e.isYou ? 'you' : ''}">${e.icon} ${e.name}</div>
-      <div class="lb-score">${fmt(e.score)}</div>
-    </div>
-  `).join('');
-}
-
-/* ================================================================
-   MACHINES RENDER
-================================================================ */
-function reRenderMachines() {
-  const rowFront = document.getElementById('machine-row-front');
-  const rowBack  = document.getElementById('machine-row-back');
-  rowFront.innerHTML = '';
-  rowBack.innerHTML  = '';
-
-  for (const hw of HARDWARE) {
-    const count = G.hardware[hw.id] || 0;
-    if (count === 0) continue;
-
-    // Show up to 8 visible units per type
-    const displayCount = Math.min(count, 8);
-    const row = hw.row === 'back' ? rowBack : rowFront;
-
-    for (let i = 0; i < displayCount; i++) {
-      const card = document.createElement('div');
-      card.className = 'machine-card';
-      card.style.animationDelay = (i * 0.05) + 's';
-
-      const body = document.createElement('div');
-      body.className = `machine-body ${hw.class}`;
-
-      // LEDs
-      const ledsHtml = hw.id === 'rack'
-        ? '<div class="rack-strip"></div><div class="rack-strip"></div><div class="rack-strip"></div>'
-        : '<div class="led"></div>';
-      body.innerHTML = ledsHtml;
-
-      const lbl = document.createElement('div');
-      lbl.className = 'machine-label';
-      lbl.textContent = count > displayCount ? `×${count}` : ``;
-
-      card.appendChild(body);
-      card.appendChild(lbl);
-      row.appendChild(card);
-    }
-  }
-}
-
-/* ================================================================
-   LOCATION SIGN
-================================================================ */
-function updateLocation() {
-  const sign = document.getElementById('location-sign');
-  const loc  = [...LOCATIONS].reverse().find(l => G.year >= l.year);
-  if (loc) sign.textContent = loc.label;
-}
-
-/* ================================================================
-   SHOP RENDER
-================================================================ */
-let currentTab = 'hardware';
-
-function switchTab(tab) {
-  currentTab = tab;
-  document.getElementById('tab-hardware').classList.toggle('active', tab === 'hardware');
-  document.getElementById('tab-ai').classList.toggle('active', tab === 'ai');
-  renderShop();
-}
-
-function renderShop() {
-  const content = document.getElementById('shop-content');
-  content.innerHTML = '';
-
-  if (currentTab === 'hardware') {
-    const title = document.createElement('div');
-    title.className = 'section-title';
-    title.textContent = '⚙️ Hardware Store';
-    content.appendChild(title);
-
-    for (const hw of HARDWARE) {
-      const count  = G.hardware[hw.id] || 0;
-      const cost   = getHardwareCost(hw);
-      const locked = G.year < (hw.requireYear || 2016);
-
-      const card = document.createElement('div');
-      card.className = `shop-card hardware${locked ? ' locked' : ''}`;
-
-      const compute = hw.compute;
-      const elec    = hw.elec;
-
-      card.innerHTML = `
-        <div class="card-icon">${hw.icon}</div>
-        <div class="card-body">
-          <div class="card-name">${hw.name}</div>
-          <div class="card-desc">${hw.desc}</div>
-          <div class="card-stats">
-            <div class="card-stat stat-compute">+${compute} TF/s</div>
-            <div class="card-stat stat-cost">⚡ +${fmtMoney(elec)}/s</div>
-          </div>
-        </div>
-        <div class="card-right">
-          <div class="card-count">Owned: <span>${count}</span></div>
-          <button class="buy-btn ${locked ? 'disabled' : ''}" data-hw="${hw.id}" onclick="buyHardware('${hw.id}')">
-            ${locked ? `🔒 ${hw.requireYear}` : fmtMoney(cost)}
-          </button>
-        </div>
-      `;
-      content.appendChild(card);
-    }
-
-    // Income info card
-    const infoCard = document.createElement('div');
-    infoCard.className = 'shop-card';
-    infoCard.style.background = 'rgba(57,255,133,0.04)';
-    infoCard.style.borderColor = 'rgba(57,255,133,0.2)';
-    const mps = getMoneyPerSecond();
-    infoCard.innerHTML = `
-      <div class="card-icon">📊</div>
-      <div class="card-body">
-        <div class="card-name">Net Income</div>
-        <div class="card-stats">
-          <div class="card-stat stat-green">${mps >= 0 ? '+' : ''}${fmtMoney(mps)}/s</div>
-          <div class="card-stat stat-money">Users: ${fmt(G.users)}</div>
-        </div>
-      </div>
-    `;
-    content.appendChild(infoCard);
-
-  } else {
-    // AI TECH TAB
-    const title = document.createElement('div');
-    title.className = 'section-title';
-    title.textContent = '🧠 AI Research';
-    content.appendChild(title);
-
-    for (const upg of AI_UPGRADES) {
-      const owned  = G.unlockedUpgrades.includes(upg.id);
-      const locked = G.year < (upg.requireYear || 2016);
-
-      const card = document.createElement('div');
-      card.className = `shop-card ai-tech${locked ? ' locked' : ''}${owned ? ' maxed' : ''}`;
-
-      card.innerHTML = `
-        <div class="card-icon">${upg.icon}</div>
-        <div class="card-body">
-          <div class="card-name">${upg.name}</div>
-          <div class="card-desc">${upg.desc}</div>
-          <div class="card-stats">
-            <div class="card-stat stat-special">${upg.statLine}</div>
-            ${locked ? `<div class="card-stat" style="color:var(--neon-red);border-color:rgba(255,75,110,0.3);background:rgba(255,75,110,0.07)">Unlocks ${upg.requireYear}</div>` : ''}
-          </div>
-        </div>
-        <div class="card-right">
-          <button class="buy-btn ai ${owned ? 'maxed' : ''} ${!owned && !locked && G.money < upg.cost ? 'disabled' : ''}" 
-                  data-ai="${upg.id}" onclick="buyAIUpgrade('${upg.id}')">
-            ${owned ? '✅ Owned' : locked ? `🔒 ${upg.requireYear}` : fmtMoney(upg.cost)}
-          </button>
-        </div>
-      `;
-      content.appendChild(card);
-    }
-  }
-}
-
-/* ================================================================
-   VISUAL EFFECTS
-================================================================ */
-function spawnMoneyPop(text) {
-  const layer = document.getElementById('notif-layer');
-  const el    = document.createElement('div');
-  el.className = 'money-pop';
-  el.textContent = text;
-  el.style.left   = (30 + Math.random() * 40) + '%';
-  el.style.top    = (40 + Math.random() * 20) + '%';
-  layer.appendChild(el);
-  setTimeout(() => el.remove(), 1300);
-}
-
-function spawnParticles() {
-  const layer  = document.getElementById('notif-layer');
-  const colors = ['var(--neon-yellow)', 'var(--neon-blue)', 'var(--neon-green)', 'var(--neon-purple)'];
-  for (let i = 0; i < 18; i++) {
-    const p  = document.createElement('div');
-    p.className = 'particle';
-    const angle = (Math.PI * 2 * i) / 18;
-    const dist  = 60 + Math.random() * 80;
-    p.style.setProperty('--px', Math.cos(angle) * dist + 'px');
-    p.style.setProperty('--py', Math.sin(angle) * dist + 'px');
-    p.style.left       = (45 + Math.random() * 10) + '%';
-    p.style.top        = '60%';
-    p.style.background = colors[Math.floor(Math.random() * colors.length)];
-    p.style.boxShadow  = `0 0 6px ${p.style.background}`;
-    layer.appendChild(p);
-    setTimeout(() => p.remove(), 900);
-  }
-}
-
-function flashScreen(big = false) {
-  const flash = document.getElementById('upgrade-flash');
-  flash.style.background = big ? 'var(--neon-purple)' : 'var(--neon-blue)';
-  flash.style.opacity = big ? '0.15' : '0.08';
-  setTimeout(() => { flash.style.opacity = '0'; }, 200);
-}
-
-/* ================================================================
-   MASCOT
-================================================================ */
-let mascotTimer = null;
-
-function mascotReact(excited = false) {
-  const mouth = document.getElementById('mascot-mouth');
-  if (excited) {
-    mouth.style.borderColor = 'var(--neon-yellow)';
-    mouth.style.width = '36px';
-    setTimeout(() => {
-      mouth.style.borderColor = 'var(--neon-green)';
-      mouth.style.width = '28px';
-    }, 600);
-  }
-  triggerMascotSpeech();
-}
-
-function triggerMascotSpeech() {
-  const speech = document.getElementById('mascot-speech');
-  speech.textContent = QUIPS[Math.floor(Math.random() * QUIPS.length)];
-  speech.classList.add('show');
-  clearTimeout(mascotTimer);
-  mascotTimer = setTimeout(() => speech.classList.remove('show'), 3000);
-}
-
-/* ================================================================
-   TOAST NOTIFICATIONS
-================================================================ */
-function showToast(msg, type = '') {
-  const container = document.getElementById('toast-container');
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.textContent = msg;
-  container.appendChild(toast);
-  setTimeout(() => toast.remove(), 3600);
-}
-
-/* ================================================================
-   STARS BACKGROUND
-================================================================ */
-function initStars() {
-  const container = document.getElementById('stars-container');
-  for (let i = 0; i < 80; i++) {
-    const star = document.createElement('div');
-    star.className = 'star';
-    star.style.left = Math.random() * 100 + '%';
-    star.style.top  = Math.random() * 60 + '%';
-    star.style.setProperty('--dur', (2 + Math.random() * 4) + 's');
-    star.style.animationDelay = (Math.random() * 4) + 's';
-    container.appendChild(star);
-  }
-}
-
-/* ================================================================
-   INITIAL LEADERBOARD (year 2015 = before game)
-================================================================ */
-function initLeaderboard() {
-  const myScore = getArenaScore();
-  const entries = [
-    { name: 'ChillGPT', icon: '🤖', score: myScore, isYou: true },
-    ...COMPETITORS.map(c => ({ name: c.name, icon: c.icon, score: getCompetitorScore(c, G.year - 1), isYou: false })),
-  ];
-  entries.sort((a, b) => b.score - a.score);
-  updateLeaderboardBar(entries);
-}
-
-/* ================================================================
-   BOOT
-================================================================ */
-function init() {
-  loadGame();
-  initStars();
-  updateLocation();
-  reRenderMachines();
-  renderShop();
-  initLeaderboard();
-  updateUI();
-
-  // Start the game loop
-  setInterval(gameTick, 100);
-
-  // Auto-save
-  setInterval(saveGame, 30000);
-
-  // Periodic leaderboard refresh
-  setInterval(initLeaderboard, 5000);
-
-  // Welcome toast
-  setTimeout(() => {
-    showToast('👋 Welcome to ChillGPT Empire! Buy GPUs and collect revenue to grow.', '');
-    triggerMascotSpeech();
-  }, 800);
-}
-
-// Start when DOM ready
-document.addEventListener('DOMContentLoaded', init);
-</script>
+<script src="js/upgrades.js"></script>
+<script src="js/save.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
