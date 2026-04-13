@@ -19,21 +19,25 @@ const Game = (() => {
    */
   function createDefaults() {
     return {
-      money:              50,      // current cash ($)
+      money:              1000,    // current cash ($)  [Phase 1: start with more]
       pendingRevenue:     0,       // revenue queued up awaiting Collect
-      totalMoneyEarned:   50,      // all-time total for leaderboard/score
+      totalMoneyEarned:   1000,    // all-time total for leaderboard/score
 
       year:               2016,
       yearProgress:       0,       // seconds elapsed inside the current year
       yearDuration:       210,     // real seconds per in-game year (3.5 min)
 
+      /** In-game month inside the current year (1–12) */
+      currentMonth:       1,
+
       trainProgress:      0,       // 0–100, controls the training bar
 
       /* Multipliers from AI upgrades — mutable during a run */
       mult: {
-        moneyPerUser:   0.01,   // $ per user per second
-        computeToUsers: 0.5,    // users gained per TF/s of compute
-        elecReduction:  1.0,    // multiplied onto electricity (lower = cheaper)
+        moneyPerUser:     0.01,   // $ per user per second
+        computeToUsers:   0.5,    // users gained per TF/s of compute
+        elecReduction:    1.0,    // multiplied onto electricity (lower = cheaper)
+        workerIncome:     2.0,    // $ earned per worker per second
       },
 
       /* Counts of each hardware tier purchased */
@@ -43,6 +47,13 @@ const Game = (() => {
         rack:      0,
         megaDC:    0,
         quantumDC: 0,
+      },
+
+      /* Staff / physical room inventory */
+      inventory: {
+        workers:     1,    // starting with one worker (the founder)
+        serverRacks: 0,
+        dataCenters: 0,
       },
 
       /** Array of AI upgrade IDs that have been purchased */
@@ -96,10 +107,14 @@ const Game = (() => {
 
   /**
    * Gross revenue per second (before electricity cost).
+   * Combines compute-based user revenue + direct worker income.
    * @returns {number}
    */
   function getGrossMoneyPerSecond() {
-    return getUsers() * state.mult.moneyPerUser;
+    const userRevenue   = getUsers() * state.mult.moneyPerUser;
+    const workerCount   = state.inventory ? (state.inventory.workers || 0) : 0;
+    const workerRevenue = workerCount * (state.mult.workerIncome || 2.0);
+    return userRevenue + workerRevenue;
   }
 
   /**
@@ -175,6 +190,11 @@ const Game = (() => {
     state.money         -= cost;
     state.hardware[hwId] = (state.hardware[hwId] || 0) + 1;
 
+    // Fire event for Phaser canvas
+    window.dispatchEvent(new CustomEvent('SPAWN_MACHINE', {
+      detail: { hwId, computePS: hw.computePS, label: `+${hw.computePS} TF/s` },
+    }));
+
     const bigUpgrade = hwId === 'megaDC' || hwId === 'quantumDC';
     return {
       ok: true,
@@ -207,11 +227,57 @@ const Game = (() => {
     state.unlockedUpgrades.push(upgradeId);
     upg.apply(state);  // Mutate multipliers now
 
+    // Feedback burst in Phaser
+    window.dispatchEvent(new CustomEvent('SPAWN_FEEDBACK', {
+      detail: { text: `🧠 ${upg.badge}` },
+    }));
+
     return {
       ok: true,
       bigUpgrade: true,
       message: `🧠 Unlocked ${upg.name}! ${upg.badge}`,
     };
+  }
+
+  // ── STAFF ACTIONS ─────────────────────────────────────────────────
+
+  /**
+   * Hire one worker.
+   * Workers provide direct income per second AND fill the Phaser room.
+   * Cost scales geometrically with the number of workers owned.
+   * @returns {{ ok: boolean, message: string }}
+   */
+  function hireWorker() {
+    const BASE_COST = 50;
+    const COST_MULT = 1.18;
+    const owned     = state.inventory ? (state.inventory.workers || 0) : 0;
+    const cost      = Math.floor(BASE_COST * Math.pow(COST_MULT, owned));
+
+    if (state.money < cost) {
+      return { ok: false, message: `💸 Need ${Fmt.money(cost)} to hire a worker!` };
+    }
+
+    state.money -= cost;
+    if (!state.inventory) state.inventory = { workers: 0, serverRacks: 0, dataCenters: 0 };
+    state.inventory.workers = (state.inventory.workers || 0) + 1;
+
+    // Notify Phaser to place a worker sprite
+    window.dispatchEvent(new CustomEvent('SPAWN_WORKER', {
+      detail: { type: 'worker' },
+    }));
+
+    return { ok: true, message: `👨‍💻 Hired Worker #${state.inventory.workers}!` };
+  }
+
+  /**
+   * Calculate the cost to hire the next worker.
+   * @returns {number}
+   */
+  function getNextWorkerCost() {
+    const BASE_COST = 50;
+    const COST_MULT = 1.18;
+    const owned     = state.inventory ? (state.inventory.workers || 0) : 0;
+    return Math.floor(BASE_COST * Math.pow(COST_MULT, owned));
   }
 
   /**
@@ -267,12 +333,20 @@ const Game = (() => {
       _triggerNewYear();
     }
 
+    // Month progression (12 months per year)
+    const monthsPerYear   = 12;
+    const secsPerMonth    = state.yearDuration / monthsPerYear;
+    const newMonth = Math.floor((state.yearProgress / secsPerMonth) % monthsPerYear) + 1;
+    state.currentMonth = Math.min(newMonth, 12);
+
     // Expose derived values for UI.js to read
+    const workers = state.inventory ? (state.inventory.workers || 0) : 0;
     state._computed = {
       compute:   getTotalCompute(),
       users:     getUsers(),
       elec:      getElectricity(),
       mps:       mps,
+      workers,
     };
   }
 
@@ -313,10 +387,12 @@ const Game = (() => {
     getArenaScore,
     getCompetitorScore,
     getNextHardwareCost,
+    getNextWorkerCost,
 
     // Actions
     buyHardware,
     buyAIUpgrade,
+    hireWorker,
     collectMoney,
 
     // Loop
