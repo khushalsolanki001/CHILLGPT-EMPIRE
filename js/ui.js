@@ -20,7 +20,7 @@ const UI = (() => {
   const $  = (id)  => document.getElementById(id);
   const $$ = (sel) => document.querySelectorAll(sel);
 
-  // Tab state ('hardware' | 'ai')
+  // Tab state ('hardware' | 'ai' | 'staff')
   let _currentTab = 'hardware';
 
   // Mascot speech timer
@@ -43,7 +43,15 @@ const UI = (() => {
     $('stat-electricity').textContent = Fmt.money(c.elec || 0) + '/s';
     $('stat-users').textContent      = Fmt.num(c.users || 0, 0);
     $('stat-net').textContent        = (mps >= 0 ? '+' : '') + Fmt.money(mps) + '/s';
-    $('year-value').textContent      = s.year;
+
+    // Year + Month display
+    const month  = s.currentMonth || 1;
+    const mo     = String(month).padStart(2, '0');
+    $('year-value').textContent = `${s.year} / M${mo}`;
+
+    // Workers pill (if element exists)
+    const wEl = $('stat-workers');
+    if (wEl) wEl.textContent = (c.workers || 0) + ' staff';
 
     // Electricity danger colour
     $('elec-pill').classList.toggle('danger', mps < 0);
@@ -78,8 +86,13 @@ const UI = (() => {
     _currentTab = tab;
     $('tab-hardware').classList.toggle('active', tab === 'hardware');
     $('tab-hardware').setAttribute('aria-selected', tab === 'hardware');
-    $('tab-ai').classList.toggle('active', tab === 'ai');
-    $('tab-ai').setAttribute('aria-selected', tab === 'ai');
+    $('tab-ai').classList.toggle('active',       tab === 'ai');
+    $('tab-ai').setAttribute('aria-selected',       tab === 'ai');
+    const staffTab = $('tab-staff');
+    if (staffTab) {
+      staffTab.classList.toggle('active', tab === 'staff');
+      staffTab.setAttribute('aria-selected', tab === 'staff');
+    }
     renderShop();
   }
 
@@ -93,6 +106,8 @@ const UI = (() => {
 
     if (_currentTab === 'hardware') {
       _renderHardwareTab(container);
+    } else if (_currentTab === 'staff') {
+      _renderStaffTab(container);
     } else {
       _renderAITab(container);
     }
@@ -187,6 +202,53 @@ const UI = (() => {
     }
   }
 
+  /** Render the Hire Staff tab */
+  function _renderStaffTab(container) {
+    _sectionTitle(container, '👥 HIRE STAFF');
+
+    const owned   = Game.state.inventory ? (Game.state.inventory.workers || 0) : 0;
+    const cost    = Game.getNextWorkerCost();
+    const canBuy  = Game.state.money >= cost;
+
+    // Worker card
+    const card = _el('div', 'shop-card hw');
+    card.innerHTML = `
+      <div class="card-icon">👨‍💻</div>
+      <div class="card-body">
+        <div class="card-name">Hire Worker</div>
+        <div class="card-desc">A dedicated dev who codes 24/7. Earns $2/s base income and fills your office!</div>
+        <div class="card-badges">
+          <span class="badge badge-green">+$2/s income</span>
+          <span class="badge badge-blue">Fills office room</span>
+        </div>
+      </div>
+      <div class="card-right">
+        <div class="card-count">STAFF: <span>${owned}</span></div>
+        <button
+          class="buy-btn${canBuy ? '' : ' cant-afford'}"
+          id="btn-hire-worker"
+          onclick="UI.handleHireWorker()"
+          aria-label="Hire worker for ${Fmt.money(cost)}"
+        >${Fmt.money(cost)}</button>
+      </div>
+    `;
+    container.appendChild(card);
+
+    // Info row
+    const info = _el('div', 'shop-card info-card');
+    info.innerHTML = `
+      <div class="card-icon">📊</div>
+      <div class="card-body">
+        <div class="card-name">STAFF INCOME</div>
+        <div class="card-badges">
+          <span class="badge badge-green">+${Fmt.money(owned * 2)}/s from ${owned} workers</span>
+          <span class="badge badge-blue">Each worker: +$2/s</span>
+        </div>
+      </div>
+    `;
+    container.appendChild(info);
+  }
+
   /**
    * Re-render only the buy-button states without rebuilding the whole shop.
    * Lightweight update called every tick.
@@ -213,6 +275,15 @@ const UI = (() => {
         btn.textContent = Fmt.money(upg.cost);
       }
     });
+
+    // Worker hire button
+    const workerBtn = $('btn-hire-worker');
+    if (workerBtn) {
+      const cost   = Game.getNextWorkerCost();
+      const canBuy = Game.state.money >= cost;
+      workerBtn.classList.toggle('cant-afford', !canBuy);
+      workerBtn.textContent = Fmt.money(cost);
+    }
   }
 
 
@@ -572,6 +643,7 @@ const UI = (() => {
       flash(result.bigUpgrade);
       if (result.bigUpgrade) mascotHappy(true);
       toast(result.message, 't-green');
+      // Phaser SPAWN_MACHINE already fired from game.js
     } else {
       toast(result.message, 't-red');
     }
@@ -584,6 +656,21 @@ const UI = (() => {
       flashScreen(true);
       mascotHappy(true);
       toast(result.message, 't-purple');
+      // Phaser SPAWN_FEEDBACK already fired from game.js
+    } else {
+      toast(result.message, 't-red');
+    }
+  }
+
+  /** Handle hiring a worker — updates state, visual room, and toast. */
+  function handleHireWorker() {
+    const result = Game.hireWorker();
+    if (result.ok) {
+      renderShop();
+      flashScreen(false);
+      mascotHappy(true);
+      toast(result.message, 't-green');
+      // Phaser SPAWN_WORKER already fired from game.js
     } else {
       toast(result.message, 't-red');
     }
@@ -680,6 +767,7 @@ const UI = (() => {
     // Buy handlers (called from onclick in HTML)
     handleBuyHardware,
     handleBuyAI,
+    handleHireWorker,
     handleCollect,
 
     // Mascot
