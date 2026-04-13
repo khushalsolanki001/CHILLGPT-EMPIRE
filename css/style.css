@@ -1211,3 +1211,48 @@ html, body {
   .logo-text { display: none; }
   #toast-container { right: 10px; }
 }
+
+/* ================================================================
+   WORKERS STAT PILL
+================================================================ */
+.stat-pill.workers .pill-value {
+  color: var(--neon-orange);
+  text-shadow: 0 0 16px rgba(255, 140, 66, 0.55);
+}
+
+/* ================================================================
+   PHASER CANVAS LAYER
+================================================================ */
+/* The canvas wrapper sits at z-index 1, BEHIND the CSS UI (z-index 2+).
+   pointer-events: none lets clicks pass through to the DOM UI above. */
+#phaser-canvas-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+#phaser-canvas-wrapper canvas {
+  display: block;
+  pointer-events: none;
+}
+
+/* The #factory DOM elements (machines-container, mascot, collect-section)
+   are already absolute-positioned at higher z-indices — they appear
+   on top of Phaser automatically. */
+
+/* Widen year badge to accommodate "2016 / M01" */
+.year-badge {
+  min-width: 90px;
+}
+.year-value {
+  font-size: 0.6rem !important;
+  white-space: nowrap;
+}
+
+/* Staff tab gets orange accent to match workers pill */
+#tab-staff.active {
+  color: var(--neon-orange) !important;
+  border-bottom-color: var(--neon-orange) !important;
+  text-shadow: 0 0 16px rgba(255, 140, 66, 0.55);
+}
+
