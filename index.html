@@ -15,6 +15,9 @@
 
   <!-- All styles -->
   <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Phaser 3 — loaded before game scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.87.0/dist/phaser.min.js"></script>
 </head>
 <body>
 
@@ -64,6 +67,15 @@
         <div class="pill-body">
           <div class="pill-label">USERS</div>
           <div class="pill-value" id="stat-users">0</div>
+        </div>
+      </div>
+
+      <!-- Workers -->
+      <div class="stat-pill workers">
+        <span class="pill-icon">👥</span>
+        <div class="pill-body">
+          <div class="pill-label">STAFF</div>
+          <div class="pill-value" id="stat-workers">1 staff</div>
         </div>
       </div>
 
@@ -163,6 +175,8 @@
     <div class="shop-tabs" role="tablist">
       <button class="shop-tab active" id="tab-hardware" role="tab" aria-selected="true"
               onclick="UI.switchTab('hardware')">⚙️ HARDWARE</button>
+      <button class="shop-tab" id="tab-staff" role="tab" aria-selected="false"
+              onclick="UI.switchTab('staff')">👥 STAFF</button>
       <button class="shop-tab" id="tab-ai" role="tab" aria-selected="false"
               onclick="UI.switchTab('ai')">🧠 AI TECH</button>
     </div>
@@ -219,5 +233,6 @@
 <script src="js/game.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
+<script src="js/phaser-scene.js"></script>
 </body>
 </html>
