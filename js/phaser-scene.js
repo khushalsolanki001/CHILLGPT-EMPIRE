@@ -108,8 +108,13 @@ class GameDevStoryScene extends Phaser.Scene {
 
     // 1. Room background — sprite if available, else procedural
     if (this._spritesOk['bg']) {
-      const bg = this.add.image(W / 2, H / 2, 'bg')
-        .setDisplaySize(W, H)
+      // Scale bg to COVER the canvas while preserving aspect ratio
+      const tex    = this.textures.get('bg').getSourceImage();
+      const scaleX = W / tex.width;
+      const scaleY = H / tex.height;
+      const scale  = Math.max(scaleX, scaleY);
+      this.add.image(W / 2, H / 2, 'bg')
+        .setScale(scale)
         .setDepth(0);
     } else {
       this._drawRetroRoom(W, H);
