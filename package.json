@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve ."
+  },
   "dependencies": {
     "phaser": "^4.0.0"
   }
