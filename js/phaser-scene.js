@@ -186,27 +186,36 @@ class GameDevStoryScene extends Phaser.Scene {
    * Spacing and maxX scale with canvas width so it works at any size.
    */
   _buildZones(W, H) {
-    const LEFT_MARGIN  = W * 0.20;   // avoid the left window+mascot area
-    const RIGHT_MARGIN = W * 0.06;   // small right margin
+    // ── Calibrated to actual bg.png room layout ──
+    // The dado rail / windowsill bottom sits at ≈ H * 0.70 (~420px on 600px H).
+    // Wooden floor spans H * 0.72 → H (432px → 600px).
+    //
+    // LEFT_MARGIN: skip the mascot + window area on the far left.
+    // RIGHT_MARGIN: leave a gap before the shop panel shadow.
+
+    const LEFT_MARGIN  = Math.round(W * 0.22);  // ≈ 267px — past windows+mascot
+    const RIGHT_MARGIN = Math.round(W * 0.06);  // ≈ 73px
     const MAX_X        = W - RIGHT_MARGIN;
 
-    // machines — back row, directly below windows
-    const mStartX    = LEFT_MARGIN;
-    const mStartY    = Math.round(H * 0.65);
-    const mSpacingX  = 100;          // horizontal gap including sprite width
-    const mSpacingY  = 85;           // row height when wrapping
+    // machineZone — floor, just past the dado rail (back row)
+    // Bottom anchor Y = H * 0.76 so tops of tallest~210px sprites still clear rail.
+    const mStartX   = LEFT_MARGIN;
+    const mStartY   = Math.round(H * 0.76);   // ≈ 456px on 600px canvas
+    const mSpacingX = 130;   // wide enough for 110–160px‐wide sprite art
+    const mSpacingY = 90;    // row-wrap vertical gap
 
-    // workers — front row, clearly on wooden floor
-    const wStartX    = LEFT_MARGIN;
-    const wStartY    = Math.round(H * 0.89);
-    const wSpacingX  = 110;
-    const wSpacingY  = 90;
+    // workerZone — front of wooden floor (foreground row)
+    // Bottom anchor Y = H * 0.93 — clearly on the warm parquet.
+    const wStartX   = LEFT_MARGIN;
+    const wStartY   = Math.round(H * 0.93);   // ≈ 558px on 600px canvas
+    const wSpacingX = 140;   // desks are wider than GPU cards
+    const wSpacingY = 90;
 
     this._machineZone = makeZone(mStartX, mStartY, mSpacingX, mSpacingY, MAX_X);
     this._workerZone  = makeZone(wStartX, wStartY, wSpacingX, wSpacingY, MAX_X);
 
-    console.log('[Phaser] machineZone start:', mStartX, mStartY, 'maxX:', MAX_X);
-    console.log('[Phaser] workerZone  start:', wStartX, wStartY, 'maxX:', MAX_X);
+    console.log('[Phaser] machineZone:', mStartX, mStartY, '→ maxX', MAX_X);
+    console.log('[Phaser] workerZone: ', wStartX, wStartY, '→ maxX', MAX_X);
   }
 
   /**
