@@ -1,103 +1,142 @@
 /**
- * phaser-scene.js  ★ RETRO TYCOON VISUAL THEME ★
+ * phaser-scene.js  ★ RETRO TYCOON — Grid, Scaling & Animation ★
  * ─────────────────────────────────────────────────────────────────
  * Phaser 3 Scene: "GameDevStoryScene"
  *
- * Visual style: Game Dev Story — warm 16-bit pixel art office room.
- * Falls back to procedural warm-coloured rectangles when sprites
- * are unavailable (e.g., offline / dev environment).
+ * All sprite sheets are 1024×1024 with exactly 2 frames side-by-side,
+ * so each frame is 512 wide × 1024 tall.
  *
- * CustomEvents listened from UI.js:
- *   • SPAWN_WORKER  → places a desk+worker in the next grid cell
- *   • SPAWN_MACHINE → places a machine sprite in the next grid cell
- *   • SPAWN_FEEDBACK→ shows a floating "+X TF/s" popup text
+ * CustomEvents from UI.js:
+ *   SPAWN_WORKER  → places animated desk+worker in next front slot
+ *   SPAWN_MACHINE → places animated machine in next back slot
+ *   SPAWN_FEEDBACK→ floating popup text at a position
  * ─────────────────────────────────────────────────────────────────
  */
 
 /* global Phaser */
 
-// ── GRID CONFIGURATION ───────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// SPRITE SHEET CONFIG
+// All AI-generated sheets are 1024×1024 with 2 frames side-by-side
+// → frameWidth = 512, frameHeight = 1024
+// ─────────────────────────────────────────────────────────────────
+const FRAME_W = 512;
+const FRAME_H = 1024;
 
-const GRID_COLS     = 8;
-const GRID_ROWS     = 3;
-const CELL_W        = 82;
-const CELL_H        = 68;
-const GRID_X_MARGIN = 20;   // left margin from canvas edge
-const GRID_Y_FACTOR = 0.44; // top of grid as fraction of canvas height
-
-// ── ASSET PATHS ──────────────────────────────────────────────────
-
-const ASSET_BASE = 'assets/images/';
-
-// ── WARM RETRO COLOUR PALETTE ────────────────────────────────────
-
-const R = {
-  // Room colours
-  wall:        0xd4b882,
-  wallStripe:  0xc0a870,
-  floor:       0xb89050,
-  floorAlt:    0xa87e40,
-  ceiling:     0xe8d4a8,
-  skirting:    0x7a5230,
-  windowFrame: 0x6a3c14,
-  windowGlass: 0x90c4e8,
-  windowSky:   0x5aa0d0,
-  door:        0x8a5c28,
-  poster:      0xe8a840,
-  lightPanel:  0xfff0c0,
-
-  // Machine fallback colours (warm, no neon)
-  gpuPCB:      0x6a8c2a,
-  gpuEdge:     0x3a5010,
-  gpuFan:      0xb0b8c0,
-  rackBody:    0x606870,
-  rackEdge:    0x2a2e34,
-  rackLedR:    0xe03030,
-  rackLedG:    0x30d050,
-  deskWood:    0x9c6830,
-  deskEdge:    0x5a3810,
-  monitorCase: 0xd0c8b0,
-  monitorScr:  0x2a3c18,
-  chairBack:   0x3850a0,
-
-  // Text / UI
-  textDark:    0x1a1208,
-  feedGold:    0xc8960c,
-  feedGreen:   0x3d7a2e,
-  feedBlue:    0x1e5fa8,
-  black:       0x000000,
-  white:       0xffffff,
+// ─────────────────────────────────────────────────────────────────
+// TARGET RENDERED HEIGHTS (pixels in canvas space)
+// scale = targetHeight / frameHeight (1024)
+// ─────────────────────────────────────────────────────────────────
+const TARGET_H = {
+  worker:    78,   // desk + worker  → scale ≈ 0.076
+  gpu:       60,   // GPU card       → scale ≈ 0.059
+  cluster:   72,   // GPU cluster    → scale ≈ 0.070
+  rack:      92,   // server rack    → scale ≈ 0.090
+  megaDC:    110,  // mega DC        → scale ≈ 0.107
+  quantumDC: 128,  // quantum DC     → scale ≈ 0.125
 };
 
-// ── PHASER SCENE ─────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// GRID LAYOUT (% of canvas)
+// BACK row  = machines / server racks (against the wall)
+// FRONT row = worker desks (on the floor)
+// ─────────────────────────────────────────────────────────────────
+const BACK_COLS       = 9;
+const FRONT_COLS      = 8;
+const BACK_Y_FACTOR   = 0.54;   // back row sits just below mid-room
+const FRONT_Y_FACTOR  = 0.75;   // front row is near camera
+const GRID_MARGIN_L   = 0.05;   // left margin (fraction of W)
+const GRID_MARGIN_R   = 0.05;   // right margin
+
+// ─────────────────────────────────────────────────────────────────
+// WARM RETRO PALETTE (procedural fallback)
+// ─────────────────────────────────────────────────────────────────
+const C = {
+  wall:       0xd4b882,
+  wallStripe: 0xc0a870,
+  floor:      0xb89050,
+  floorAlt:   0xa87e40,
+  skirting:   0x7a5230,
+  ceiling:    0xe8d4a8,
+  lightPanel: 0xfff0c0,
+  winFrame:   0x6a3c14,
+  winGlass:   0x90c4e8,
+  winSky:     0x5aa0d0,
+  cityBldg:   0x2a3848,
+  poster:     0xe8a840,
+  deskWood:   0x9c6830,
+  deskEdge:   0x5a3810,
+  monCase:    0xd0c8b0,
+  monScr:     0x2a3c18,
+  chairBack:  0x3850a0,
+  gpuPCB:     0x6a8c2a,
+  gpuEdge:    0x3a5010,
+  gpuFan:     0xb0b8c0,
+  rackBody:   0x606870,
+  rackEdge:   0x2a2e34,
+  ledR:       0xe03030,
+  ledG:       0x30d050,
+  feedGold:   0xc8960c,
+  feedGreen:  0x3d7a2e,
+  feedBlue:   0x1e5fa8,
+  black:      0x000000,
+};
+
+// ─────────────────────────────────────────────────────────────────
+// SCENE
+// ─────────────────────────────────────────────────────────────────
 
 class GameDevStoryScene extends Phaser.Scene {
 
   constructor() {
     super({ key: 'GameDevStoryScene' });
-    this._cells     = [];   // grid cell descriptors
-    this._workers   = [];   // { cell, container }
-    this._machines  = [];   // { cell, container }
-    this._spritesOk = {};   // tracks which texture keys loaded OK
+    // Slot arrays: each entry is { x, y, occupied }
+    this._backSlots  = [];
+    this._frontSlots = [];
+    this._backIdx    = 0;
+    this._frontIdx   = 0;
+    // Track which textures / spritesheets loaded successfully
+    this._ok = {};
   }
 
   // ── PRELOAD ────────────────────────────────────────────────────
 
   preload() {
-    // Load sprite sheets / images.
-    // Each uses an onError so we fall back to procedural drawing
-    // if the file is missing (CORS-free local dev, etc.).
-    const tryLoad = (key, path) => {
-      this.load.image(key, ASSET_BASE + path);
-      this.load.on('filecomplete-image-' + key, () => {
-        this._spritesOk[key] = true;
-      });
-    };
+    const ok = (key) => { this._ok[key] = true; };
 
-    tryLoad('bg',     'bg.png');
-    tryLoad('desk',   'desk.png');
-    tryLoad('gpu',    'gpu.png');
-    tryLoad('server', 'server.png');
+    // Background — empty room
+    this.load.image('bg', 'assets/images/bg.png');
+    this.load.on('filecomplete-image-bg', () => ok('bg'));
+
+    // ── Sprite sheets (1024×1024, 2 frames @ 512×1024 each) ──
+    // server: rack / megaDC / quantumDC
+    this.load.spritesheet('server_anim', 'assets/images/server_sheet.png', {
+      frameWidth:  FRAME_W,
+      frameHeight: FRAME_H,
+    });
+    this.load.on('filecomplete-spritesheet-server_anim', () => ok('server_anim'));
+
+    // worker
+    this.load.spritesheet('worker_anim', 'assets/images/worker_sheet.png', {
+      frameWidth:  FRAME_W,
+      frameHeight: FRAME_H,
+    });
+    this.load.on('filecomplete-spritesheet-worker_anim', () => ok('worker_anim'));
+
+    // gpu / cluster
+    this.load.spritesheet('gpu_anim', 'assets/images/gpu_sheet.png', {
+      frameWidth:  FRAME_W,
+      frameHeight: FRAME_H,
+    });
+    this.load.on('filecomplete-spritesheet-gpu_anim', () => ok('gpu_anim'));
+
+    // ── Static fallback images ──
+    this.load.image('desk',   'assets/images/desk.png');
+    this.load.image('gpu',    'assets/images/gpu.png');
+    this.load.image('server', 'assets/images/server.png');
+    this.load.on('filecomplete-image-desk',   () => ok('desk'));
+    this.load.on('filecomplete-image-gpu',    () => ok('gpu'));
+    this.load.on('filecomplete-image-server', () => ok('server'));
   }
 
   // ── CREATE ─────────────────────────────────────────────────────
@@ -106,544 +145,251 @@ class GameDevStoryScene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
 
-    // 1. Room background — sprite if available, else procedural
-    if (this._spritesOk['bg']) {
-      // Scale bg to COVER the canvas while preserving aspect ratio
-      const tex    = this.textures.get('bg').getSourceImage();
-      const scaleX = W / tex.width;
-      const scaleY = H / tex.height;
+    // 1. BACKGROUND
+    this._drawBackground(W, H);
+
+    // 2. BUILD GRID SLOTS
+    this._buildSlots(W, H);
+
+    // 3. DEFINE ANIMATIONS
+    this._createAnimations();
+
+    // 4. WIRE EVENTS
+    window.addEventListener('SPAWN_WORKER',   (e) => this._onSpawnWorker(e.detail));
+    window.addEventListener('SPAWN_MACHINE',  (e) => this._onSpawnMachine(e.detail));
+    window.addEventListener('SPAWN_FEEDBACK', (e) => this._onSpawnFeedback(e.detail));
+
+    // 5. AMBIENT TICK
+    this.time.addEvent({
+      delay:         2200,
+      loop:          true,
+      callback:      this._ambientTick,
+      callbackScope: this,
+    });
+
+    // 6. REPLAY SAVED STATE
+    this._syncWithGameState();
+  }
+
+  // ── BACKGROUND ─────────────────────────────────────────────────
+
+  _drawBackground(W, H) {
+    if (this._ok['bg']) {
+      // Scale bg image to COVER the canvas (crop-to-fit)
+      const src    = this.textures.get('bg').getSourceImage();
+      const scaleX = W / src.width;
+      const scaleY = H / src.height;
       const scale  = Math.max(scaleX, scaleY);
       this.add.image(W / 2, H / 2, 'bg')
         .setScale(scale)
         .setDepth(0);
     } else {
+      // Warm procedural fallback
       this._drawRetroRoom(W, H);
     }
-
-    // 2. Build invisible grid
-    this._buildGrid(W, H);
-
-    // 3. Faint grid overlay (helps see the office floor layout)
-    this._drawGridOverlay();
-
-    // 4. Listen for React/UI CustomEvents
-    window.addEventListener('SPAWN_WORKER',   (e) => this._onSpawnWorker(e.detail));
-    window.addEventListener('SPAWN_MACHINE',  (e) => this._onSpawnMachine(e.detail));
-    window.addEventListener('SPAWN_FEEDBACK', (e) => this._onSpawnFeedback(e.detail));
-
-    // 5. Replay items already in game state (on load)
-    this._syncWithGameState();
-
-    // 6. Ambient tick — random worker activity sparks
-    this.time.addEvent({
-      delay: 1800,
-      loop:  true,
-      callback: this._ambientTick,
-      callbackScope: this,
-    });
   }
 
-  // ── PROCEDURAL ROOM BACKGROUND ─────────────────────────────────
+  // ── SLOT GRID ──────────────────────────────────────────────────
 
   /**
-   * Draw a warm Game Dev Story–style office room when bg.png is absent.
+   * Build two flat arrays of {x, y} slot positions:
+   *   _backSlots  — for machines (aligned to back wall)
+   *   _frontSlots — for workers/desks (on the floor)
    */
-  _drawRetroRoom(W, H) {
-    const g = this.add.graphics().setDepth(0);
+  _buildSlots(W, H) {
+    const usableW   = W * (1 - GRID_MARGIN_L - GRID_MARGIN_R);
+    const startX    = W * GRID_MARGIN_L;
 
-    const wallH = H * 0.44;
-
-    // ── CEILING ──
-    g.fillStyle(R.ceiling);
-    g.fillRect(0, 0, W, 14);
-
-    // ── FLUORESCENT LIGHT PANELS ──
-    const lCount = Math.floor(W / 180);
-    for (let i = 0; i < lCount; i++) {
-      const lx = (i + 0.5) * (W / lCount);
-      g.fillStyle(R.lightPanel);
-      g.fillRect(lx - 45, 2, 90, 10);
-      g.lineStyle(2, R.windowFrame, 1);
-      g.strokeRect(lx - 45, 2, 90, 10);
-    }
-
-    // ── WALL (upper) ──
-    g.fillStyle(R.wall);
-    g.fillRect(0, 14, W, wallH - 14);
-
-    // Dado rail stripe
-    g.fillStyle(R.wallStripe);
-    g.fillRect(0, wallH - 24, W, 12);
-    g.lineStyle(2, R.skirting, 1);
-    g.strokeRect(0, wallH - 24, W, 12);
-
-    // ── WINDOWS ──
-    const winCount = Math.floor(W / 220);
-    for (let i = 0; i < winCount; i++) {
-      const wx = 70 + i * (W / winCount);
-      const wy = 22;
-      const ww = 120; const wh = wallH - 60;
-
-      // Window reveal
-      g.fillStyle(R.windowFrame);
-      g.fillRect(wx - 6, wy - 6, ww + 12, wh + 12);
-
-      // Sky gradient (solid blocks)
-      g.fillStyle(R.windowSky);
-      g.fillRect(wx, wy, ww, wh * 0.6);
-      g.fillStyle(R.windowGlass);
-      g.fillRect(wx, wy + wh * 0.6, ww, wh * 0.4);
-
-      // City silhouette (simplified blocky buildings)
-      g.fillStyle(0x2a3848);
-      const buildings = [0.1, 0.25, 0.15, 0.3, 0.2, 0.35];
-      buildings.forEach((h, j) => {
-        const bx = wx + j * (ww / buildings.length);
-        const bh = wh * 0.4 * h + 10;
-        g.fillRect(bx, wy + wh * 0.6 - bh, ww / buildings.length - 2, bh);
+    // Back row
+    const backY     = H * BACK_Y_FACTOR;
+    const bSpacing  = usableW / BACK_COLS;
+    for (let i = 0; i < BACK_COLS; i++) {
+      this._backSlots.push({
+        x: startX + (i + 0.5) * bSpacing,
+        y: backY,
       });
-
-      // Window cross-frame
-      g.lineStyle(4, R.windowFrame, 1);
-      g.strokeRect(wx, wy, ww, wh);
-      g.beginPath();
-      g.moveTo(wx + ww / 2, wy); g.lineTo(wx + ww / 2, wy + wh);
-      g.moveTo(wx, wy + wh / 2); g.lineTo(wx + ww, wy + wh / 2);
-      g.strokePath();
-
-      // Window sill
-      g.fillStyle(R.windowFrame);
-      g.fillRect(wx - 8, wy + wh + 6, ww + 16, 8);
     }
 
-    // ── MOTIVATIONAL POSTER ──
-    const px = W * 0.62; const py = 28;
-    g.fillStyle(R.poster);
-    g.fillRect(px - 40, py, 80, 55);
-    g.lineStyle(3, R.skirting, 1);
-    g.strokeRect(px - 40, py, 80, 55);
-    // Text placeholder lines
-    g.fillStyle(R.skirting);
-    for (let k = 0; k < 4; k++) g.fillRect(px - 28, py + 12 + k * 10, 56, 4);
-
-    // ── SIDE WALL CLOCK ──
-    const clkX = W - 60; const clkY = wallH * 0.35;
-    g.fillStyle(R.ceiling);
-    g.fillCircle(clkX, clkY, 22);
-    g.lineStyle(3, R.windowFrame, 1);
-    g.strokeCircle(clkX, clkY, 22);
-    g.lineStyle(3, R.windowFrame, 1);
-    g.beginPath();
-    g.moveTo(clkX, clkY); g.lineTo(clkX, clkY - 14); // 12 o'clock hand
-    g.moveTo(clkX, clkY); g.lineTo(clkX + 10, clkY); // 3 o'clock hand
-    g.strokePath();
-
-    // ── SKIRTING BOARD ──
-    g.fillStyle(R.skirting);
-    g.fillRect(0, wallH, W, 10);
-
-    // ── FLOOR (lower half) — checkerboard parquet ──
-    const TILE = 44;
-    const fRows = Math.ceil((H - wallH) / TILE) + 2;
-    const fCols = Math.ceil(W / TILE) + 2;
-    for (let r = 0; r < fRows; r++) {
-      for (let c = 0; c < fCols; c++) {
-        const fy = wallH + 10 + r * TILE;
-        const fx = c * TILE;
-        g.fillStyle((r + c) % 2 === 0 ? R.floor : R.floorAlt);
-        g.fillRect(fx, fy, TILE, TILE);
-      }
+    // Front row
+    const frontY    = H * FRONT_Y_FACTOR;
+    const fSpacing  = usableW / FRONT_COLS;
+    for (let i = 0; i < FRONT_COLS; i++) {
+      this._frontSlots.push({
+        x: startX + (i + 0.5) * fSpacing,
+        y: frontY,
+      });
     }
 
-    // Subtle floor grid lines
-    g.lineStyle(1, R.skirting, 0.15);
-    for (let r = 0; r < fRows; r++) {
-      g.beginPath();
-      g.moveTo(0, wallH + 10 + r * TILE);
-      g.lineTo(W, wallH + 10 + r * TILE);
-      g.strokePath();
-    }
-
-    // ── HQ NAME PLATE on wall ──
-    const signX = W / 2, signY = wallH - 52;
-    g.fillStyle(R.skirting);
-    g.fillRect(signX - 96, signY - 4, 192, 30);
-    g.fillStyle(R.poster);
-    g.fillRect(signX - 92, signY, 184, 22);
-
-    const signTxt = this.add.text(signX, signY + 11, '★ ChillGPT HQ ★', {
-      fontFamily: '"Press Start 2P", monospace',
-      fontSize:   '10px',
-      color:      '#3a1a00',
-    }).setOrigin(0.5).setDepth(4);
+    // Debug: draw faint dots at each slot (comment out in production)
+    // const g = this.add.graphics().setDepth(3).setAlpha(0.12);
+    // g.fillStyle(C.black);
+    // [...this._backSlots, ...this._frontSlots].forEach(s => g.fillCircle(s.x, s.y, 4));
   }
 
-  // ── GRID ───────────────────────────────────────────────────────
+  // ── ANIMATIONS ─────────────────────────────────────────────────
 
-  _buildGrid(W, H) {
-    this._cells = [];
-    const gridW  = GRID_COLS * CELL_W;
-    const startX = Math.floor((W - gridW) / 2) + GRID_X_MARGIN;
-    const startY = Math.floor(H * GRID_Y_FACTOR);
-    this._gridStartX = startX;
-    this._gridStartY = startY;
+  _createAnimations() {
+    // Server LED blink (2 frames, 4fps)
+    if (this._ok['server_anim']) {
+      this.anims.create({
+        key:       'server_blink',
+        frames:    this.anims.generateFrameNumbers('server_anim', { start: 0, end: 1 }),
+        frameRate: 3,
+        repeat:    -1,
+      });
+    }
 
-    for (let row = 0; row < GRID_ROWS; row++) {
-      for (let col = 0; col < GRID_COLS; col++) {
-        this._cells.push({
-          x: startX + col * CELL_W + CELL_W / 2,
-          y: startY + row * CELL_H + CELL_H / 2,
-          row, col,
-          occupied: false,
-          obj: null,
-        });
-      }
+    // Worker typing (2 frames, 6fps — alternates postures)
+    if (this._ok['worker_anim']) {
+      this.anims.create({
+        key:       'worker_type',
+        frames:    this.anims.generateFrameNumbers('worker_anim', { start: 0, end: 1 }),
+        frameRate: 5,
+        repeat:    -1,
+      });
+    }
+
+    // GPU fan spin (2 frames, 8fps)
+    if (this._ok['gpu_anim']) {
+      this.anims.create({
+        key:       'gpu_spin',
+        frames:    this.anims.generateFrameNumbers('gpu_anim', { start: 0, end: 1 }),
+        frameRate: 7,
+        repeat:    -1,
+      });
     }
   }
 
-  _drawGridOverlay() {
-    const g = this.add.graphics().setDepth(3);
-    g.lineStyle(1, R.skirting, 0.12);
-    const sx = this._gridStartX, sy = this._gridStartY;
-    for (let row = 0; row <= GRID_ROWS; row++) {
-      g.beginPath();
-      g.moveTo(sx, sy + row * CELL_H);
-      g.lineTo(sx + GRID_COLS * CELL_W, sy + row * CELL_H);
-      g.strokePath();
+  // ── SPAWN: WORKER ──────────────────────────────────────────────
+
+  _onSpawnWorker(_detail) {
+    // Grab next front slot
+    if (this._frontIdx >= this._frontSlots.length) {
+      console.warn('[Phaser] Front slots full — wrapping.');
+      this._frontIdx = 0;
     }
-    for (let col = 0; col <= GRID_COLS; col++) {
-      g.beginPath();
-      g.moveTo(sx + col * CELL_W, sy);
-      g.lineTo(sx + col * CELL_W, sy + GRID_ROWS * CELL_H);
-      g.strokePath();
+    const slot = this._frontSlots[this._frontIdx++];
+    const tH   = TARGET_H.worker;
+
+    let obj;
+
+    if (this._ok['worker_anim']) {
+      // ── Animated sprite sheet ──
+      obj = this.add.sprite(slot.x, slot.y, 'worker_anim', 0)
+        .setOrigin(0.5, 1)
+        .setDepth(8);
+      this._scaleToTargetH(obj, FRAME_H, tH);
+      obj.play('worker_type');
+    } else if (this._ok['desk']) {
+      // ── Static fallback image ──
+      obj = this.add.image(slot.x, slot.y, 'desk')
+        .setOrigin(0.5, 1)
+        .setDepth(8);
+      this._scaleToTargetH(obj, obj.height, tH);
+    } else {
+      // ── Fully procedural ──
+      obj = this._procWorker(slot.x, slot.y, tH);
     }
+
+    if (obj) this._popIn(obj);
+    this.cameras.main.shake(140, 0.003);
   }
 
-  /**
-   * Next free cell.
-   * Workers prefer the BACK rows (lower indices), machines prefer FRONT.
-   */
-  _nextFreeCell(preferBack = true) {
-    const sorted = [...this._cells].sort((a, b) =>
-      preferBack ? a.row - b.row : b.row - a.row
-    );
-    return sorted.find(c => !c.occupied) || null;
-  }
-
-  // ── SPAWN HANDLERS ─────────────────────────────────────────────
-
-  _onSpawnWorker(detail) {
-    const cell = this._nextFreeCell(true);
-    if (!cell) return;
-    cell.occupied = true;
-
-    const obj = this._spritesOk['desk']
-      ? this._spawnDeskSprite(cell.x, cell.y)
-      : this._spawnDeskProc(cell.x, cell.y);
-
-    cell.obj = obj;
-    this._workers.push({ cell, obj });
-    this._animateWorker(obj, cell.y);
-    this.cameras.main.shake(160, 0.003);
-  }
+  // ── SPAWN: MACHINE ─────────────────────────────────────────────
 
   _onSpawnMachine(detail) {
-    const cell = this._nextFreeCell(false);
-    if (!cell) return;
-    cell.occupied = true;
+    if (this._backIdx >= this._backSlots.length) {
+      console.warn('[Phaser] Back slots full — wrapping.');
+      this._backIdx = 0;
+    }
+    const slot     = this._backSlots[this._backIdx++];
+    const hwId     = detail.hwId || 'gpu';
+    const isServer = ['rack', 'megaDC', 'quantumDC'].includes(hwId);
+    const tH       = TARGET_H[hwId] ?? TARGET_H.gpu;
 
-    const hwId = detail.hwId || 'gpu';
-    const obj  = this._spawnMachineObj(cell.x, cell.y, hwId);
-    cell.obj   = obj;
-    this._machines.push({ cell, obj });
+    let obj;
 
-    // Appear animation
-    this.tweens.add({
-      targets: obj, scaleX: { from: 0, to: 1 }, scaleY: { from: 0, to: 1 },
-      ease: 'Back.easeOut', duration: 380,
-    });
+    if (isServer && this._ok['server_anim']) {
+      obj = this.add.sprite(slot.x, slot.y, 'server_anim', 0)
+        .setOrigin(0.5, 1)
+        .setDepth(7);
+      this._scaleToTargetH(obj, FRAME_H, tH);
+      obj.play('server_blink');
 
-    // Floating feedback
-    const label = detail.computePS ? `+${detail.computePS} TF/s` : (detail.label || '+CU');
-    this._spawnFeedbackText(cell.x, cell.y - 30, label, R.feedBlue);
+    } else if (!isServer && this._ok['gpu_anim']) {
+      obj = this.add.sprite(slot.x, slot.y, 'gpu_anim', 0)
+        .setOrigin(0.5, 1)
+        .setDepth(7);
+      this._scaleToTargetH(obj, FRAME_H, tH);
+      obj.play('gpu_spin');
 
-    this.cameras.main.shake(100, 0.002);
+    } else if (isServer && this._ok['server']) {
+      obj = this.add.image(slot.x, slot.y, 'server')
+        .setOrigin(0.5, 1)
+        .setDepth(7);
+      this._scaleToTargetH(obj, obj.height, tH);
+
+    } else if (!isServer && this._ok['gpu']) {
+      obj = this.add.image(slot.x, slot.y, 'gpu')
+        .setOrigin(0.5, 1)
+        .setDepth(7);
+      this._scaleToTargetH(obj, obj.height, tH);
+
+    } else {
+      obj = this._procMachine(slot.x, slot.y, hwId, tH);
+    }
+
+    if (obj) this._popIn(obj);
+
+    // Floating "+X TF/s" label
+    const label = detail.computePS ? `+${detail.computePS} TF/s` : '+CU';
+    this._spawnFeedbackText(slot.x, slot.y - tH - 12, label, C.feedBlue);
+    this.cameras.main.shake(90, 0.002);
   }
+
+  // ── SPAWN: FEEDBACK ────────────────────────────────────────────
 
   _onSpawnFeedback(detail) {
     const W = this.scale.width, H = this.scale.height;
     const x = detail.x ?? W / 2 + (Math.random() - 0.5) * 200;
-    const y = detail.y ?? H * 0.5;
-    this._spawnFeedbackText(x, y, detail.text, detail.color || R.feedGold);
+    const y = detail.y ?? H * 0.50;
+    this._spawnFeedbackText(x, y, detail.text, detail.color ?? C.feedGold);
   }
 
-  // ── DESK — SPRITE VERSION ──────────────────────────────────────
-
-  _spawnDeskSprite(cx, cy) {
-    const img = this.add.image(cx, cy, 'desk')
-      .setDisplaySize(CELL_W - 8, CELL_H - 6)
-      .setDepth(6)
-      .setOrigin(0.5, 0.85);
-    return img;
-  }
-
-  // ── DESK — PROCEDURAL FALLBACK ─────────────────────────────────
+  // ── HELPERS ────────────────────────────────────────────────────
 
   /**
-   * Draw a warm pixel-art worker+desk using Graphics when desk.png is absent.
+   * Compute and set uniform scale so the object renders at targetPx tall.
+   * Stores result as ._ts so _popIn can restore it.
+   * @param {Phaser.GameObjects.GameObject} obj
+   * @param {number} naturalH  — natural texture height in pixels
+   * @param {number} targetPx  — desired canvas height in pixels
    */
-  _spawnDeskProc(cx, cy) {
-    const g  = this.add.graphics().setDepth(6);
-    const dW = CELL_W - 10;
-    const dH = 30;
-    const dX = cx - dW / 2;
-    const dY = cy - dH / 2 + 8;
-
-    // ── CHAIR (behind desk) ──
-    g.fillStyle(R.chairBack);
-    g.fillRect(cx - 10, dY - 20, 20, 16);
-    g.lineStyle(2, R.black, 1);
-    g.strokeRect(cx - 10, dY - 20, 20, 16);
-
-    // ── DESK TOP ──
-    g.fillStyle(R.deskWood);
-    g.fillRect(dX, dY, dW, dH);
-    g.lineStyle(3, R.deskEdge, 1);
-    g.strokeRect(dX, dY, dW, dH);
-    // Desk edge band (front)
-    g.fillStyle(R.deskEdge);
-    g.fillRect(dX, dY + dH - 6, dW, 6);
-
-    // Desk legs
-    g.fillStyle(R.deskEdge);
-    g.fillRect(dX + 4,       dY + dH, 6, 10);
-    g.fillRect(dX + dW - 10, dY + dH, 6, 10);
-
-    // ── MONITOR ──
-    const mW = 28, mH = 22;
-    const mX = cx - mW / 2 + 4;
-    const mY = dY - mH - 2;
-
-    g.fillStyle(R.monitorCase);
-    g.fillRect(mX - 4, mY - 4, mW + 8, mH + 8);
-    g.lineStyle(2, R.deskEdge, 1);
-    g.strokeRect(mX - 4, mY - 4, mW + 8, mH + 8);
-
-    // Screen
-    g.fillStyle(R.monitorScr);
-    g.fillRect(mX, mY, mW, mH);
-    // Green "code" lines on screen
-    g.fillStyle(0x50e050);
-    for (let i = 0; i < 5; i++) {
-      const lw = 5 + Math.floor(Math.random() * (mW - 8));
-      g.fillRect(mX + 2, mY + 2 + i * 4, lw, 2);
-    }
-
-    // Monitor stand
-    g.fillStyle(R.monitorCase);
-    g.fillRect(cx - 4, dY - 4, 8, 6);
-
-    // ── KEYBOARD ──
-    g.fillStyle(R.monitorCase);
-    g.fillRect(cx - 16, dY + 4, 32, 8);
-    g.lineStyle(1, R.deskEdge, 1);
-    g.strokeRect(cx - 16, dY + 4, 32, 8);
-
-    // ── WORKER (pixel character, seated) ──
-    const pX = mX - 14;
-    const pY = dY - 16;
-    // Body
-    g.fillStyle(0x4870d0);  // blue shirt
-    g.fillRect(pX, pY + 8, 12, 11);
-    // Head
-    g.fillStyle(0xf0c880);  // skin
-    g.fillRect(pX + 1, pY, 10, 9);
-    // Hair
-    g.fillStyle(0x301808);
-    g.fillRect(pX + 1, pY, 10, 3);
-    // Arms reaching to keyboard
-    g.fillStyle(0x4870d0);
-    g.fillRect(pX + 12, pY + 9, 18, 5);
-
-    return g;
+  _scaleToTargetH(obj, naturalH, targetPx) {
+    const s = naturalH > 0 ? targetPx / naturalH : 0.1;
+    obj.setScale(s);
+    obj._ts = s;   // remember target scale for pop-in
   }
-
-  // ── MACHINE SPAWNER ────────────────────────────────────────────
-
-  _spawnMachineObj(cx, cy, hwId) {
-    const isServer = (hwId === 'rack' || hwId === 'megaDC' || hwId === 'quantumDC');
-    const spriteKey = isServer ? 'server' : 'gpu';
-
-    if (this._spritesOk[spriteKey]) {
-      return this._spawnMachineSprite(cx, cy, spriteKey, hwId);
-    } else {
-      return this._spawnMachineProc(cx, cy, hwId);
-    }
-  }
-
-  // ── MACHINE — SPRITE version ────────────────────────────────────
-
-  _spawnMachineSprite(cx, cy, key, hwId) {
-    // Size scales with hardware tier
-    const sizes = {
-      gpu:       { w: 48,  h: 60  },
-      cluster:   { w: 60,  h: 74  },
-      rack:      { w: 56,  h: 90  },
-      megaDC:    { w: 70,  h: 108 },
-      quantumDC: { w: 84,  h: 128 },
-    };
-    const sz = sizes[hwId] || sizes.gpu;
-
-    const img = this.add.image(cx, cy, key)
-      .setDisplaySize(sz.w, sz.h)
-      .setOrigin(0.5, 0.9)
-      .setDepth(7);
-
-    // Gentle LED pulse via alpha tween
-    this.tweens.add({
-      targets: img, alpha: { from: 0.85, to: 1 },
-      duration: 900 + Math.random() * 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-    });
-
-    return img;
-  }
-
-  // ── MACHINE — PROCEDURAL FALLBACK ─────────────────────────────
 
   /**
-   * Draw warm-coloured retro machines when sprites are absent.
+   * Play a scale-from-0 pop-in tween.
+   * Reads obj._ts for the final scale; falls back to current scale.
    */
-  _spawnMachineProc(cx, cy, hwId) {
-    const g = this.add.graphics().setDepth(7);
-
-    const defs = {
-      gpu: {
-        w: 44, h: 56,
-        body: R.gpuPCB, edge: R.gpuEdge,
-        leds: [0x50e050, 0xe05050],
-        label: 'GPU',
-      },
-      cluster: {
-        w: 58, h: 70,
-        body: 0x5a7c22, edge: 0x2a4008,
-        leds: [0x50e050, 0x50e050, 0xe0e050],
-        label: 'CLSTR',
-      },
-      rack: {
-        w: 56, h: 90,
-        body: R.rackBody, edge: R.rackEdge,
-        leds: [R.rackLedR, R.rackLedG, R.rackLedR, R.rackLedG],
-        label: 'RACK',
-      },
-      megaDC: {
-        w: 70, h: 108,
-        body: 0x505860, edge: 0x1a1e24,
-        leds: [R.rackLedG, R.rackLedG, R.rackLedR],
-        label: 'MEGA',
-      },
-      quantumDC: {
-        w: 84, h: 126,
-        body: 0x3a2848, edge: 0x18101e,
-        leds: [0x9050c0, R.rackLedG, 0x9050c0],
-        label: 'QNTM',
-      },
-    };
-
-    const def = defs[hwId] || defs.gpu;
-    const bX  = cx - def.w / 2;
-    const bY  = cy - def.h / 2;
-
-    // Outer casing
-    g.fillStyle(def.body);
-    g.fillRect(bX, bY, def.w, def.h);
-    g.lineStyle(3, def.edge, 1);
-    g.strokeRect(bX, bY, def.w, def.h);
-
-    // Inner panel inset
-    g.fillStyle(def.edge);
-    g.fillRect(bX + 4, bY + 4, def.w - 8, 4);
-
-    // Vent slots
-    g.lineStyle(1, def.edge, 0.4);
-    const slotCnt = Math.floor(def.h / 10);
-    for (let i = 0; i < slotCnt; i++) {
-      const sy = bY + 12 + i * 10;
-      g.beginPath();
-      g.moveTo(bX + 6, sy); g.lineTo(bX + def.w - 14, sy);
-      g.strokePath();
-    }
-
-    // Fan circle (GPU / cluster only)
-    if (hwId === 'gpu' || hwId === 'cluster') {
-      g.fillStyle(R.gpuFan);
-      g.fillCircle(cx, bY + def.h * 0.4, def.w * 0.28);
-      g.lineStyle(2, def.edge, 1);
-      g.strokeCircle(cx, bY + def.h * 0.4, def.w * 0.28);
-      g.fillStyle(def.edge);
-      g.fillCircle(cx, bY + def.h * 0.4, 4);
-    }
-
-    // Gold contacts at bottom (GPU style)
-    if (hwId === 'gpu' || hwId === 'cluster') {
-      g.fillStyle(0xc8a820);
-      const contactW = Math.floor(def.w / 6);
-      for (let c = 0; c < 5; c++) {
-        g.fillRect(bX + 6 + c * contactW, bY + def.h - 10, contactW - 2, 10);
-      }
-    }
-
-    // LEDs column (right side)
-    const ledSpacing = (def.h - 20) / (def.leds.length + 1);
-    def.leds.forEach((col, i) => {
-      const lx = bX + def.w - 9;
-      const ly = bY + 10 + (i + 1) * ledSpacing;
-      g.fillStyle(col);
-      g.fillCircle(lx, ly, 4);
-      g.lineStyle(1, def.edge, 0.6);
-      g.strokeCircle(lx, ly, 4);
-    });
-
-    // Shadow under machine
-    g.fillStyle(0x000000, 0.15);
-    g.fillEllipse(cx, bY + def.h + 4, def.w * 0.8, 8);
-
-    // Label text
-    const labelColors = {
-      gpu: '#1e3a08', cluster: '#1e3a08', rack: '#1a1e24',
-      megaDC: '#0e1218', quantumDC: '#10081a',
-    };
-    this.add.text(cx, bY + def.h - 6, def.label, {
-      fontFamily: '"Press Start 2P", monospace',
-      fontSize:   '6px',
-      color:      labelColors[hwId] || '#1a1208',
-    }).setOrigin(0.5, 1).setDepth(8);
-
-    // Pulse alpha like LEDs
-    this.tweens.add({
-      targets: g, alpha: { from: 0.88, to: 1 },
-      duration: 1000 + Math.random() * 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-    });
-
-    return g;
-  }
-
-  // ── WORKER ANIMATION ───────────────────────────────────────────
-
-  _animateWorker(obj, baseY) {
+  _popIn(obj) {
+    const ts = obj._ts ?? obj.scaleX;
+    obj.setScale(0.001);
     this.tweens.add({
       targets:  obj,
-      y:        obj.y - 3,
-      duration: 380 + Math.random() * 180,
-      yoyo:     true,
-      repeat:   -1,
-      ease:     'Sine.easeInOut',
-      delay:    Math.random() * 500,
+      scaleX:   ts,
+      scaleY:   ts,
+      ease:     'Back.easeOut',
+      duration: 420,
     });
   }
 
   // ── FLOATING FEEDBACK TEXT ─────────────────────────────────────
 
-  _spawnFeedbackText(x, y, text, color = R.feedGold) {
+  _spawnFeedbackText(x, y, text, color = C.feedGold) {
     const hex = '#' + color.toString(16).padStart(6, '0');
     const txt = this.add.text(x, y, text, {
       fontFamily: '"Press Start 2P", monospace',
@@ -651,13 +397,13 @@ class GameDevStoryScene extends Phaser.Scene {
       color:      hex,
       stroke:     '#ffffff',
       strokeThickness: 3,
-    }).setOrigin(0.5).setDepth(20);
+    }).setOrigin(0.5).setDepth(25);
 
     this.tweens.add({
       targets:    txt,
-      y:          y - 65,
+      y:          y - 60,
       alpha:      { from: 1, to: 0 },
-      duration:   1500,
+      duration:   1600,
       ease:       'Cubic.easeOut',
       onComplete: () => txt.destroy(),
     });
@@ -666,56 +412,322 @@ class GameDevStoryScene extends Phaser.Scene {
   // ── AMBIENT TICK ───────────────────────────────────────────────
 
   _ambientTick() {
-    if (this._workers.length === 0) return;
-    const w = this._workers[Math.floor(Math.random() * this._workers.length)];
-    this._spawnFeedbackText(w.cell.x, w.cell.y - 24, '💻', R.feedGreen);
+    // Show a tiny typing emoji near a random front slot that's occupied
+    const occupied = this._frontIdx;
+    if (occupied === 0) return;
+    const idx = Math.floor(Math.random() * occupied);
+    const s   = this._frontSlots[idx];
+    if (s) this._spawnFeedbackText(s.x + 10, s.y - (TARGET_H.worker + 8), '💻', C.feedGreen);
   }
 
   // ── SYNC FROM SAVE ─────────────────────────────────────────────
 
   _syncWithGameState() {
     if (typeof Game === 'undefined') return;
-    const s = Game.state;
+    const st = Game.state;
 
     // Workers
-    const wCount = s.inventory ? (s.inventory.workers || 0) : 0;
-    for (let i = 0; i < wCount; i++) this._onSpawnWorker({ type: 'worker' });
+    const wCount = st.inventory?.workers ?? 0;
+    for (let i = 0; i < Math.min(wCount, FRONT_COLS); i++) {
+      this._onSpawnWorker({ type: 'worker' });
+    }
 
-    // Machines (cap at 3 per type to avoid grid overflow on load)
+    // Machines — cap at 2 per type on load to avoid slot exhaustion
     const hwIds = ['gpu', 'cluster', 'rack', 'megaDC', 'quantumDC'];
     hwIds.forEach(id => {
-      const count = s.hardware ? (s.hardware[id] || 0) : 0;
-      const hw    = typeof HARDWARE !== 'undefined' ? HARDWARE.find(h => h.id === id) : null;
+      const count = st.hardware?.[id] ?? 0;
+      const hw    = typeof HARDWARE !== 'undefined'
+        ? HARDWARE.find(h => h.id === id)
+        : null;
       for (let i = 0; i < Math.min(count, 2); i++) {
-        this._onSpawnMachine({ hwId: id, computePS: hw?.computePS || 0 });
+        this._onSpawnMachine({ hwId: id, computePS: hw?.computePS ?? 0 });
       }
     });
   }
+
+  // ─────────────────────────────────────────────────────────────
+  // PROCEDURAL FALLBACK DRAWING
+  // Used when sprite sheets AND static images both fail to load.
+  // Warm retro colours, no neon.
+  // ─────────────────────────────────────────────────────────────
+
+  /**
+   * Draw a warm pixel-art office room when bg.png is absent.
+   */
+  _drawRetroRoom(W, H) {
+    const g    = this.add.graphics().setDepth(0);
+    const wallH = H * 0.44;
+
+    // Ceiling strip
+    g.fillStyle(C.ceiling);
+    g.fillRect(0, 0, W, 14);
+
+    // Fluorescent light panels
+    const lCount = Math.floor(W / 180);
+    for (let i = 0; i < lCount; i++) {
+      const lx = (i + 0.5) * (W / lCount);
+      g.fillStyle(C.lightPanel);
+      g.fillRect(lx - 44, 2, 88, 10);
+      g.lineStyle(2, C.winFrame, 1);
+      g.strokeRect(lx - 44, 2, 88, 10);
+    }
+
+    // Wall
+    g.fillStyle(C.wall);
+    g.fillRect(0, 14, W, wallH - 14);
+
+    // Dado rail
+    g.fillStyle(C.wallStripe);
+    g.fillRect(0, wallH - 24, W, 12);
+    g.lineStyle(2, C.skirting, 1);
+    g.strokeRect(0, wallH - 24, W, 12);
+
+    // Windows
+    const winCount = Math.max(2, Math.floor(W / 220));
+    for (let i = 0; i < winCount; i++) {
+      const wx = 70 + i * (W / winCount);
+      const wy = 22;
+      const ww = 110, wh = wallH - 56;
+
+      g.fillStyle(C.winFrame);
+      g.fillRect(wx - 6, wy - 6, ww + 12, wh + 12);
+      g.fillStyle(C.winSky);
+      g.fillRect(wx, wy, ww, Math.floor(wh * 0.6));
+      g.fillStyle(C.winGlass);
+      g.fillRect(wx, wy + Math.floor(wh * 0.6), ww, Math.ceil(wh * 0.4));
+
+      // City silhouette
+      g.fillStyle(C.cityBldg);
+      [0.12, 0.28, 0.18, 0.34, 0.22].forEach((h, j) => {
+        const bx = wx + j * (ww / 5);
+        const bh = wh * 0.4 * h + 8;
+        g.fillRect(bx, wy + Math.floor(wh * 0.6) - bh, ww / 5 - 2, bh);
+      });
+
+      g.lineStyle(4, C.winFrame, 1);
+      g.strokeRect(wx, wy, ww, wh);
+      g.lineStyle(2, C.winFrame, 1);
+      g.beginPath();
+      g.moveTo(wx + ww / 2, wy); g.lineTo(wx + ww / 2, wy + wh);
+      g.moveTo(wx, wy + wh / 2); g.lineTo(wx + ww, wy + wh / 2);
+      g.strokePath();
+      g.fillStyle(C.winFrame);
+      g.fillRect(wx - 8, wy + wh + 6, ww + 16, 8);
+    }
+
+    // Poster
+    const px = W * 0.62, py = 30;
+    g.fillStyle(C.skirting);
+    g.fillRect(px - 42, py - 4, 84, 52);
+    g.fillStyle(C.poster);
+    g.fillRect(px - 38, py, 76, 44);
+    g.fillStyle(C.skirting);
+    for (let k = 0; k < 4; k++) g.fillRect(px - 26, py + 10 + k * 9, 52, 4);
+
+    // HQ name plate
+    const npX = W / 2, npY = wallH - 50;
+    g.fillStyle(C.skirting);
+    g.fillRect(npX - 98, npY - 4, 196, 30);
+    g.fillStyle(C.poster);
+    g.fillRect(npX - 94, npY, 188, 22);
+    this.add.text(npX, npY + 11, '★  ChillGPT HQ  ★', {
+      fontFamily: '"Press Start 2P", monospace',
+      fontSize:   '10px',
+      color:      '#3a1a00',
+    }).setOrigin(0.5).setDepth(4);
+
+    // Skirting board
+    g.fillStyle(C.skirting);
+    g.fillRect(0, wallH, W, 10);
+
+    // Floor — warm parquet checkerboard
+    const TILE  = 44;
+    const fRows = Math.ceil((H - wallH) / TILE) + 2;
+    const fCols = Math.ceil(W / TILE) + 2;
+    for (let r = 0; r < fRows; r++) {
+      for (let c = 0; c < fCols; c++) {
+        g.fillStyle((r + c) % 2 === 0 ? C.floor : C.floorAlt);
+        g.fillRect(c * TILE, wallH + 10 + r * TILE, TILE, TILE);
+      }
+    }
+    // Subtle plank lines
+    g.lineStyle(1, C.skirting, 0.12);
+    for (let r = 0; r <= fRows; r++) {
+      g.beginPath();
+      g.moveTo(0, wallH + 10 + r * TILE);
+      g.lineTo(W, wallH + 10 + r * TILE);
+      g.strokePath();
+    }
+  }
+
+  /**
+   * Procedural worker desk — used only when all image assets fail.
+   */
+  _procWorker(cx, cy, targetH) {
+    const g   = this.add.graphics().setDepth(8);
+    const s   = targetH / 80;   // scale factor relative to 80px reference height
+    const dW  = Math.round(54 * s);
+    const dH  = Math.round(28 * s);
+    const dX  = cx - dW / 2;
+    const dY  = cy - dH;        // origin bottom
+
+    // Chair
+    g.fillStyle(C.chairBack);
+    g.fillRect(cx - Math.round(10 * s), dY - Math.round(18 * s), Math.round(20 * s), Math.round(14 * s));
+    g.lineStyle(2, C.black, 1);
+    g.strokeRect(cx - Math.round(10 * s), dY - Math.round(18 * s), Math.round(20 * s), Math.round(14 * s));
+
+    // Desk top
+    g.fillStyle(C.deskWood);
+    g.fillRect(dX, dY, dW, dH);
+    g.lineStyle(2, C.deskEdge, 1);
+    g.strokeRect(dX, dY, dW, dH);
+    g.fillStyle(C.deskEdge);
+    g.fillRect(dX, dY + dH - Math.round(5 * s), dW, Math.round(5 * s));
+    // Legs
+    g.fillRect(dX + 3, dY + dH, Math.round(5 * s), Math.round(8 * s));
+    g.fillRect(dX + dW - Math.round(8 * s), dY + dH, Math.round(5 * s), Math.round(8 * s));
+
+    // Monitor
+    const mW = Math.round(24 * s), mH = Math.round(18 * s);
+    const mX = cx - mW / 2 + Math.round(4 * s);
+    const mY = dY - mH - Math.round(2 * s);
+    g.fillStyle(C.monCase);
+    g.fillRect(mX - 3, mY - 3, mW + 6, mH + 6);
+    g.lineStyle(2, C.deskEdge, 1);
+    g.strokeRect(mX - 3, mY - 3, mW + 6, mH + 6);
+    g.fillStyle(C.monScr);
+    g.fillRect(mX, mY, mW, mH);
+    g.fillStyle(0x50e050);
+    for (let i = 0; i < 4; i++) {
+      g.fillRect(mX + 2, mY + 2 + i * Math.round(4 * s), Math.round((6 + Math.random() * (mW - 10)) * s / s), Math.round(2 * s));
+    }
+
+    // Worker body (tiny pixel figure)
+    const pX = mX - Math.round(12 * s);
+    const pY = dY - Math.round(14 * s);
+    g.fillStyle(0x4870d0);
+    g.fillRect(pX, pY + Math.round(7 * s), Math.round(10 * s), Math.round(10 * s));
+    g.fillStyle(0xf0c880);
+    g.fillRect(pX + Math.round(1 * s), pY, Math.round(8 * s), Math.round(8 * s));
+    g.fillStyle(0x301808);
+    g.fillRect(pX + Math.round(1 * s), pY, Math.round(8 * s), Math.round(3 * s));
+
+    g._ts = 1; // already scaled via geometry
+    return g;
+  }
+
+  /**
+   * Procedural machine — used only when all image assets fail.
+   */
+  _procMachine(cx, cy, hwId, targetH) {
+    const defs = {
+      gpu:       { body: C.gpuPCB,  edge: C.gpuEdge,  leds: [C.ledG, C.ledG],          w: 0.55 },
+      cluster:   { body: 0x5a7c22, edge: 0x2a4008,    leds: [C.ledG, C.ledG, 0xe0e050], w: 0.65 },
+      rack:      { body: C.rackBody, edge: C.rackEdge, leds: [C.ledR, C.ledG, C.ledR, C.ledG], w: 0.60 },
+      megaDC:    { body: 0x505860, edge: 0x1a1e24,    leds: [C.ledG, C.ledG, C.ledR],   w: 0.70 },
+      quantumDC: { body: 0x3a2848, edge: 0x18101e,    leds: [0x9050c0, C.ledG, 0x9050c0], w: 0.80 },
+    };
+
+    const def = defs[hwId] ?? defs.gpu;
+    const bH  = targetH;
+    const bW  = Math.round(bH * def.w);
+    const bX  = cx - bW / 2;
+    const bY  = cy - bH;
+
+    const g = this.add.graphics().setDepth(7);
+    g.fillStyle(def.body);
+    g.fillRect(bX, bY, bW, bH);
+    g.lineStyle(3, def.edge, 1);
+    g.strokeRect(bX, bY, bW, bH);
+    g.fillStyle(def.edge);
+    g.fillRect(bX + 4, bY + 4, bW - 8, 4);
+
+    // Vent slots
+    g.lineStyle(1, def.edge, 0.35);
+    const slots = Math.floor(bH / 10);
+    for (let i = 0; i < slots; i++) {
+      g.beginPath();
+      g.moveTo(bX + 5, bY + 12 + i * 10);
+      g.lineTo(bX + bW - 13, bY + 12 + i * 10);
+      g.strokePath();
+    }
+
+    // GPU fan
+    if (hwId === 'gpu' || hwId === 'cluster') {
+      g.fillStyle(C.gpuFan);
+      g.fillCircle(cx, bY + bH * 0.38, bW * 0.27);
+      g.lineStyle(2, def.edge, 1);
+      g.strokeCircle(cx, bY + bH * 0.38, bW * 0.27);
+      g.fillStyle(def.edge);
+      g.fillCircle(cx, bY + bH * 0.38, 4);
+      // Gold contacts
+      g.fillStyle(0xc8a820);
+      for (let c = 0; c < 5; c++) {
+        const cw = Math.floor(bW / 7);
+        g.fillRect(bX + 5 + c * cw, bY + bH - 10, cw - 2, 10);
+      }
+    }
+
+    // LEDs
+    const ledSp = (bH - 20) / (def.leds.length + 1);
+    def.leds.forEach((col, i) => {
+      const lx = bX + bW - 9;
+      const ly = bY + 10 + (i + 1) * ledSp;
+      g.fillStyle(col);
+      g.fillCircle(lx, ly, 4);
+      g.lineStyle(1, def.edge, 0.5);
+      g.strokeCircle(lx, ly, 4);
+    });
+
+    // Shadow
+    g.fillStyle(0x000000);
+    g.setAlpha(0.12);
+    g.fillEllipse(cx, bY + bH + 4, bW * 0.75, 7);
+    g.setAlpha(1);
+
+    // Label
+    this.add.text(cx, bY + bH - 5, hwId.toUpperCase().slice(0, 5), {
+      fontFamily: '"Press Start 2P", monospace',
+      fontSize:   '6px',
+      color:      '#' + def.edge.toString(16).padStart(6, '0'),
+    }).setOrigin(0.5, 1).setDepth(8);
+
+    // Pulse alpha
+    this.tweens.add({
+      targets:  g,
+      alpha:    { from: 0.88, to: 1 },
+      duration: 1000 + Math.random() * 600,
+      yoyo:     true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+
+    g._ts = 1;
+    return g;
+  }
 }
 
-// ── PHASER GAME BOOTSTRAP ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────────────────────────────
 
 function initPhaserGame() {
   const factory = document.getElementById('factory');
-  if (!factory) {
-    console.warn('[Phaser] #factory not found.');
-    return;
-  }
+  if (!factory) { console.warn('[Phaser] #factory missing.'); return; }
 
   const W = factory.clientWidth  || window.innerWidth  - 320;
   const H = factory.clientHeight || window.innerHeight - 122;
 
-  const wrapper = document.createElement('div');
-  wrapper.id    = 'phaser-canvas-wrapper';
+  const wrapper  = document.createElement('div');
+  wrapper.id     = 'phaser-canvas-wrapper';
   factory.insertBefore(wrapper, factory.firstChild);
 
   window.__phaserGame = new Phaser.Game({
-    type:            Phaser.AUTO,
-    width:           W,
-    height:          H,
-    transparent:     true,
-    parent:          wrapper,
-    scene:           [GameDevStoryScene],
+    type:        Phaser.AUTO,
+    width:       W,
+    height:      H,
+    transparent: true,
+    parent:      wrapper,
+    scene:       [GameDevStoryScene],
     scale: {
       mode:       Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -727,7 +739,7 @@ function initPhaserGame() {
     },
   });
 
-  console.log('[Phaser] GameDevStoryScene (Retro Tycoon) booted ✅');
+  console.log('[Phaser] GameDevStoryScene booted ✅  (Grid + Sprite Animations)');
 }
 
 if (document.readyState === 'loading') {
