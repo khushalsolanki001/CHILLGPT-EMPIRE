@@ -69,8 +69,13 @@ python -m http.server 8080
 npx -y serve .
 # Opens automatically in browser
 ```
+### Option C — Node.js
+```bash
+npm run dev .
+# Opens automatically in browser
+```
 
-### Option C — VS Code
+### Option D — VS Code
 Install the **Live Server** extension → right-click `index.html` → *Open with Live Server*
 
 > **⚠️ Do NOT open `index.html` directly as a `file://` URL.**  
