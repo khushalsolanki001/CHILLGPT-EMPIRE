@@ -1,9 +1,13 @@
 {
   "scripts": {
-    "start": "npx serve .",
-    "dev": "npx serve ."
+    "start":  "npx serve .",
+    "dev":    "npx serve .",
+    "editor": "node editor-server.js"
   },
   "dependencies": {
     "phaser": "^4.0.0"
+  },
+  "devDependencies": {
+    "express": "^4.19.2"
   }
 }
