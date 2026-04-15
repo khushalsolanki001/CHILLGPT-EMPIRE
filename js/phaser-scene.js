@@ -154,6 +154,16 @@ class GameDevStoryScene extends Phaser.Scene {
       callbackScope: this,
     });
 
+    // ── EDITOR_LAYOUT_BEGIN ──
+// ── Placed by Visual Layout Editor ──
+    const desk1_1 = this.add.image(720, 305, 'desk1')
+      .setOrigin(0.50, 0.50)
+      .setDisplaySize(480, 410)
+      .setDepth(1)
+      .setAlpha(1.00);
+
+  // ── EDITOR_LAYOUT_END ──
+
     // 6. Replay items already purchased (on page load / save restore)
     this._syncWithGameState();
   }

@@ -1,0 +1,23 @@
+{
+  "objects": [
+    {
+      "id": 1,
+      "type": "image",
+      "key": "desk1",
+      "src": "assets/images/desk1.png",
+      "isSprite": false,
+      "name": "desk1",
+      "x": 480,
+      "y": 100,
+      "w": 480,
+      "h": 410,
+      "rotation": 0,
+      "alpha": 1,
+      "depth": 1,
+      "originX": 0.5,
+      "originY": 0.5,
+      "flipX": false,
+      "flipY": false
+    }
+  ]
+}
