@@ -159,7 +159,7 @@ class GameDevStoryScene extends Phaser.Scene {
 
     // ── EDITOR_LAYOUT_BEGIN ──
     // ── Placed by Visual Layout Editor (% of canvas, auto-scales) ──
-    const desk_1 = this.add.image(Math.round(W*0.3841), Math.round(H*0.6900), 'desk')
+    const desk_1 = this.add.image(Math.round(W*0.3675), Math.round(H*0.6733), 'desk')
       .setOrigin(0.50, 0.50)
       .setDisplaySize(Math.round(W*0.1060), Math.round(H*0.2133))
       .setDepth(1).setAlpha(1.00);
