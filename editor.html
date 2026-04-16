@@ -416,8 +416,8 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
 <!-- ══════════════════════════════════════════════════════════════ -->
 <script>
 'use strict';
-// ─── CONSTANTS ─────────────────────────────────────────────────
-const W = 1920, H = 1080;        // scene dimensions
+// ─── CONSTANTS — must match GAME_W / GAME_H in phaser-scene.js ────
+const W = 1208, H = 600;        // ← same as Phaser fixed canvas size
 const SERVER = 'http://localhost:3333';
 
 // ─── STATE ─────────────────────────────────────────────────────
@@ -455,15 +455,17 @@ async function loadAssets() {
     const list = await res.json();
     buildAssetGrid(list);
   } catch {
-    // fallback hard-coded list if server not available
+    // fallback — uses CORRECT Phaser texture keys matching preload()
     const fallback = [
-      { key:'bg', src:'assets/images/bg.png', isSprite:false, label:'bg' },
-      { key:'desk1', src:'assets/images/desk1.png', isSprite:false, label:'desk1' },
-      { key:'gpu', src:'assets/images/gpu.png', isSprite:false, label:'gpu' },
-      { key:'gpu_sheet', src:'assets/images/gpu_sheet.png', isSprite:true, label:'gpu_sheet' },
-      { key:'server', src:'assets/images/server.png', isSprite:false, label:'server' },
-      { key:'server_sheet', src:'assets/images/server_sheet.png', isSprite:true, label:'server_sheet' },
-      { key:'worker_sheet', src:'assets/images/worker_sheet.png', isSprite:true, label:'worker_sheet' },
+      { key:'bg',          src:'assets/images/bg.png',           isSprite:false, isNew:false, label:'bg' },
+      { key:'desk',        src:'assets/images/desk1.png',         isSprite:false, isNew:false, label:'desk' },
+      { key:'gpu',         src:'assets/images/gpu.png',           isSprite:false, isNew:false, label:'gpu' },
+      { key:'server',      src:'assets/images/server.png',        isSprite:false, isNew:false, label:'server' },
+      { key:'gpu_anim',    src:'assets/images/gpu_sheet.png',     isSprite:true,  isNew:false, label:'gpu_anim (sheet)' },
+      { key:'gpu_anim2',   src:'assets/images/gpu_sheet1.png',    isSprite:true,  isNew:false, label:'gpu_anim2' },
+      { key:'server_anim', src:'assets/images/server_sheet.png',  isSprite:true,  isNew:false, label:'server_anim' },
+      { key:'worker_anim', src:'assets/images/worker_sheet.png',  isSprite:true,  isNew:false, label:'worker_anim' },
+      { key:'worker_anim2',src:'assets/images/worker_sheet2.png', isSprite:true,  isNew:false, label:'worker_anim2' },
     ];
     buildAssetGrid(fallback);
   }
@@ -474,16 +476,24 @@ function buildAssetGrid(list) {
   grid.innerHTML = '';
   list.forEach(a => {
     const el = document.createElement('div');
-    el.className = 'at'; el.draggable = true; el.title = a.label;
+    el.className = 'at'; el.draggable = true;
+    // isNew = needs a new preload() entry (server will auto-inject it)
+    const newWarn = a.isNew ? ' ⚠ needs preload' : '';
+    el.title = `Key: ${a.key}${newWarn}\nFile: ${a.src}`;
     if (a.isSprite) el.innerHTML += `<span class="sps">SPS</span>`;
+    if (a.isNew)    el.innerHTML += `<span class="sps" style="background:var(--yellow);color:#0c0d13;right:auto;left:3px">NEW</span>`;
     const img = document.createElement('img');
-    img.src = a.src; img.alt = a.label;
+    img.src = a.src; img.alt = a.key;
     el.appendChild(img);
     const nm = document.createElement('div');
-    nm.className = 'nm'; nm.textContent = a.label;
+    nm.className = 'nm';
+    // Show the actual Phaser key prominently
+    nm.textContent = a.key;
+    nm.title = a.label;
     el.appendChild(nm);
     el.addEventListener('dragstart', e => {
-      dragAsset = { type:'image', key:a.key, src:a.src, isSprite:a.isSprite };
+      // Always use the Phaser texture key, not the filename
+      dragAsset = { type:'image', key:a.key, src:a.src, isSprite:a.isSprite, isNew:a.isNew, file:a.file };
       e.dataTransfer.effectAllowed = 'copy';
     });
     grid.appendChild(el);
