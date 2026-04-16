@@ -118,12 +118,15 @@ class GameDevStoryScene extends Phaser.Scene {
     this.load.on('filecomplete-spritesheet-gpu_anim', () => ok('gpu_anim'));
 
     // Static fallback images
-    this.load.image('desk',   'assets/images/desk.png');
+    this.load.image('desk',   'assets/images/desk1.png');  // file is desk1.png (not desk.png)
     this.load.image('gpu',    'assets/images/gpu.png');
     this.load.image('server', 'assets/images/server.png');
     this.load.on('filecomplete-image-desk',   () => ok('desk'));
     this.load.on('filecomplete-image-gpu',    () => ok('gpu'));
     this.load.on('filecomplete-image-server', () => ok('server'));
+    // ── EDITOR_PRELOAD_BEGIN ──
+    // ── EDITOR_PRELOAD_END ──
+
   }
 
   // ── CREATE ─────────────────────────────────────────────────────
@@ -155,14 +158,13 @@ class GameDevStoryScene extends Phaser.Scene {
     });
 
     // ── EDITOR_LAYOUT_BEGIN ──
-// ── Placed by Visual Layout Editor ──
-    const desk1_1 = this.add.image(720, 305, 'desk1')
+    // ── Placed by Visual Layout Editor (% of canvas, auto-scales) ──
+    const desk_1 = this.add.image(Math.round(W*0.3841), Math.round(H*0.6900), 'desk')
       .setOrigin(0.50, 0.50)
-      .setDisplaySize(480, 410)
-      .setDepth(1)
-      .setAlpha(1.00);
+      .setDisplaySize(Math.round(W*0.1060), Math.round(H*0.2133))
+      .setDepth(1).setAlpha(1.00);
 
-  // ── EDITOR_LAYOUT_END ──
+    // ── EDITOR_LAYOUT_END ──
 
     // 6. Replay items already purchased (on page load / save restore)
     this._syncWithGameState();
@@ -651,22 +653,19 @@ function initPhaserGame() {
   const factory = document.getElementById('factory');
   if (!factory) { console.warn('[Phaser] #factory not found.'); return; }
 
-  const W = factory.clientWidth  || window.innerWidth  - 320;
-  const H = factory.clientHeight || window.innerHeight - 122;
-
   const wrapper = document.createElement('div');
   wrapper.id    = 'phaser-canvas-wrapper';
   factory.insertBefore(wrapper, factory.firstChild);
 
   window.__phaserGame = new Phaser.Game({
     type:        Phaser.AUTO,
-    width:       W,
-    height:      H,
+    width:       factory.clientWidth  || window.innerWidth  - 320,
+    height:      factory.clientHeight || window.innerHeight - 122,
     transparent: true,
     parent:      wrapper,
     scene:       [GameDevStoryScene],
     scale: {
-      mode:       Phaser.Scale.RESIZE,
+      mode:       Phaser.Scale.RESIZE,  // fits any display — positions use W*pct/H*pct
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     render: {
