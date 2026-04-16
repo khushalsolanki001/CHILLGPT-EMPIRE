@@ -106,7 +106,7 @@ class GameDevStoryScene extends Phaser.Scene {
 
     // Sprite sheets (1024×1024 → 2 frames each @ 512×1024)
     this.load.spritesheet('server_anim', 'assets/images/server_sheet.png',
-      { frameWidth: FRAME_W, frameHeight: FRAME_H });
+      { frameWidth: 627, frameHeight: 1254 });
     this.load.on('filecomplete-spritesheet-server_anim', () => ok('server_anim'));
 
     this.load.spritesheet('worker_anim', 'assets/images/worker_sheet.png',
@@ -137,6 +137,20 @@ class GameDevStoryScene extends Phaser.Scene {
 
     // 1. Background
     this._drawBackground(W, H);
+
+    // Navigation Button to Server Room
+    const btn = this.add.text(1180, 270, '▶\nSERVERS', {
+      fontFamily: '"Press Start 2P", monospace',
+      fontSize: '12px',
+      color: '#ffffff',
+      backgroundColor: '#5a3810',
+      padding: { x: 10, y: 10 },
+      align: 'center'
+    }).setOrigin(1, 0.5).setInteractive().setDepth(100);
+
+    btn.on('pointerdown', () => {
+      this.scene.switch('ServerRoomScene');
+    });
 
     // 2. Build placement zones using actual canvas dimensions
     this._buildZones(W, H);
@@ -308,32 +322,22 @@ class GameDevStoryScene extends Phaser.Scene {
   // ── SPAWN: MACHINE ─────────────────────────────────────────────
 
   _onSpawnMachine(detail) {
-    const pos      = this._nextZonePos(this._machineZone);
     const hwId     = detail.hwId || 'gpu';
-    const isServer = ['rack', 'megaDC', 'quantumDC'].includes(hwId);
+    const isServer = ['rack', 'megaDC', 'quantumDC', 'server'].includes(hwId);
+    
+    // Servers are handled by the ServerRoomScene
+    if (isServer) return;
+
+    const pos      = this._nextZonePos(this._machineZone);
     const tH       = TARGET_H[hwId] ?? TARGET_H.gpu;
     let   obj;
 
-    if (isServer && this._ok['server_anim']) {
-      obj = this.add.sprite(pos.x, pos.y, 'server_anim', 0)
-        .setOrigin(0.5, 1)
-        .setDepth(7);
-      this._scaleToTargetH(obj, FRAME_H, tH);
-      obj.play('server_blink');
-
-    } else if (!isServer && this._ok['gpu_anim']) {
+    if (!isServer && this._ok['gpu_anim']) {
       obj = this.add.sprite(pos.x, pos.y, 'gpu_anim', 0)
         .setOrigin(0.5, 1)
         .setDepth(7);
       this._scaleToTargetH(obj, FRAME_H, tH);
       obj.play('gpu_spin');
-
-    } else if (isServer && this._ok['server']) {
-      const tex = this.textures.get('server').getSourceImage();
-      obj = this.add.image(pos.x, pos.y, 'server')
-        .setOrigin(0.5, 1)
-        .setDepth(7);
-      this._scaleToTargetH(obj, tex.height, tH);
 
     } else if (!isServer && this._ok['gpu']) {
       const tex = this.textures.get('gpu').getSourceImage();
@@ -436,8 +440,8 @@ class GameDevStoryScene extends Phaser.Scene {
     const wCount = Math.min(st.inventory?.workers ?? 0, 6);
     for (let i = 0; i < wCount; i++) this._onSpawnWorker({});
 
-    // Machines — cap at 3 per type on load
-    const hwOrder = ['gpu', 'cluster', 'rack', 'megaDC', 'quantumDC'];
+    // Machines — ignore servers here (handled by ServerRoomScene)
+    const hwOrder = ['gpu', 'cluster'];
     hwOrder.forEach(id => {
       const count = Math.min(st.hardware?.[id] ?? 0, 3);
       const hw    = typeof HARDWARE !== 'undefined'
@@ -646,6 +650,164 @@ class GameDevStoryScene extends Phaser.Scene {
 }
 
 // ─────────────────────────────────────────────────────────────────
+// SERVER ROOM SCENE
+// ─────────────────────────────────────────────────────────────────
+
+class ServerRoomScene extends Phaser.Scene {
+  constructor() {
+    super({ key: 'ServerRoomScene' });
+    this._ok = {};
+    this._serverCount = 0;
+  }
+
+  preload() {
+    const ok = (key) => { this._ok[key] = true; };
+    this.load.image('server1', 'assets/images/server1.png');
+    this.load.on('filecomplete-image-server1', () => ok('server1'));
+    
+    // We also need server assets, they might be cached from GameDevStoryScene
+    // but calling load again is safe (Phaser skips cached)
+    this.load.spritesheet('server_anim', 'assets/images/server_sheet.png', { frameWidth: 627, frameHeight: 1254 });
+    this.load.on('filecomplete-spritesheet-server_anim', () => ok('server_anim'));
+    this.load.image('server', 'assets/images/server.png');
+    this.load.on('filecomplete-image-server', () => ok('server'));
+  }
+
+  create() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+
+    // 1. Background
+    this.add.rectangle(0, 0, W, H, 0x111115).setOrigin(0).setDepth(0); // Add a dark background universally
+
+    if (this.textures.exists('server1')) {
+      const src = this.textures.get('server1').getSourceImage();
+      // Use Math.min instead of Math.max to fit the entire image on the screen without cropping
+      const scale = Math.min(W / src.width, H / src.height);
+      this.add.image(W / 2, H / 2, 'server1').setScale(scale).setDepth(0);
+    }
+
+    // Navigation Button to Main Room
+    const btnBack = this.add.text(28, 270, '◀\nOFFICE', {
+      fontFamily: '"Press Start 2P", monospace',
+      fontSize: '12px',
+      color: '#ffffff',
+      backgroundColor: '#5a3810',
+      padding: { x: 10, y: 10 },
+      align: 'center'
+    }).setOrigin(0, 0.5).setInteractive().setDepth(100);
+
+    btnBack.on('pointerdown', () => {
+      this.scene.switch('GameDevStoryScene');
+    });
+
+    // 3. Define animations
+    if (this.textures.exists('server_anim')) {
+      if (!this.anims.exists('server_blink')) {
+        this.anims.create({
+          key: 'server_blink',
+          frames: this.anims.generateFrameNumbers('server_anim', { start: 0, end: 1 }),
+          frameRate: 3, repeat: -1,
+        });
+      }
+    }
+
+    // 4. Wire events
+    window.addEventListener('SPAWN_MACHINE', (e) => this._onSpawnMachine(e.detail));
+    
+    // 5. Restore state
+    this._syncWithGameState();
+  }
+
+  _onSpawnMachine(detail) {
+    const hwId = detail.hwId || 'gpu';
+    const isServer = ['rack', 'megaDC', 'quantumDC', 'server'].includes(hwId);
+    
+    // Only handle servers
+    if (!isServer) return;
+    
+    // Max 4 servers according to instructions
+    if (this._serverCount >= 4) return;
+    
+    const W = this.scale.width;
+    const H = this.scale.height;
+    
+    // 2x2 grid centered, moved up slightly
+    const spots = [
+      { x: W * 0.5 - 90, y: H * 0.55 }, // back left
+      { x: W * 0.5 + 90, y: H * 0.55 }, // back right
+      { x: W * 0.5 - 90, y: H * 0.79 }, // front left
+      { x: W * 0.5 + 90, y: H * 0.79 }, // front right
+    ];
+    
+    const pos = spots[this._serverCount];
+    this._serverCount++;
+    
+    const tH = TARGET_H[hwId] ?? TARGET_H.rack;
+    let obj;
+
+    if (this.textures.exists('server_anim')) {
+      obj = this.add.sprite(pos.x, pos.y, 'server_anim', 0)
+        .setOrigin(0.5, 1)
+        .setDepth(7 + this._serverCount);
+      this._scaleToTargetH(obj, 1254, tH);
+      if (this.anims.exists('server_blink')) {
+        obj.play('server_blink');
+      }
+
+    } else if (this.textures.exists('server')) {
+      const tex = this.textures.get('server').getSourceImage();
+      obj = this.add.image(pos.x, pos.y, 'server')
+        .setOrigin(0.5, 1)
+        .setDepth(7 + this._serverCount);
+      this._scaleToTargetH(obj, tex.height, tH);
+    }
+    
+    if (obj) this._popIn(obj);
+    
+    if (this.scene.isActive()) {
+      this.cameras.main.shake(90, 0.002);
+    }
+  }
+
+  _scaleToTargetH(obj, naturalH, targetPx) {
+    const s = naturalH > 0 ? targetPx / naturalH : 0.15;
+    obj.setScale(s);
+    obj._ts = s;
+  }
+
+  _popIn(obj) {
+    const ts = obj._ts ?? obj.scaleX;
+    obj.setScale(0.001);
+    this.tweens.add({
+      targets:  obj,
+      scaleX:   ts,
+      scaleY:   ts,
+      ease:     'Back.easeOut',
+      duration: 420,
+    });
+  }
+
+  _syncWithGameState() {
+    this._serverCount = 0;
+    if (typeof Game === 'undefined') return;
+    const st = Game.state;
+
+    // Hardware checks
+    const hwOrder = ['rack', 'megaDC', 'quantumDC', 'server'];
+    hwOrder.forEach(id => {
+      // Allow up to 4 servers total
+      const count = Math.min(st.hardware?.[id] ?? 0, 4);
+      for (let i = 0; i < count; i++) {
+        if (this._serverCount < 4) {
+          this._onSpawnMachine({ hwId: id });
+        }
+      }
+    });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
 // BOOT
 // ─────────────────────────────────────────────────────────────────
 
@@ -663,7 +825,7 @@ function initPhaserGame() {
     height:      factory.clientHeight || window.innerHeight - 122,
     transparent: true,
     parent:      wrapper,
-    scene:       [GameDevStoryScene],
+    scene:       [GameDevStoryScene, ServerRoomScene],
     scale: {
       mode:       Phaser.Scale.RESIZE,  // fits any display — positions use W*pct/H*pct
       autoCenter: Phaser.Scale.CENTER_BOTH,
