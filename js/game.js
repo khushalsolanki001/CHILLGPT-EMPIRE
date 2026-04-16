@@ -182,6 +182,17 @@ const Game = (() => {
       return { ok: false, message: `🔒 ${hw.name} unlocks in ${hw.requireYear}!` };
     }
 
+    const isServer = ['rack', 'megaDC', 'quantumDC', 'server'].includes(hwId);
+    if (isServer) {
+        let totalServers = 0;
+        ['rack', 'megaDC', 'quantumDC', 'server'].forEach(id => {
+            totalServers += state.hardware[id] || 0;
+        });
+        if (totalServers >= 4) {
+            return { ok: false, message: `❌ Server Room is full! Maximum 4 servers allowed.` };
+        }
+    }
+
     const cost = getNextHardwareCost(hw);
     if (state.money < cost) {
       return { ok: false, message: `💸 Need ${Fmt.money(cost)} to buy ${hw.name}!` };
