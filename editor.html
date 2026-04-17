@@ -407,8 +407,8 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
 .ze-handle:active { cursor:grabbing; }
 .ze-handle.line-start, .ze-handle.line-end { border-radius:3px; width:16px; height:16px; }
 #ze-overlay {
-  position:absolute; inset:0; pointer-events:none;
-  z-index:5;
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); 
+  pointer-events:none; z-index:5;
 }
 
 /* ══════════════════════════════════════════════════════════════ */
@@ -458,12 +458,13 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
 
 /* Canvas preview */
 #ze-wrap {
-  flex:1; overflow:hidden; background:#06070c;
+  flex:1; overflow:hidden; background:#111218;
   display:flex; align-items:center; justify-content:center;
   position:relative;
 }
 #ze-canvas {
-  display:block; cursor:default;
+  display:block; cursor:default; background:#000;
+  box-shadow: 0 0 0 1px #333, 0 10px 40px rgba(0,0,0,0.5);
 }
 
 /* Side panel */
@@ -1447,12 +1448,18 @@ let zData = null;
 const $ = id => document.getElementById(id);
 let zActiveTab = 'm'; // 'm' | 'w' | 'server'
 const RefW = 1208, RefH = 600;
+let zBG = new Image();
+zBG.src = 'assets/images/bg.png';
 
 document.getElementById('btn-zone-edit').addEventListener('click', async () => {
   zCodeModal.classList.add('open');
   await loadZoneData();
-  resizeZCanvas();
-  renderZones();
+  if (!zBG.complete) {
+    zBG.onload = () => { resizeZCanvas(); renderZones(); };
+  } else {
+    resizeZCanvas();
+    renderZones();
+  }
 });
 
 ['ze-cancel', 'ze-close'].forEach(id => {
@@ -1571,18 +1578,36 @@ let zw = 604, zh = 300, zScale = 0.5;
 function resizeZCanvas() {
   const p = zCanvas.parentElement.getBoundingClientRect();
   const ar = RefW/RefH;
-  if (p.width / p.height > ar) {
-    zh = p.height - 40; zw = zh * ar;
+  // Use 85% of space to leave visible padding
+  const availW = p.width * 0.85;
+  const availH = p.height * 0.85;
+
+  if (availW / availH > ar) {
+    zh = availH; zw = zh * ar;
   } else {
-    zw = p.width - 40; zh = zw / ar;
+    zw = availW; zh = zw / ar;
   }
-  zCanvas.width = zw; zCanvas.height = zh;
+  
+  zCanvas.width  = zw; 
+  zCanvas.height = zh;
+  zCanvas.style.width  = zw + 'px';
+  zCanvas.style.height = zh + 'px';
+  
+  zOverlay.style.width  = zw + 'px';
+  zOverlay.style.height = zh + 'px';
+  
   zScale = zw / RefW;
 }
 window.addEventListener('resize', () => { if(zCodeModal.classList.contains('open')) { resizeZCanvas(); renderZones(); }});
 
 function renderZones() {
   zCtx.clearRect(0,0,zw,zh);
+  if (zBG.complete) {
+    zCtx.drawImage(zBG, 0, 0, zw, zh);
+  } else {
+    zCtx.fillStyle = '#222';
+    zCtx.fillRect(0,0,zw,zh);
+  }
   zOverlay.innerHTML = '';
   if (!zData) return;
   
@@ -1602,21 +1627,29 @@ function renderMachineZone() {
   zCtx.moveTo(rx, 0); zCtx.lineTo(rx, zh);
   zCtx.moveTo(0, my); zCtx.lineTo(zw, my); zCtx.stroke();
   
-  zCtx.fillStyle = '#00ffff';
+  zCtx.fillStyle = '#00ffff88';
   let gx = lx, gy = my, gcnt = 0;
-  while(gy < zh - 20 && gcnt < 30) {
+  const mH = (m.height || 110) * zScale;
+  const mW = mH * 0.7;
+
+  while(gy < zh - 10 && gcnt < 30) {
     let rowX = gx;
-    while(rowX < rx - 10) {
-      zCtx.fillRect(rowX-10 * zScale, gy-10 * zScale, 20*zScale, 20*zScale);
+    let rcnt = 0;
+    while(rowX < rx - 10 && rcnt < 10) {
+      zCtx.fillRect(rowX - mW/2, gy - mH, mW, mH);
       rowX += m.spacingX * zScale;
+      rcnt++;
     }
     gy += m.spacingY * zScale;
     gcnt++;
   }
   
-  createHandle(lx, my, 'mtl', (dx,dy) => {
-    m.leftMarginFrac = Math.max(0, lx + dx)/zw; 
-    m.startYFrac = Math.max(0, my + dy)/zh; 
+  const hX = lx;
+  const hY = my - mH/2;
+
+  createHandle(hX, hY, 'mtl', (dx,dy) => {
+    m.leftMarginFrac = Math.max(0, (hX + dx)/zw); 
+    m.startYFrac = Math.max(0, (hY + dy + mH/2)/zh); 
   });
 }
 
@@ -1625,21 +1658,30 @@ function renderWorkerZone() {
   const m = zData.workerZone;
   if (!m || !m.spots) return;
 
+  const staffH = (m.height || 150) * zScale;
+  const staffW = staffH * 0.6; // Approximate desk/person width
+
   m.spots.forEach((s, i) => {
     const x = s.xFrac * zw;
     const y = s.yFrac * zh;
 
-    zCtx.fillStyle = '#ffbb0088';
-    // Draw a small block representing the staff member
-    zCtx.fillRect(x - 15 * zScale, y - 15 * zScale, 30 * zScale, 30 * zScale);
+    // Draw a rectangle representing the staff asset (aligned to bottom middle)
+    zCtx.fillRect(x - staffW/2, y - staffH, staffW, staffH);
+    zCtx.strokeRect(x - staffW/2, y - staffH, staffW, staffH);
     
+    // Label
     zCtx.fillStyle = '#ffbb00';
     zCtx.font = '10px Arial';
-    zCtx.fillText(`Staff ${i+1}`, x + 10, y);
+    zCtx.fillText(`Staff ${i+1}`, x - 20, y - staffH - 5);
 
-    createHandle(x, y, 'w' + i, (dx, dy) => {
-      s.xFrac = Math.max(-0.1, Math.min(1.1, (x + dx) / zw));
-      s.yFrac = Math.max(-0.1, Math.min(1.1, (y + dy) / zh));
+    // Place handle in the CENTER of the ghost box to avoid "gap"
+    const handleX = x;
+    const handleY = y - staffH/2;
+
+    createHandle(handleX, handleY, 'w' + i, (dx, dy) => {
+      s.xFrac = Math.max(-0.1, Math.min(1.1, (handleX + dx) / zw));
+      // Convert handle center + offset back to bottom-anchor for game logic
+      s.yFrac = Math.max(-0.1, Math.min(1.1, (handleY + dy + staffH/2) / zh));
     });
   });
 }
@@ -1649,12 +1691,14 @@ function renderServerZone() {
   if(!sp) return;
   sp.forEach((s,i) => {
     const x = s.xFrac * zw, y = s.yFrac * zh;
-    zCtx.fillStyle = '#00ffaa';
-    zCtx.fillRect(x - 20*zScale, y - 40*zScale, 40*zScale, 80*zScale);
+    zCtx.fillStyle = '#00ffaa88';
+    const serverH = 80 * zScale;
+    zCtx.fillRect(x - 20*zScale, y - serverH, 40*zScale, serverH);
     
-    createHandle(x, y, `s${i}`, (dx,dy) => {
+    const hY = y - serverH/2;
+    createHandle(x, hY, `s${i}`, (dx,dy) => {
       s.xFrac = Math.max(0, Math.min(1, (x+dx)/zw));
-      s.yFrac = Math.max(0, Math.min(1, (y+dy)/zh));
+      s.yFrac = Math.max(0, Math.min(1, (hY + dy + serverH/2)/zh));
     });
   });
 }
