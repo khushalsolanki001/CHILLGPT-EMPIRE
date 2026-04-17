@@ -173,9 +173,9 @@ class GameDevStoryScene extends Phaser.Scene {
 
     // ── EDITOR_LAYOUT_BEGIN ──
     // ── Placed by Visual Layout Editor (% of canvas, auto-scales) ──
-    const desk_1 = this.add.image(Math.round(W*0.3675), Math.round(H*0.6733), 'desk')
+    const desk_1 = this.add.image(Math.round(W*0.4015), Math.round(H*0.6250), 'desk')
       .setOrigin(0.50, 0.50)
-      .setDisplaySize(Math.round(W*0.1060), Math.round(H*0.2133))
+      .setDisplaySize(Math.round(W*0.1407), Math.round(H*0.2833))
       .setDepth(1).setAlpha(1.00);
 
     // ── EDITOR_LAYOUT_END ──
@@ -219,21 +219,21 @@ class GameDevStoryScene extends Phaser.Scene {
     // LEFT_MARGIN: skip the mascot + window area on the far left.
     // RIGHT_MARGIN: leave a gap before the shop panel shadow.
 
-    const LEFT_MARGIN  = Math.round(W * 0.22);  // ≈ 267px — past windows+mascot
-    const RIGHT_MARGIN = Math.round(W * 0.06);  // ≈ 73px
+    const LEFT_MARGIN  = Math.round(W * 0.1000);  // ≈ 267px — past windows+mascot
+    const RIGHT_MARGIN = Math.round(W * 0.1900);  // ≈ 73px
     const MAX_X        = W - RIGHT_MARGIN;
 
     // machineZone — floor, just past the dado rail (back row)
     // Bottom anchor Y = H * 0.76 so tops of tallest~210px sprites still clear rail.
     const mStartX   = LEFT_MARGIN;
-    const mStartY   = Math.round(H * 0.76);   // ≈ 456px on 600px canvas
-    const mSpacingX = 130;   // wide enough for 110–160px‐wide sprite art
-    const mSpacingY = 90;    // row-wrap vertical gap
+    const mStartY   = Math.round(H * 0.4300);   // ≈ 456px on 600px canvas
+    const mSpacingX = 120;   // wide enough for 110–160px‐wide sprite art
+    const mSpacingY = 80;    // row-wrap vertical gap
 
     // workerZone — front of wooden floor (foreground row)
     // Bottom anchor Y = H * 0.93 — clearly on the warm parquet.
     const wStartX   = LEFT_MARGIN;
-    const wStartY   = Math.round(H * 0.93);   // ≈ 558px on 600px canvas
+    const wStartY   = Math.round(H * 0.9300);   // ≈ 558px on 600px canvas
     const wSpacingX = 140;   // desks are wider than GPU cards
     const wSpacingY = 90;
 
@@ -732,12 +732,12 @@ class ServerRoomScene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
     
-    // 2x2 grid centered, moved up slightly
+    // 2x2 grid — positions set by Live Zone Editor (W/H fractions, auto-scale)
     const spots = [
-      { x: W * 0.5 - 90, y: H * 0.55 }, // back left
-      { x: W * 0.5 + 90, y: H * 0.55 }, // back right
-      { x: W * 0.5 - 90, y: H * 0.79 }, // front left
-      { x: W * 0.5 + 90, y: H * 0.79 }, // front right
+      { x: W * 0.4254, y: H * 0.5500 }, // back left
+      { x: W * 0.5746, y: H * 0.5500 }, // back right
+      { x: W * 0.4254, y: H * 0.7900 }, // front left
+      { x: W * 0.5746, y: H * 0.7900 }, // front right
     ];
     
     const pos = spots[this._serverCount];

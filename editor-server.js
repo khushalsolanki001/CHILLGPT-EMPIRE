@@ -242,6 +242,109 @@ function san(s)  { return s.replace(/[^a-zA-Z0-9_]/g, '_'); }
 function f2(n)   { return parseFloat(n).toFixed(2); }
 function esc(s)  { return s.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&'); }
 
+// ─── GET /api/zones ──────────────────────────────────────────────
+// Returns parsed zone config from phaser-scene.js so the editor
+// can show live, editable zone overlays.
+app.get('/api/zones', (req, res) => {
+  const sceneFile = path.join(ROOT, 'js', 'phaser-scene.js');
+  if (!fs.existsSync(sceneFile)) return res.json({ error: 'phaser-scene.js not found' });
+  const src = fs.readFileSync(sceneFile, 'utf8');
+
+  // Extract _buildZones numbers via regex
+  const parseNum = (name) => {
+    const m = src.match(new RegExp(`const ${name}\\s*=\\s*([\\d.]+)`));
+    return m ? parseFloat(m[1]) : null;
+  };
+  const parseExpr = (name) => {
+    const m = src.match(new RegExp(`const ${name}\\s*=\\s*([^;\\n]+)`));
+    return m ? m[1].trim() : null;
+  };
+
+  // machineZone and workerZone params from _buildZones
+  const zones = {
+    machineZone: {
+      leftMarginFrac: parseFloat((src.match(/LEFT_MARGIN.*?W\s*\*\s*([\d.]+)/) || [,'0.22'])[1]),
+      rightMarginFrac: parseFloat((src.match(/RIGHT_MARGIN.*?W\s*\*\s*([\d.]+)/) || [,'0.06'])[1]),
+      startYFrac: parseFloat((src.match(/mStartY.*?H\s*\*\s*([\d.]+)/) || [,'0.76'])[1]),
+      spacingX: parseFloat((src.match(/mSpacingX\s*=\s*([\d.]+)/) || [,'130'])[1]),
+      spacingY: parseFloat((src.match(/mSpacingY\s*=\s*([\d.]+)/) || [,'90'])[1]),
+    },
+    workerZone: {
+      leftMarginFrac: parseFloat((src.match(/LEFT_MARGIN.*?W\s*\*\s*([\d.]+)/) || [,'0.22'])[1]),
+      startYFrac: parseFloat((src.match(/wStartY.*?H\s*\*\s*([\d.]+)/) || [,'0.93'])[1]),
+      spacingX: parseFloat((src.match(/wSpacingX\s*=\s*([\d.]+)/) || [,'140'])[1]),
+      spacingY: parseFloat((src.match(/wSpacingY\s*=\s*([\d.]+)/) || [,'90'])[1]),
+    },
+    serverRoom: {
+      // Parse the 4 spots from ServerRoomScene._onSpawnMachine
+      spots: (() => {
+        const block = src.match(/const spots = \[(\s*[\s\S]*?)\];/);
+        if (!block) return [
+          { xFrac:0.40, yFrac:0.55 }, { xFrac:0.60, yFrac:0.55 },
+          { xFrac:0.40, yFrac:0.79 }, { xFrac:0.60, yFrac:0.79 },
+        ];
+        const raw = block[1];
+        const rows = [...raw.matchAll(/W\s*\*\s*([\d.]+).*?H\s*\*\s*([\d.]+)/g)];
+        return rows.map(r => ({ xFrac: parseFloat(r[1]), yFrac: parseFloat(r[2]) }));
+      })(),
+      // Parse the +/-90 offset used  (W*0.5 ± offset → derive from first spot xFrac)
+      offsetX: (() => {
+        const m = src.match(/W\s*\*\s*0\.5\s*-\s*([\d.]+)/);
+        return m ? parseFloat(m[1]) : 90;
+      })(),
+    },
+    canvasW: 1208,
+    canvasH: 600,
+  };
+  res.json(zones);
+});
+
+// ─── POST /api/zones ─────────────────────────────────────────────
+// Patch _buildZones() and ServerRoomScene spots[] in phaser-scene.js
+app.post('/api/zones', (req, res) => {
+  const sceneFile = path.join(ROOT, 'js', 'phaser-scene.js');
+  if (!fs.existsSync(sceneFile)) return res.status(404).json({ error: 'phaser-scene.js not found' });
+
+  const { machineZone, workerZone, serverRoom } = req.body;
+  let src = fs.readFileSync(sceneFile, 'utf8');
+
+  // Patch machineZone
+  if (machineZone) {
+    src = src
+      .replace(/const LEFT_MARGIN\s*=\s*Math\.round\(W\s*\*\s*[\d.]+\)/, `const LEFT_MARGIN  = Math.round(W * ${machineZone.leftMarginFrac.toFixed(4)})`)
+      .replace(/const RIGHT_MARGIN\s*=\s*Math\.round\(W\s*\*\s*[\d.]+\)/, `const RIGHT_MARGIN = Math.round(W * ${machineZone.rightMarginFrac.toFixed(4)})`)
+      .replace(/const mStartY\s*=\s*Math\.round\(H\s*\*\s*[\d.]+\)/, `const mStartY   = Math.round(H * ${machineZone.startYFrac.toFixed(4)})`)
+      .replace(/const mSpacingX\s*=\s*[\d.]+/, `const mSpacingX = ${Math.round(machineZone.spacingX)}`)
+      .replace(/const mSpacingY\s*=\s*[\d.]+/, `const mSpacingY = ${Math.round(machineZone.spacingY)}`);
+  }
+
+  // Patch workerZone
+  if (workerZone) {
+    src = src
+      .replace(/const wStartY\s*=\s*Math\.round\(H\s*\*\s*[\d.]+\)/, `const wStartY   = Math.round(H * ${workerZone.startYFrac.toFixed(4)})`)
+      .replace(/const wSpacingX\s*=\s*[\d.]+/, `const wSpacingX = ${Math.round(workerZone.spacingX)}`)
+      .replace(/const wSpacingY\s*=\s*[\d.]+/, `const wSpacingY = ${Math.round(workerZone.spacingY)}`);
+  }
+
+  // Patch serverRoom spots[]
+  if (serverRoom && serverRoom.spots && serverRoom.spots.length === 4) {
+    const sp = serverRoom.spots;
+    // Reconstruct offsets from absolute fracs — spots[0] is W*0.5 - offsetX
+    // We now store as plain fracs:
+    const newSpots = sp.map((s, i) => {
+      const label = ['back left','back right','front left','front right'][i];
+      return `      { x: W * ${s.xFrac.toFixed(4)}, y: H * ${s.yFrac.toFixed(4)} }, // ${label}`;
+    }).join('\n');
+    src = src.replace(
+      /const spots = \[([\s\S]*?)\];/,
+      `const spots = [\n${newSpots}\n    ];`
+    );
+  }
+
+  fs.writeFileSync(sceneFile, src, 'utf8');
+  res.json({ ok: true });
+});
+
 // ─────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log('\n  ✅  ChillGPT Editor Server running!');
