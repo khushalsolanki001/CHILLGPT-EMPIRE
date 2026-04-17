@@ -673,19 +673,26 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
             <input type="number" id="ze-m-sx" min="40" max="400" step="5" /></div>
           <div class="zm-field"><label>SPACING Y (px)</label>
             <input type="number" id="ze-m-sy2" min="20" max="300" step="5" /></div>
+          <div class="zm-field"><label>Item Height (px)</label>
+            <input type="number" id="ze-m-h" min="40" max="400" step="5" /></div>
         </div>
 
         <!-- WORKER ZONE -->
         <div id="ze-panel-worker" style="display:none">
-          <div class="zm-side-hdr">👷 Staff / Worker Zone</div>
-          <div class="zm-field"><label>LEFT MARGIN (frac of W)</label>
-            <input type="number" id="ze-w-lm" min="0" max="0.9" step="0.01" /></div>
-          <div class="zm-field"><label>START Y (frac of H)</label>
-            <input type="number" id="ze-w-sy" min="0" max="1" step="0.01" /></div>
-          <div class="zm-field"><label>SPACING X (px)</label>
-            <input type="number" id="ze-w-sx" min="40" max="400" step="5" /></div>
-          <div class="zm-field"><label>SPACING Y (px)</label>
-            <input type="number" id="ze-w-sy2" min="20" max="300" step="5" /></div>
+          <div class="zm-side-hdr">👷 Staff / Worker Spots</div>
+          <div class="zm-field"><label>Staff Height (px)</label>
+            <input type="number" id="ze-w-h" min="50" max="300" step="5" /></div>
+          <div class="zm-divider"></div>
+          <div class="zm-field"><label>Spot 1 X (frac)</label><input type="number" id="ze-w-x0" step="0.01"/></div>
+          <div class="zm-field"><label>Spot 1 Y (frac)</label><input type="number" id="ze-w-y0" step="0.01"/></div>
+          <div class="zm-field"><label>Spot 2 X (frac)</label><input type="number" id="ze-w-x1" step="0.01"/></div>
+          <div class="zm-field"><label>Spot 2 Y (frac)</label><input type="number" id="ze-w-y1" step="0.01"/></div>
+          <div class="zm-field"><label>Spot 3 X (frac)</label><input type="number" id="ze-w-x2" step="0.01"/></div>
+          <div class="zm-field"><label>Spot 3 Y (frac)</label><input type="number" id="ze-w-y2" step="0.01"/></div>
+          <div class="zm-field"><label>Spot 4 X (frac)</label><input type="number" id="ze-w-x3" step="0.01"/></div>
+          <div class="zm-field"><label>Spot 4 Y (frac)</label><input type="number" id="ze-w-y3" step="0.01"/></div>
+          <div class="zm-field"><label>Spot 5 X (frac)</label><input type="number" id="ze-w-x4" step="0.01"/></div>
+          <div class="zm-field"><label>Spot 5 Y (frac)</label><input type="number" id="ze-w-y4" step="0.01"/></div>
         </div>
 
         <!-- SERVER ROOM -->
@@ -1437,6 +1444,7 @@ const zCtx = zCanvas.getContext('2d');
 const zOverlay = document.getElementById('ze-overlay');
 
 let zData = null;
+const $ = id => document.getElementById(id);
 let zActiveTab = 'm'; // 'm' | 'w' | 'server'
 const RefW = 1208, RefH = 600;
 
@@ -1489,26 +1497,30 @@ document.getElementById('ze-reload').addEventListener('click', async () => {
 });
 
 const Z_INPUTS = {
-  m: ['ze-m-lm', 'ze-m-rm', 'ze-m-sy', 'ze-m-sx', 'ze-m-sy2'],
-  w: ['ze-w-lm', 'ze-w-sy', 'ze-w-sx', 'ze-w-sy2'],
+  m: ['ze-m-lm', 'ze-m-rm', 'ze-m-sy', 'ze-m-sx', 'ze-m-sy2', 'ze-m-h'],
+  w: ['ze-w-h', 'ze-w-x0', 'ze-w-y0', 'ze-w-x1', 'ze-w-y1', 'ze-w-x2', 'ze-w-y2', 'ze-w-x3', 'ze-w-y3', 'ze-w-x4', 'ze-w-y4'],
   server: ['ze-s-x0','ze-s-y0','ze-s-x1','ze-s-y1','ze-s-x2','ze-s-y2','ze-s-x3','ze-s-y3']
 };
 
 function populateZInputs() {
   if (!zData) return;
-  const $ = id => document.getElementById(id);
   if (zData.machineZone) {
-    $('ze-m-lm').value = (zData.machineZone.leftMarginFrac).toFixed(4);
-    $('ze-m-rm').value = (zData.machineZone.rightMarginFrac).toFixed(4);
-    $('ze-m-sy').value = (zData.machineZone.startYFrac).toFixed(4);
-    $('ze-m-sx').value = zData.machineZone.spacingX;
-    $('ze-m-sy2').value = zData.machineZone.spacingY;
+    Z_INPUTS.m.forEach(id => {
+      if (id === 'ze-m-h') $(id).value = zData.machineZone.height;
+      else if (id === 'ze-m-lm') $(id).value = (zData.machineZone.leftMarginFrac).toFixed(4);
+      else if (id === 'ze-m-rm') $(id).value = (zData.machineZone.rightMarginFrac).toFixed(4);
+      else if (id === 'ze-m-sy') $(id).value = (zData.machineZone.startYFrac).toFixed(4);
+      else $(id).value = zData.machineZone[id.split('-').pop()];
+    });
   }
   if (zData.workerZone) {
-    $('ze-w-lm').value = (zData.workerZone.leftMarginFrac).toFixed(4);
-    $('ze-w-sy').value = (zData.workerZone.startYFrac).toFixed(4);
-    $('ze-w-sx').value = zData.workerZone.spacingX;
-    $('ze-w-sy2').value = zData.workerZone.spacingY;
+    if (zData.workerZone.height) $('ze-w-h').value = zData.workerZone.height;
+    if (zData.workerZone.spots) {
+      zData.workerZone.spots.forEach((s,i) => {
+        if ($('ze-w-x'+i)) $('ze-w-x'+i).value = (s.xFrac).toFixed(4);
+        if ($('ze-w-y'+i)) $('ze-w-y'+i).value = (s.yFrac).toFixed(4);
+      });
+    }
   }
   if (zData.serverRoom && zData.serverRoom.spots) {
     zData.serverRoom.spots.forEach((s,i) => {
@@ -1537,12 +1549,14 @@ function syncInputsToData() {
     zData.machineZone.startYFrac = val('ze-m-sy');
     zData.machineZone.spacingX = val('ze-m-sx');
     zData.machineZone.spacingY = val('ze-m-sy2');
+    zData.machineZone.height = val('ze-m-h');
   }
   if (zActiveTab === 'w') {
-    zData.workerZone.leftMarginFrac = val('ze-w-lm');
-    zData.workerZone.startYFrac = val('ze-w-sy');
-    zData.workerZone.spacingX = val('ze-w-sx');
-    zData.workerZone.spacingY = val('ze-w-sy2');
+    zData.workerZone.height = val('ze-w-h');
+    zData.workerZone.spots.forEach((s,i) => {
+      if ($('ze-w-x'+i)) s.xFrac = val('ze-w-x'+i);
+      if ($('ze-w-y'+i)) s.yFrac = val('ze-w-y'+i);
+    });
   }
   if (zActiveTab === 'server') {
     for(let i=0;i<4;i++) {
@@ -1609,33 +1623,24 @@ function renderMachineZone() {
 function renderWorkerZone() {
   zCtx.strokeStyle = '#ffbb00'; zCtx.lineWidth = 1;
   const m = zData.workerZone;
-  const lx = m.leftMarginFrac * zw; 
-  const my = m.startYFrac * zh;
-  const rx = zw;
-  
-  zCtx.beginPath(); zCtx.moveTo(lx, 0); zCtx.lineTo(lx, zh);
-  zCtx.moveTo(0, my); zCtx.lineTo(zw, my); zCtx.stroke();
-  
-  zCtx.fillStyle = '#ffbb0088'; // Semi-transparent for overlapping ghosts
-  let gx = lx, gy = my, gcnt = 0;
-  const stepX = (m.spacingX || 140) * zScale;
-  const stepY = (m.spacingY || 90) * zScale;
+  if (!m || !m.spots) return;
 
-  while(gy < zh - 10 && gcnt < 30) {
-    let rowX = gx;
-    let rcnt = 0;
-    while(rowX < rx - 10 && rcnt < 10) {
-      zCtx.fillRect(rowX - 10 * zScale, gy - 20 * zScale, 20 * zScale, 20 * zScale);
-      rowX += stepX;
-      rcnt++;
-    }
-    gy += stepY;
-    gcnt++;
-  }
-  
-  createHandle(lx, my, 'wtl', (dx,dy) => {
-    m.leftMarginFrac = Math.max(0, lx + dx)/zw;
-    m.startYFrac = Math.max(0, my + dy)/zh;
+  m.spots.forEach((s, i) => {
+    const x = s.xFrac * zw;
+    const y = s.yFrac * zh;
+
+    zCtx.fillStyle = '#ffbb0088';
+    // Draw a small block representing the staff member
+    zCtx.fillRect(x - 15 * zScale, y - 15 * zScale, 30 * zScale, 30 * zScale);
+    
+    zCtx.fillStyle = '#ffbb00';
+    zCtx.font = '10px Arial';
+    zCtx.fillText(`Staff ${i+1}`, x + 10, y);
+
+    createHandle(x, y, 'w' + i, (dx, dy) => {
+      s.xFrac = Math.max(-0.1, Math.min(1.1, (x + dx) / zw));
+      s.yFrac = Math.max(-0.1, Math.min(1.1, (y + dy) / zh));
+    });
   });
 }
 

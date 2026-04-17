@@ -91,7 +91,8 @@ class GameDevStoryScene extends Phaser.Scene {
   constructor() {
     super({ key: 'GameDevStoryScene' });
     this._machineZone = null;
-    this._workerZone  = null;
+    this._workerSpots  = [];
+    this._workerCount = 0;
     this._ok          = {};  // which textures/sheets loaded OK
   }
 
@@ -218,25 +219,29 @@ class GameDevStoryScene extends Phaser.Scene {
     const RIGHT_MARGIN = Math.round(W * 0.3000);  // ≈ 73px
     const MAX_X        = W - RIGHT_MARGIN;
 
-    // machineZone
-    // Bottom anchor Y = H * 0.76 so tops of tallest~210px sprites still clear rail.
+    const mH = 110;
     const mStartX   = Math.round(W * 0.3200);
     const mStartY   = Math.round(H * 0.5600);   // ≈ 456px on 600px canvas
     const mSpacingX = 140;   // wide enough for 110–160px‐wide sprite art
     const mSpacingY = 95;    // row-wrap vertical gap
 
-    // workerZone
-    // Bottom anchor Y = H * 0.93
-    const wStartX   = Math.round(W * 0.3200);
-    const wStartY   = Math.round(H * 0.8471);   // ≈ 558px on 600px canvas
-    const wSpacingX = 70;   // desks are wider than GPU cards
-    const wSpacingY = 145;
-
+    this._machineHeight = mH;
     this._machineZone = makeZone(mStartX, mStartY, mSpacingX, mSpacingY, MAX_X);
-    this._workerZone  = makeZone(wStartX, wStartY, wSpacingX, wSpacingY, MAX_X);
+
+    // -- STAFF / WORKER SPOTS (Adjusted by Live Editor) --
+    const wH = 235;
+    const wSpots = [
+      { x: W * 0.3643, y: H * 0.9109 },
+      { x: W * 0.3600, y: H * 0.9712 },
+      { x: W * 0.6500, y: H * 0.8500 },
+      { x: W * 0.7421, y: H * 0.8923 },
+      { x: W * 0.6000, y: H * 0.9500 }
+    ];
+    this._workerSpots = wSpots;
+    this._workerHeight = wH;
 
     console.log('[Phaser] machineZone:', mStartX, mStartY, '→ maxX', MAX_X);
-    console.log('[Phaser] workerZone: ', wStartX, wStartY, '→ maxX', MAX_X);
+    console.log('[Phaser] workerSpots:', wSpots.length);
   }
 
   /**
@@ -288,8 +293,10 @@ class GameDevStoryScene extends Phaser.Scene {
   // ── SPAWN: WORKER ──────────────────────────────────────────────
 
   _onSpawnWorker(_detail) {
-    const pos = this._nextZonePos(this._workerZone);
-    const tH  = TARGET_H.worker;
+    const spots = this._workerSpots || [];
+    const pos = spots[this._workerCount % spots.length] || { x: W * 0.5, y: H * 0.9 };
+    this._workerCount++;
+    const tH  = this._workerHeight || 150;
     let   obj;
 
     if (this._ok['worker_anim']) {
@@ -324,7 +331,7 @@ class GameDevStoryScene extends Phaser.Scene {
     if (isServer) return;
 
     const pos      = this._nextZonePos(this._machineZone);
-    const tH       = TARGET_H[hwId] ?? TARGET_H.gpu;
+    const tH       = this._machineHeight || 110;
     let   obj;
 
     if (!isServer && this._ok['gpu_anim']) {
@@ -415,14 +422,18 @@ class GameDevStoryScene extends Phaser.Scene {
 
   _ambientTick() {
     // Show 💻 near a random worker position that's been filled
-    const filledCount = Math.floor(
-      (this._workerZone.currentX - this._workerZone.startX) / this._workerZone.spacingX
-    );
-    if (filledCount <= 0) return;
-    const idx  = Math.floor(Math.random() * filledCount);
-    const wX   = this._workerZone.startX + idx * this._workerZone.spacingX;
-    const wY   = this._workerZone.startY;
-    this._spawnFeedbackText(wX, wY - TARGET_H.worker - 8, '💻', C.feedGreen);
+    const spots = this._workerSpots || [];
+    if (spots.length === 0 || this._workerCount === 0) return;
+
+    // Total filled spots is workerCount, but capped at spots.length
+    const filledCount = Math.min(this._workerCount, spots.length);
+    const idx = Math.floor(Math.random() * filledCount);
+    const pos = spots[idx];
+
+    if (pos) {
+      const tH = this._workerHeight || 150;
+      this._spawnFeedbackText(pos.x, pos.y - tH - 8, '💻', C.feedGreen);
+    }
   }
 
   // ── SYNC SAVED STATE ───────────────────────────────────────────

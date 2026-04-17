@@ -263,17 +263,25 @@ app.get('/api/zones', (req, res) => {
   // machineZone and workerZone params from _buildZones
   const zones = {
     machineZone: {
-      leftMarginFrac: parseFloat((src.match(/mStartX.*?W\s*\*\s*([\d.]+)/) || [,'0.1000'])[1]),
-      rightMarginFrac: parseFloat((src.match(/RIGHT_MARGIN.*?W\s*\*\s*([\d.]+)/) || [,'0.06'])[1]),
-      startYFrac: parseFloat((src.match(/mStartY.*?H\s*\*\s*([\d.]+)/) || [,'0.76'])[1]),
-      spacingX: parseFloat((src.match(/mSpacingX\s*=\s*([\d.]+)/) || [,'130'])[1]),
-      spacingY: parseFloat((src.match(/mSpacingY\s*=\s*([\d.]+)/) || [,'90'])[1]),
+      leftMarginFrac: parseFloat((src.match(/mStartX.*?W\s*\*\s*([\d.]+)/) || [,'0.32'])[1]),
+      rightMarginFrac: parseFloat((src.match(/RIGHT_MARGIN.*?W\s*\*\s*([\d.]+)/) || [,'0.19'])[1]),
+      startYFrac: parseFloat((src.match(/mStartY.*?H\s*\*\s*([\d.]+)/) || [,'0.56'])[1]),
+      spacingX: parseFloat((src.match(/mSpacingX\s*=\s*([\d.]+)/) || [,'140'])[1]),
+      spacingY: parseFloat((src.match(/mSpacingY\s*=\s*([\d.]+)/) || [,'95'])[1]),
+      height: parseFloat((src.match(/const mH\s*=\s*([\d.]+)/) || [,'110'])[1]),
     },
     workerZone: {
-      leftMarginFrac: parseFloat((src.match(/wStartX.*?W\s*\*\s*([\d.]+)/) || [,'0.1000'])[1]),
-      startYFrac: parseFloat((src.match(/wStartY.*?H\s*\*\s*([\d.]+)/) || [,'0.93'])[1]),
-      spacingX: parseFloat((src.match(/wSpacingX\s*=\s*([\d.]+)/) || [,'140'])[1]),
-      spacingY: parseFloat((src.match(/wSpacingY\s*=\s*([\d.]+)/) || [,'90'])[1]),
+      height: parseFloat((src.match(/const wH\s*=\s*([\d.]+)/) || [,'150'])[1]),
+      spots: (() => {
+        const block = src.match(/const wSpots = \[([\s\S]*?)\];/);
+        if (!block) return [
+          { xFrac:0.35, yFrac:0.85 }, { xFrac:0.50, yFrac:0.85 }, { xFrac:0.65, yFrac:0.85 },
+          { xFrac:0.40, yFrac:0.95 }, { xFrac:0.60, yFrac:0.95 }
+        ];
+        const raw = block[1];
+        const rows = [...raw.matchAll(/W\s*\*\s*([\d.]+).*?H\s*\*\s*([\d.]+)/g)];
+        return rows.map(r => ({ xFrac: parseFloat(r[1]), yFrac: parseFloat(r[2]) }));
+      })(),
     },
     serverRoom: {
       // Parse the 4 spots from ServerRoomScene._onSpawnMachine
@@ -315,16 +323,25 @@ app.post('/api/zones', (req, res) => {
       .replace(/(const RIGHT_MARGIN\s*=\s*Math\.round\(W\s*\*\s*)[\d.]+(\))/, `$1${machineZone.rightMarginFrac.toFixed(4)}$2`)
       .replace(/(const mStartY\s*=\s*Math\.round\(H\s*\*\s*)[\d.]+(\))/, `$1${machineZone.startYFrac.toFixed(4)}$2`)
       .replace(/(const mSpacingX\s*=\s*)[\d.]+/, `$1${Math.round(machineZone.spacingX)}`)
-      .replace(/(const mSpacingY\s*=\s*)[\d.]+/, `$1${Math.round(machineZone.spacingY)}`);
+      .replace(/(const mSpacingY\s*=\s*)[\d.]+/, `$1${Math.round(machineZone.spacingY)}`)
+      .replace(/(const mH\s*=\s*)[\d.]+/, `$1${Math.round(machineZone.height)}`);
   }
 
   // Patch workerZone
   if (workerZone) {
     src = src
-      .replace(/(const wStartX\s*=\s*Math\.round\(W\s*\*\s*)[\d.]+(\))/, `$1${workerZone.leftMarginFrac.toFixed(4)}$2`)
-      .replace(/(const wStartY\s*=\s*Math\.round\(H\s*\*\s*)[\d.]+(\))/, `$1${workerZone.startYFrac.toFixed(4)}$2`)
-      .replace(/(const wSpacingX\s*=\s*)[\d.]+/, `$1${Math.round(workerZone.spacingX)}`)
-      .replace(/(const wSpacingY\s*=\s*)[\d.]+/, `$1${Math.round(workerZone.spacingY)}`);
+      .replace(/(const wH\s*=\s*)[\d.]+/, `$1${Math.round(workerZone.height)}`);
+    
+    if (workerZone.spots && workerZone.spots.length > 0) {
+      const sp = workerZone.spots;
+      const newSpots = sp.map((s, i) => {
+        return `      { x: W * ${s.xFrac.toFixed(4)}, y: H * ${s.yFrac.toFixed(4)} }${i < sp.length-1 ? ',' : ''}`;
+      }).join('\n');
+      src = src.replace(
+        /const wSpots = \[([\s\S]*?)\];/,
+        `const wSpots = [\n${newSpots}\n    ];`
+      );
+    }
   }
 
   // Patch serverRoom spots[]
