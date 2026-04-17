@@ -279,7 +279,8 @@ app.get('/api/zones', (req, res) => {
           { xFrac:0.40, yFrac:0.95 }, { xFrac:0.60, yFrac:0.95 }
         ];
         const raw = block[1];
-        const rows = [...raw.matchAll(/W\s*\*\s*([\d.]+).*?H\s*\*\s*([\d.]+)/g)];
+        // Robust multi-line regex for spot coordinates
+        const rows = [...raw.matchAll(/W\s*\*\s*([\d.e-]+)[\s\S]*?H\s*\*\s*([\d.e-]+)/g)];
         return rows.map(r => ({ xFrac: parseFloat(r[1]), yFrac: parseFloat(r[2]) }));
       })(),
     },
