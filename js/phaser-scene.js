@@ -118,6 +118,10 @@ class GameDevStoryScene extends Phaser.Scene {
       { frameWidth: FRAME_W, frameHeight: FRAME_H });
     this.load.on('filecomplete-spritesheet-gpu_anim', () => ok('gpu_anim'));
 
+    this.load.spritesheet('cluster_anim', 'assets/images/gpu_cluster_sheet.png',
+      { frameWidth: 512, frameHeight: 170 });
+    this.load.on('filecomplete-spritesheet-cluster_anim', () => ok('cluster_anim'));
+
     // Static fallback images
     this.load.image('desk',   'assets/images/desk1.png');  // file is desk1.png (not desk.png)
     this.load.image('gpu',    'assets/images/gpu.png');
@@ -220,10 +224,10 @@ class GameDevStoryScene extends Phaser.Scene {
     const RIGHT_MARGIN = Math.round(W * 0.3000);  // ≈ 73px
     const MAX_X        = W - RIGHT_MARGIN;
 
-    const mH = 70;
-    const mStartX   = Math.round(W * 0.4139);
-    const mStartY   = Math.round(H * 0.3774);   // ≈ 456px on 600px canvas
-    const mSpacingX = 40;   // wide enough for 110–160px‐wide sprite art
+    const mH = 125;
+    const mStartX   = Math.round(W * 0.5793);
+    const mStartY   = Math.round(H * 0.9621);   // ≈ 456px on 600px canvas
+    const mSpacingX = 0;   // wide enough for 110–160px‐wide sprite art
     const mSpacingY = 0;    // row-wrap vertical gap
 
     this._machineHeight = mH;
@@ -287,6 +291,28 @@ class GameDevStoryScene extends Phaser.Scene {
         key: 'gpu_spin',
         frames: this.anims.generateFrameNumbers('gpu_anim', { start: 0, end: 1 }),
         frameRate: 7, repeat: -1,
+      });
+    }
+    if (this._ok['cluster_anim']) {
+      this.anims.create({
+        key: 'cluster_idle',
+        frames: [{ key: 'cluster_anim', frame: 0 }],
+        frameRate: 1, repeat: 0
+      });
+      this.anims.create({
+        key: 'cluster_led',
+        frames: this.anims.generateFrameNumbers('cluster_anim', { start: 1, end: 3 }),
+        frameRate: 4, repeat: -1
+      });
+      this.anims.create({
+        key: 'cluster_fan',
+        frames: this.anims.generateFrameNumbers('cluster_anim', { start: 4, end: 7 }),
+        frameRate: 12, repeat: -1
+      });
+      this.anims.create({
+        key: 'cluster_pulse',
+        frames: this.anims.generateFrameNumbers('cluster_anim', { start: 8, end: 10 }),
+        frameRate: 3, repeat: -1, yoyo: true
       });
     }
   }
