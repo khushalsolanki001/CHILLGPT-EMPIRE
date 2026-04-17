@@ -631,7 +631,8 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
     <div class="zm-topbar">
       <span class="zm-title">🎯 Live Zone Editor — Drag handles to reposition spawn zones</span>
       <div class="zm-tabs">
-        <button class="ztab active" data-tab="m" id="zt-machine">⚙ GPU / Machine</button>
+        <button class="ztab active" data-tab="m" id="zt-machine">⚙ Machine Zone</button>
+        <button class="ztab" data-tab="g" id="zt-gpu" >🔋 GPU Clusters</button>
         <button class="ztab" data-tab="w"  id="zt-worker" >👷 Staff / Worker</button>
         <button class="ztab" data-tab="server"  id="zt-server" >🖥 Server Room</button>
       </div>
@@ -650,7 +651,7 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
       <aside class="zm-side">
         <!-- MACHINE ZONE -->
         <div id="ze-panel-machine">
-          <div class="zm-side-hdr">⚙ GPU / Machine Zone</div>
+          <div class="zm-side-hdr">⚙ Other Machine Zone</div>
           <div class="zm-field"><label>LEFT MARGIN (frac of W)</label>
             <input type="number" id="ze-m-lm" min="0" max="0.9" step="0.01" /></div>
           <div class="zm-field"><label>RIGHT MARGIN (frac of W)</label>
@@ -661,8 +662,24 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
             <input type="number" id="ze-m-sx" min="40" max="400" step="5" /></div>
           <div class="zm-field"><label>SPACING Y (px)</label>
             <input type="number" id="ze-m-sy2" min="20" max="300" step="5" /></div>
-          <div class="zm-field"><label>Item Height (px)</label>
+          <div class="zm-field"><label>Misc Machine H (px)</label>
             <input type="number" id="ze-m-h" min="40" max="400" step="5" /></div>
+        </div>
+
+        <!-- GPU CLUSTERS -->
+        <div id="ze-panel-gpu" style="display:none">
+          <div class="zm-side-hdr">🔋 GPU Clusters (G0-G3)</div>
+          <div class="zm-field"><label>GPU Height (px)</label>
+            <input type="number" id="ze-g-h" min="40" max="300" step="5" /></div>
+          <div class="zm-divider"></div>
+          <div class="zm-field"><label>G0 X (frac)</label><input type="number" id="ze-g-x0" step="0.01"/></div>
+          <div class="zm-field"><label>G0 Y (frac)</label><input type="number" id="ze-g-y0" step="0.01"/></div>
+          <div class="zm-field"><label>G1 X (frac)</label><input type="number" id="ze-g-x1" step="0.01"/></div>
+          <div class="zm-field"><label>G1 Y (frac)</label><input type="number" id="ze-g-y1" step="0.01"/></div>
+          <div class="zm-field"><label>G2 X (frac)</label><input type="number" id="ze-g-x2" step="0.01"/></div>
+          <div class="zm-field"><label>G2 Y (frac)</label><input type="number" id="ze-g-y2" step="0.01"/></div>
+          <div class="zm-field"><label>G3 X (frac)</label><input type="number" id="ze-g-x3" step="0.01"/></div>
+          <div class="zm-field"><label>G3 Y (frac)</label><input type="number" id="ze-g-y3" step="0.01"/></div>
         </div>
 
         <!-- WORKER ZONE -->
@@ -1434,7 +1451,7 @@ const zOverlay = document.getElementById('ze-overlay');
 
 let zData = null;
 const $ = id => document.getElementById(id);
-let zActiveTab = 'm'; // 'm' | 'w' | 'server'
+let zActiveTab = 'm'; // 'm' | 'g' | 'w' | 'server'
 const RefW = 1208, RefH = 600;
 let zBG = new Image();
 zBG.src = 'assets/images/bg.png';
@@ -1474,6 +1491,7 @@ document.querySelectorAll('.ztab').forEach(t => {
     console.log("Tab switched to:", zActiveTab);
     
     document.getElementById('ze-panel-machine').style.display = zActiveTab==='m'?'block':'none';
+    document.getElementById('ze-panel-gpu').style.display     = zActiveTab==='g'?'block':'none';
     document.getElementById('ze-panel-worker').style.display  = zActiveTab==='w'?'block':'none';
     document.getElementById('ze-panel-server').style.display  = zActiveTab==='server'?'block':'none';
     renderZones();
@@ -1501,6 +1519,7 @@ document.getElementById('ze-reload').addEventListener('click', async () => {
 
 const Z_INPUTS = {
   m: ['ze-m-lm', 'ze-m-rm', 'ze-m-sy', 'ze-m-sx', 'ze-m-sy2', 'ze-m-h'],
+  g: ['ze-g-h', 'ze-g-x0', 'ze-g-y0', 'ze-g-x1', 'ze-g-y1', 'ze-g-x2', 'ze-g-y2', 'ze-g-x3', 'ze-g-y3'],
   w: ['ze-w-h', 'ze-w-x0', 'ze-w-y0', 'ze-w-x1', 'ze-w-y1', 'ze-w-x2', 'ze-w-y2', 'ze-w-x3', 'ze-w-y3', 'ze-w-x4', 'ze-w-y4'],
   server: ['ze-s-x0','ze-s-y0','ze-s-x1','ze-s-y1','ze-s-x2','ze-s-y2','ze-s-x3','ze-s-y3']
 };
@@ -1532,8 +1551,17 @@ function populateZInputs() {
       else if (id === 'ze-m-lm') $(id).value = (zData.machineZone.leftMarginFrac).toFixed(4);
       else if (id === 'ze-m-rm') $(id).value = (zData.machineZone.rightMarginFrac).toFixed(4);
       else if (id === 'ze-m-sy') $(id).value = (zData.machineZone.startYFrac).toFixed(4);
-      else $(id).value = zData.machineZone[id.split('-').pop()];
+      else $(id).value = zData.machineZone[id.split('-').pop()] || '';
     });
+  }
+  if (zData.gpuZone) {
+    if (zData.gpuZone.height) $('ze-g-h').value = zData.gpuZone.height;
+    if (zData.gpuZone.spots) {
+      zData.gpuZone.spots.forEach((s,i) => {
+        if ($('ze-g-x'+i)) $('ze-g-x'+i).value = (s.xFrac).toFixed(4);
+        if ($('ze-g-y'+i)) $('ze-g-y'+i).value = (s.yFrac).toFixed(4);
+      });
+    }
   }
   if (zData.workerZone) {
     if (zData.workerZone.height) $('ze-w-h').value = zData.workerZone.height;
@@ -1552,7 +1580,7 @@ function populateZInputs() {
   }
 }
 
-['m','w','server'].forEach(k => {
+['m','g','w','server'].forEach(k => {
   Z_INPUTS[k].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.addEventListener('input', () => {
@@ -1572,6 +1600,13 @@ function syncInputsToData() {
     zData.machineZone.spacingX = val('ze-m-sx');
     zData.machineZone.spacingY = val('ze-m-sy2');
     zData.machineZone.height = val('ze-m-h');
+  }
+  if (zActiveTab === 'g') {
+    zData.gpuZone.height = val('ze-g-h');
+    zData.gpuZone.spots.forEach((s,i) => {
+      if ($('ze-g-x'+i)) s.xFrac = val('ze-g-x'+i);
+      if ($('ze-g-y'+i)) s.yFrac = val('ze-g-y'+i);
+    });
   }
   if (zActiveTab === 'w') {
     zData.workerZone.height = val('ze-w-h');
@@ -1629,6 +1664,7 @@ function renderZones(isLite = false) {
   if (!zData) return;
   
   if (zActiveTab === 'm') renderMachineZone(isLite);
+  if (zActiveTab === 'g') renderGPUZone(isLite);
   if (zActiveTab === 'w') renderWorkerZone(isLite);
   if (zActiveTab === 'server') renderServerZone(isLite);
 }
@@ -1672,6 +1708,34 @@ function renderMachineZone(isLite) {
       h.style.height = (mH + 20) + 'px';
       h.style.transform = 'translate(-50%, -100%)';
     }
+}
+
+function renderGPUZone(isLite) {
+  zCtx.strokeStyle = '#00ffaa'; zCtx.lineWidth = 1;
+  const m = zData.gpuZone;
+  if (!m || !m.spots) return;
+
+  const gpuH = (m.height || 110) * zScale;
+  const gpuW = gpuH * 3.0; // 250x81 is roughly 3:1 aspect ratio
+
+  m.spots.forEach((s, i) => {
+    const x = s.xFrac * zw;
+    const y = s.yFrac * zh;
+    zCtx.fillStyle = '#00ffaa66';
+    zCtx.fillRect(x - gpuW/2, y - gpuH, gpuW, gpuH);
+
+    if (!isLite) {
+      const hX = x;
+      const hY = y;
+      const h = createHandle(hX, hY, 'g' + i, (dx, dy) => {
+        s.xFrac = Math.max(-0.1, Math.min(1.1, (hX + dx) / zw));
+        s.yFrac = Math.max(-0.1, Math.min(1.1, (hY + dy) / zh));
+      });
+      h.style.width = gpuW + 'px';
+      h.style.height = gpuH + 'px';
+      h.style.transform = 'translate(-50%, -100%)';
+    }
+  });
 }
 
 function renderWorkerZone(isLite) {

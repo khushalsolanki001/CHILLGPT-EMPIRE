@@ -93,7 +93,8 @@ class GameDevStoryScene extends Phaser.Scene {
     this._machineZone = null;
     this._workerSpots  = [];
     this._workerCount = 0;
-    this._ok          = {};  // which textures/sheets loaded OK
+    this._clusterCount = 0;
+    this._ok          = {};
   }
 
   // ── PRELOAD ────────────────────────────────────────────────────
@@ -118,9 +119,13 @@ class GameDevStoryScene extends Phaser.Scene {
       { frameWidth: FRAME_W, frameHeight: FRAME_H });
     this.load.on('filecomplete-spritesheet-gpu_anim', () => ok('gpu_anim'));
 
-    this.load.spritesheet('cluster_anim', 'assets/images/gpu_cluster_sheet.png',
-      { frameWidth: 512, frameHeight: 170 });
-    this.load.on('filecomplete-spritesheet-cluster_anim', () => ok('cluster_anim'));
+    this.load.spritesheet('cluster_0', 'assets/images/gpu_cluster_sheet.png', { frameWidth: 250, frameHeight: 81 });
+    this.load.spritesheet('cluster_1', 'assets/images/gpu_cluster_sheet_1.png', { frameWidth: 250, frameHeight: 75 });
+    this.load.spritesheet('cluster_2', 'assets/images/gpu_cluster_sheet_2.png', { frameWidth: 250, frameHeight: 81 });
+    this.load.spritesheet('cluster_3', 'assets/images/gpu_cluster_sheet_3.png', { frameWidth: 250, frameHeight: 80 });
+    ['0','1','2','3'].forEach(i => {
+      this.load.on(`filecomplete-spritesheet-cluster_${i}`, () => ok(`cluster_${i}`));
+    });
 
     // Static fallback images
     this.load.image('desk',   'assets/images/desk1.png');  // file is desk1.png (not desk.png)
@@ -221,14 +226,24 @@ class GameDevStoryScene extends Phaser.Scene {
     // RIGHT_MARGIN: leave a gap before the shop panel shadow.
 
     const LEFT_MARGIN  = Math.round(W * 0.3200);  // ≈ 267px — past windows+mascot
-    const RIGHT_MARGIN = Math.round(W * 0.3000);  // ≈ 73px
+    const RIGHT_MARGIN = Math.round(W * 0.2500);  // ≈ 73px
     const MAX_X        = W - RIGHT_MARGIN;
 
-    const mH = 125;
-    const mStartX   = Math.round(W * 0.5793);
-    const mStartY   = Math.round(H * 0.9621);   // ≈ 456px on 600px canvas
-    const mSpacingX = 0;   // wide enough for 110–160px‐wide sprite art
-    const mSpacingY = 0;    // row-wrap vertical gap
+    const gH = 110;
+    const gSpots = [
+      { x: W * 0.4000, y: H * 0.4500 },
+      { x: W * 0.5000, y: H * 0.4500 },
+      { x: W * 0.6000, y: H * 0.4500 },
+      { x: W * 0.7000, y: H * 0.4500 }
+    ];
+    this._gpuHeight = gH;
+    this._gpuSpots  = gSpots;
+
+    const mH = 40; // Fallback for other machines
+    const mStartX   = Math.round(W * 0.3871);
+    const mStartY   = Math.round(H * 0.4244);   // ≈ 456px on 600px canvas
+    const mSpacingX = 10;   // wide enough for 110–160px‐wide sprite art
+    const mSpacingY = 10;    // row-wrap vertical gap
 
     this._machineHeight = mH;
     this._machineZone = makeZone(mStartX, mStartY, mSpacingX, mSpacingY, MAX_X);
@@ -293,29 +308,21 @@ class GameDevStoryScene extends Phaser.Scene {
         frameRate: 7, repeat: -1,
       });
     }
-    if (this._ok['cluster_anim']) {
-      this.anims.create({
-        key: 'cluster_idle',
-        frames: [{ key: 'cluster_anim', frame: 0 }],
-        frameRate: 1, repeat: 0
-      });
-      this.anims.create({
-        key: 'cluster_led',
-        frames: this.anims.generateFrameNumbers('cluster_anim', { start: 1, end: 3 }),
-        frameRate: 4, repeat: -1
-      });
-      this.anims.create({
-        key: 'cluster_fan',
-        frames: this.anims.generateFrameNumbers('cluster_anim', { start: 4, end: 7 }),
-        frameRate: 12, repeat: -1
-      });
-      this.anims.create({
-        key: 'cluster_pulse',
-        frames: this.anims.generateFrameNumbers('cluster_anim', { start: 8, end: 10 }),
-        frameRate: 3, repeat: -1, yoyo: true
-      });
+    for (let i=0; i<4; i++) {
+      const key = `cluster_${i}`;
+      if (this._ok[key]) {
+        this.anims.create({
+          key: `${key}_anim`,
+          frames: this.anims.generateFrameNumbers(key, { start: 0, end: 1 }),
+          frameRate: 3 + i, 
+          repeat: -1,
+          yoyo: true
+        });
+      }
     }
   }
+
+
 
   // ── SPAWN: WORKER ──────────────────────────────────────────────
 
@@ -357,18 +364,31 @@ class GameDevStoryScene extends Phaser.Scene {
     // Servers are handled by the ServerRoomScene
     if (isServer) return;
 
-    const pos      = this._nextZonePos(this._machineZone);
-    const tH       = this._machineHeight || 110;
+    const tH       = (hwId === 'cluster' || hwId === 'gpu') ? (this._gpuHeight || 110) : (this._machineHeight || 110);
+    const v        = this._clusterCount % 4;
+    const pos      = (hwId === 'cluster') ? (this._gpuSpots[v] || this._nextZonePos(this._machineZone)) : this._nextZonePos(this._machineZone);
     let   obj;
 
-    if (!isServer && this._ok['gpu_anim']) {
+    if (hwId === 'cluster') {
+      const key = `cluster_${v}`;
+      this._clusterCount++;
+
+      if (this._ok[key]) {
+        obj = this.add.sprite(pos.x, pos.y, key, 0)
+          .setOrigin(0.5, 1)
+          .setDepth(7);
+        const srcH = (v === 1) ? 75 : (v === 3 ? 80 : 81);
+        this._scaleToTargetH(obj, srcH, tH);
+        obj.play(`${key}_anim`);
+      }
+    } else if (hwId === 'gpu' && this._ok['gpu_anim']) {
       obj = this.add.sprite(pos.x, pos.y, 'gpu_anim', 0)
         .setOrigin(0.5, 1)
         .setDepth(7);
       this._scaleToTargetH(obj, FRAME_H, tH);
       obj.play('gpu_spin');
 
-    } else if (!isServer && this._ok['gpu']) {
+    } else if (hwId === 'gpu' && this._ok['gpu']) {
       const tex = this.textures.get('gpu').getSourceImage();
       obj = this.add.image(pos.x, pos.y, 'gpu')
         .setOrigin(0.5, 1)

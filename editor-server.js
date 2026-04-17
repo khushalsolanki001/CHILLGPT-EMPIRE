@@ -270,6 +270,16 @@ app.get('/api/zones', (req, res) => {
       spacingY: parseFloat((src.match(/mSpacingY\s*=\s*([\d.]+)/) || [,'95'])[1]),
       height: parseFloat((src.match(/const mH\s*=\s*([\d.]+)/) || [,'110'])[1]),
     },
+    gpuZone: {
+      height: parseFloat((src.match(/const gH\s*=\s*([\d.]+)/) || [,'110'])[1]),
+      spots: (() => {
+        const block = src.match(/const gSpots = \[([\s\S]*?)\];/);
+        if (!block) return [{ xFrac:0.4, yFrac:0.45 }, { xFrac:0.5, yFrac:0.45 }, { xFrac:0.6, yFrac:0.45 }, { xFrac:0.7, yFrac:0.45 }];
+        const raw = block[1];
+        const rows = [...raw.matchAll(/W\s*\*\s*([\d.e-]+)[\s\S]*?H\s*\*\s*([\d.e-]+)/g)];
+        return rows.map(r => ({ xFrac: parseFloat(r[1]), yFrac: parseFloat(r[2]) }));
+      })(),
+    },
     workerZone: {
       height: parseFloat((src.match(/const wH\s*=\s*([\d.]+)/) || [,'150'])[1]),
       spots: (() => {
@@ -314,7 +324,7 @@ app.post('/api/zones', (req, res) => {
   const sceneFile = path.join(ROOT, 'js', 'phaser-scene.js');
   if (!fs.existsSync(sceneFile)) return res.status(404).json({ error: 'phaser-scene.js not found' });
 
-  const { machineZone, workerZone, serverRoom } = req.body;
+  const { machineZone, gpuZone, workerZone, serverRoom } = req.body;
   let src = fs.readFileSync(sceneFile, 'utf8');
 
   // Patch machineZone
@@ -326,6 +336,13 @@ app.post('/api/zones', (req, res) => {
       .replace(/(const mSpacingX\s*=\s*)[\d.]+/, `$1${Math.round(machineZone.spacingX)}`)
       .replace(/(const mSpacingY\s*=\s*)[\d.]+/, `$1${Math.round(machineZone.spacingY)}`)
       .replace(/(const mH\s*=\s*)[\d.]+/, `$1${Math.round(machineZone.height)}`);
+  }
+
+  // Patch gpuZone (4 spots)
+  if (gpuZone) {
+    src = src.replace(/(const gH\s*=\s*)[\d.]+/, `$1${Math.round(gpuZone.height)}`);
+    const spotsStr = gpuZone.spots.map(s => `      { x: W * ${s.xFrac.toFixed(4)}, y: H * ${s.yFrac.toFixed(4)} }`).join(',\n');
+    src = src.replace(/(const gSpots = \[)[\s\S]*?(\];)/, `$1\n${spotsStr}\n    $2`);
   }
 
   // Patch workerZone
