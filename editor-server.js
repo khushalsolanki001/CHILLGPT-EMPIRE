@@ -311,20 +311,20 @@ app.post('/api/zones', (req, res) => {
   // Patch machineZone
   if (machineZone) {
     src = src
-      .replace(/const mStartX\s*=\s*Math\.round\(W\s*\*\s*[\d.]+\)/, `const mStartX   = Math.round(W * ${machineZone.leftMarginFrac.toFixed(4)})`)
-      .replace(/const RIGHT_MARGIN\s*=\s*Math\.round\(W\s*\*\s*[\d.]+\)/, `const RIGHT_MARGIN = Math.round(W * ${machineZone.rightMarginFrac.toFixed(4)})`)
-      .replace(/const mStartY\s*=\s*Math\.round\(H\s*\*\s*[\d.]+\)/, `const mStartY   = Math.round(H * ${machineZone.startYFrac.toFixed(4)})`)
-      .replace(/const mSpacingX\s*=\s*[\d.]+/, `const mSpacingX = ${Math.round(machineZone.spacingX)}`)
-      .replace(/const mSpacingY\s*=\s*[\d.]+/, `const mSpacingY = ${Math.round(machineZone.spacingY)}`);
+      .replace(/(const mStartX\s*=\s*Math\.round\(W\s*\*\s*)[\d.]+(\))/, `$1${machineZone.leftMarginFrac.toFixed(4)}$2`)
+      .replace(/(const RIGHT_MARGIN\s*=\s*Math\.round\(W\s*\*\s*)[\d.]+(\))/, `$1${machineZone.rightMarginFrac.toFixed(4)}$2`)
+      .replace(/(const mStartY\s*=\s*Math\.round\(H\s*\*\s*)[\d.]+(\))/, `$1${machineZone.startYFrac.toFixed(4)}$2`)
+      .replace(/(const mSpacingX\s*=\s*)[\d.]+/, `$1${Math.round(machineZone.spacingX)}`)
+      .replace(/(const mSpacingY\s*=\s*)[\d.]+/, `$1${Math.round(machineZone.spacingY)}`);
   }
 
   // Patch workerZone
   if (workerZone) {
     src = src
-      .replace(/const wStartX\s*=\s*Math\.round\(W\s*\*\s*[\d.]+\)/, `const wStartX   = Math.round(W * ${workerZone.leftMarginFrac.toFixed(4)})`)
-      .replace(/const wStartY\s*=\s*Math\.round\(H\s*\*\s*[\d.]+\)/, `const wStartY   = Math.round(H * ${workerZone.startYFrac.toFixed(4)})`)
-      .replace(/const wSpacingX\s*=\s*[\d.]+/, `const wSpacingX = ${Math.round(workerZone.spacingX)}`)
-      .replace(/const wSpacingY\s*=\s*[\d.]+/, `const wSpacingY = ${Math.round(workerZone.spacingY)}`);
+      .replace(/(const wStartX\s*=\s*Math\.round\(W\s*\*\s*)[\d.]+(\))/, `$1${workerZone.leftMarginFrac.toFixed(4)}$2`)
+      .replace(/(const wStartY\s*=\s*Math\.round\(H\s*\*\s*)[\d.]+(\))/, `$1${workerZone.startYFrac.toFixed(4)}$2`)
+      .replace(/(const wSpacingX\s*=\s*)[\d.]+/, `$1${Math.round(workerZone.spacingX)}`)
+      .replace(/(const wSpacingY\s*=\s*)[\d.]+/, `$1${Math.round(workerZone.spacingY)}`);
   }
 
   // Patch serverRoom spots[]

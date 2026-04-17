@@ -643,9 +643,9 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
     <div class="zm-topbar">
       <span class="zm-title">🎯 Live Zone Editor — Drag handles to reposition spawn zones</span>
       <div class="zm-tabs">
-        <button class="ztab active" data-zone="machine" id="zt-machine">⚙ GPU / Machine</button>
-        <button class="ztab" data-zone="worker"  id="zt-worker" >👷 Staff / Worker</button>
-        <button class="ztab" data-zone="server"  id="zt-server" >🖥 Server Room</button>
+        <button class="ztab active" data-tab="m" id="zt-machine">⚙ GPU / Machine</button>
+        <button class="ztab" data-tab="w"  id="zt-worker" >👷 Staff / Worker</button>
+        <button class="ztab" data-tab="server"  id="zt-server" >🖥 Server Room</button>
       </div>
       <span class="cm-close" id="ze-close" style="margin-left:10px">✕</span>
     </div>
@@ -1456,9 +1456,12 @@ document.getElementById('btn-zone-edit').addEventListener('click', async () => {
 // Tabs
 document.querySelectorAll('.ztab').forEach(t => {
   t.addEventListener('click', (e) => {
+    const btn = e.currentTarget;
     document.querySelectorAll('.ztab').forEach(x => x.classList.remove('active'));
-    e.target.classList.add('active');
-    zActiveTab = e.target.dataset.tab;
+    btn.classList.add('active');
+    zActiveTab = btn.dataset.tab;
+    console.log("Tab switched to:", zActiveTab);
+    
     document.getElementById('ze-panel-machine').style.display = zActiveTab==='m'?'block':'none';
     document.getElementById('ze-panel-worker').style.display  = zActiveTab==='w'?'block':'none';
     document.getElementById('ze-panel-server').style.display  = zActiveTab==='server'?'block':'none';
@@ -1613,15 +1616,20 @@ function renderWorkerZone() {
   zCtx.beginPath(); zCtx.moveTo(lx, 0); zCtx.lineTo(lx, zh);
   zCtx.moveTo(0, my); zCtx.lineTo(zw, my); zCtx.stroke();
   
-  zCtx.fillStyle = '#ffbb00';
+  zCtx.fillStyle = '#ffbb0088'; // Semi-transparent for overlapping ghosts
   let gx = lx, gy = my, gcnt = 0;
-  while(gy < zh - 20 && gcnt < 30) {
+  const stepX = (m.spacingX || 140) * zScale;
+  const stepY = (m.spacingY || 90) * zScale;
+
+  while(gy < zh - 10 && gcnt < 30) {
     let rowX = gx;
-    while(rowX < rx - 10) {
-      zCtx.fillRect(rowX-10 * zScale, gy-10 * zScale, 20*zScale, 20*zScale);
-      rowX += m.spacingX * zScale;
+    let rcnt = 0;
+    while(rowX < rx - 10 && rcnt < 10) {
+      zCtx.fillRect(rowX - 10 * zScale, gy - 20 * zScale, 20 * zScale, 20 * zScale);
+      rowX += stepX;
+      rcnt++;
     }
-    gy += m.spacingY * zScale;
+    gy += stepY;
     gcnt++;
   }
   
