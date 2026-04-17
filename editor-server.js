@@ -263,14 +263,14 @@ app.get('/api/zones', (req, res) => {
   // machineZone and workerZone params from _buildZones
   const zones = {
     machineZone: {
-      leftMarginFrac: parseFloat((src.match(/LEFT_MARGIN.*?W\s*\*\s*([\d.]+)/) || [,'0.22'])[1]),
+      leftMarginFrac: parseFloat((src.match(/mStartX.*?W\s*\*\s*([\d.]+)/) || [,'0.1000'])[1]),
       rightMarginFrac: parseFloat((src.match(/RIGHT_MARGIN.*?W\s*\*\s*([\d.]+)/) || [,'0.06'])[1]),
       startYFrac: parseFloat((src.match(/mStartY.*?H\s*\*\s*([\d.]+)/) || [,'0.76'])[1]),
       spacingX: parseFloat((src.match(/mSpacingX\s*=\s*([\d.]+)/) || [,'130'])[1]),
       spacingY: parseFloat((src.match(/mSpacingY\s*=\s*([\d.]+)/) || [,'90'])[1]),
     },
     workerZone: {
-      leftMarginFrac: parseFloat((src.match(/LEFT_MARGIN.*?W\s*\*\s*([\d.]+)/) || [,'0.22'])[1]),
+      leftMarginFrac: parseFloat((src.match(/wStartX.*?W\s*\*\s*([\d.]+)/) || [,'0.1000'])[1]),
       startYFrac: parseFloat((src.match(/wStartY.*?H\s*\*\s*([\d.]+)/) || [,'0.93'])[1]),
       spacingX: parseFloat((src.match(/wSpacingX\s*=\s*([\d.]+)/) || [,'140'])[1]),
       spacingY: parseFloat((src.match(/wSpacingY\s*=\s*([\d.]+)/) || [,'90'])[1]),
@@ -311,7 +311,7 @@ app.post('/api/zones', (req, res) => {
   // Patch machineZone
   if (machineZone) {
     src = src
-      .replace(/const LEFT_MARGIN\s*=\s*Math\.round\(W\s*\*\s*[\d.]+\)/, `const LEFT_MARGIN  = Math.round(W * ${machineZone.leftMarginFrac.toFixed(4)})`)
+      .replace(/const mStartX\s*=\s*Math\.round\(W\s*\*\s*[\d.]+\)/, `const mStartX   = Math.round(W * ${machineZone.leftMarginFrac.toFixed(4)})`)
       .replace(/const RIGHT_MARGIN\s*=\s*Math\.round\(W\s*\*\s*[\d.]+\)/, `const RIGHT_MARGIN = Math.round(W * ${machineZone.rightMarginFrac.toFixed(4)})`)
       .replace(/const mStartY\s*=\s*Math\.round\(H\s*\*\s*[\d.]+\)/, `const mStartY   = Math.round(H * ${machineZone.startYFrac.toFixed(4)})`)
       .replace(/const mSpacingX\s*=\s*[\d.]+/, `const mSpacingX = ${Math.round(machineZone.spacingX)}`)
@@ -321,6 +321,7 @@ app.post('/api/zones', (req, res) => {
   // Patch workerZone
   if (workerZone) {
     src = src
+      .replace(/const wStartX\s*=\s*Math\.round\(W\s*\*\s*[\d.]+\)/, `const wStartX   = Math.round(W * ${workerZone.leftMarginFrac.toFixed(4)})`)
       .replace(/const wStartY\s*=\s*Math\.round\(H\s*\*\s*[\d.]+\)/, `const wStartY   = Math.round(H * ${workerZone.startYFrac.toFixed(4)})`)
       .replace(/const wSpacingX\s*=\s*[\d.]+/, `const wSpacingX = ${Math.round(workerZone.spacingX)}`)
       .replace(/const wSpacingY\s*=\s*[\d.]+/, `const wSpacingY = ${Math.round(workerZone.spacingY)}`);
