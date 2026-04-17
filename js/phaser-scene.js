@@ -230,7 +230,7 @@ class GameDevStoryScene extends Phaser.Scene {
     this._machineZone = makeZone(mStartX, mStartY, mSpacingX, mSpacingY, MAX_X);
 
     // -- STAFF / WORKER SPOTS (Adjusted by Live Editor) --
-    const wH = 235;
+    const wH = 100;
     const wSpots = [
       { x: W * 0.6140, y: H * 0.8382 },
       { x: W * 0.8735, y: H * 0.8790 },
