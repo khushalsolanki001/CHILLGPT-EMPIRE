@@ -1502,7 +1502,7 @@ function populateZInputs() {
     $('ze-m-sy2').value = zData.machineZone.spacingY;
   }
   if (zData.workerZone) {
-    $('ze-w-lm').value = (zData.machineZone.leftMarginFrac).toFixed(4);
+    $('ze-w-lm').value = (zData.workerZone.leftMarginFrac).toFixed(4);
     $('ze-w-sy').value = (zData.workerZone.startYFrac).toFixed(4);
     $('ze-w-sx').value = zData.workerZone.spacingX;
     $('ze-w-sy2').value = zData.workerZone.spacingY;
@@ -1536,7 +1536,7 @@ function syncInputsToData() {
     zData.machineZone.spacingY = val('ze-m-sy2');
   }
   if (zActiveTab === 'w') {
-    zData.machineZone.leftMarginFrac = val('ze-w-lm'); // shared left margin
+    zData.workerZone.leftMarginFrac = val('ze-w-lm');
     zData.workerZone.startYFrac = val('ze-w-sy');
     zData.workerZone.spacingX = val('ze-w-sx');
     zData.workerZone.spacingY = val('ze-w-sy2');
@@ -1606,8 +1606,7 @@ function renderMachineZone() {
 function renderWorkerZone() {
   zCtx.strokeStyle = '#ffbb00'; zCtx.lineWidth = 1;
   const m = zData.workerZone;
-  const mShared = zData.machineZone; // shares left margin
-  const lx = mShared.leftMarginFrac * zw; 
+  const lx = m.leftMarginFrac * zw; 
   const my = m.startYFrac * zh;
   const rx = zw;
   
@@ -1627,7 +1626,7 @@ function renderWorkerZone() {
   }
   
   createHandle(lx, my, 'wtl', (dx,dy) => {
-    mShared.leftMarginFrac = Math.max(0, lx + dx)/zw;
+    m.leftMarginFrac = Math.max(0, lx + dx)/zw;
     m.startYFrac = Math.max(0, my + dy)/zh;
   });
 }
