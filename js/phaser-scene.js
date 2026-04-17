@@ -184,9 +184,10 @@ class GameDevStoryScene extends Phaser.Scene {
 
   _drawBackground(W, H) {
     if (this._ok['bg']) {
-      const src    = this.textures.get('bg').getSourceImage();
-      const scale  = Math.max(W / src.width, H / src.height);
-      this.add.image(W / 2, H / 2, 'bg').setScale(scale).setDepth(0);
+      // Background fits the room dimensions exactly (matching the editor)
+      this.add.image(W / 2, H / 2, 'bg')
+        .setDisplaySize(W, H)
+        .setDepth(0);
     } else {
       this._drawRetroRoom(W, H);
     }
@@ -219,11 +220,11 @@ class GameDevStoryScene extends Phaser.Scene {
     const RIGHT_MARGIN = Math.round(W * 0.3000);  // ≈ 73px
     const MAX_X        = W - RIGHT_MARGIN;
 
-    const mH = 110;
-    const mStartX   = Math.round(W * 0.3200);
-    const mStartY   = Math.round(H * 0.5600);   // ≈ 456px on 600px canvas
-    const mSpacingX = 140;   // wide enough for 110–160px‐wide sprite art
-    const mSpacingY = 95;    // row-wrap vertical gap
+    const mH = 70;
+    const mStartX   = Math.round(W * 0.4139);
+    const mStartY   = Math.round(H * 0.3774);   // ≈ 456px on 600px canvas
+    const mSpacingX = 40;   // wide enough for 110–160px‐wide sprite art
+    const mSpacingY = 0;    // row-wrap vertical gap
 
     this._machineHeight = mH;
     this._machineZone = makeZone(mStartX, mStartY, mSpacingX, mSpacingY, MAX_X);
@@ -231,11 +232,11 @@ class GameDevStoryScene extends Phaser.Scene {
     // -- STAFF / WORKER SPOTS (Adjusted by Live Editor) --
     const wH = 235;
     const wSpots = [
-      { x: W * 0.3643, y: H * 0.9109 },
-      { x: W * 0.3600, y: H * 0.9712 },
-      { x: W * 0.6500, y: H * 0.8500 },
-      { x: W * 0.7421, y: H * 0.8923 },
-      { x: W * 0.6000, y: H * 0.9500 }
+      { x: W * 0.6140, y: H * 0.8382 },
+      { x: W * 0.8735, y: H * 0.8790 },
+      { x: W * 0.6605, y: H * 0.6374 },
+      { x: W * 0.8142, y: H * 0.7528 },
+      { x: W * 0.8675, y: H * 0.5992 }
     ];
     this._workerSpots = wSpots;
     this._workerHeight = wH;
