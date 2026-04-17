@@ -223,16 +223,16 @@ class GameDevStoryScene extends Phaser.Scene {
     const RIGHT_MARGIN = Math.round(W * 0.1900);  // ≈ 73px
     const MAX_X        = W - RIGHT_MARGIN;
 
-    // machineZone — floor, just past the dado rail (back row)
+    // machineZone
     // Bottom anchor Y = H * 0.76 so tops of tallest~210px sprites still clear rail.
-    const mStartX   = LEFT_MARGIN;
+    const mStartX   = Math.round(W * 0.1000);
     const mStartY   = Math.round(H * 0.4300);   // ≈ 456px on 600px canvas
     const mSpacingX = 120;   // wide enough for 110–160px‐wide sprite art
     const mSpacingY = 80;    // row-wrap vertical gap
 
-    // workerZone — front of wooden floor (foreground row)
-    // Bottom anchor Y = H * 0.93 — clearly on the warm parquet.
-    const wStartX   = LEFT_MARGIN;
+    // workerZone
+    // Bottom anchor Y = H * 0.93
+    const wStartX   = Math.round(W * 0.1000);
     const wStartY   = Math.round(H * 0.9300);   // ≈ 558px on 600px canvas
     const wSpacingX = 140;   // desks are wider than GPU cards
     const wSpacingY = 90;
