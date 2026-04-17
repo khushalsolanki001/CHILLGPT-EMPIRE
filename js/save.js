@@ -10,11 +10,14 @@ const SAVE_KEY = 'chillgpt_empire_v3';
 
 const Save = (() => {
 
+  let isResetting = false;
+
   /**
    * Serialise the live game state and write to localStorage.
    * Call this periodically (every 30s) and on page unload.
    */
   function save() {
+    if (isResetting) return;
     Game.state.lastSave = Date.now();
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(Game.state));
@@ -73,9 +76,9 @@ const Save = (() => {
 
   /**
    * Wipe the save and reload the page (fresh start).
-   * Called by the settings/debug reset button (future feature).
    */
   function reset() {
+    isResetting = true;
     localStorage.removeItem(SAVE_KEY);
     location.reload();
   }
