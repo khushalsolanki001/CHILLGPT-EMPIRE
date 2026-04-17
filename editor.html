@@ -395,17 +395,20 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
 
 /* Zone handles on the canvas */
 .ze-handle {
-  position:absolute; width:14px; height:14px;
-  border-radius:50%; cursor:grab;
-  border:2px solid #fff;
-  transform:translate(-50%,-50%);
-  transition:transform .1s;
-  pointer-events:all;
-  z-index:10;
+  position:absolute; cursor:grab;
+  pointer-events:all; z-index:10;
+  box-sizing: border-box;
 }
-.ze-handle:hover { transform:translate(-50%,-50%) scale(1.35); }
+.ze-handle:hover {
+  background:rgba(255,187,0,0.1);
+  outline: 1px dashed rgba(255,187,0,0.5);
+}
+.ze-handle.circle {
+  width:16px; height:16px; border-radius:50%;
+  background:var(--accent); border:2px solid #fff;
+  transform:translate(-50%,-50%);
+}
 .ze-handle:active { cursor:grabbing; }
-.ze-handle.line-start, .ze-handle.line-end { border-radius:3px; width:16px; height:16px; }
 #ze-overlay {
   position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); 
   pointer-events:none; z-index:5;
@@ -508,23 +511,7 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
   font-family:'JetBrains Mono',monospace;
 }
 
-/* Zone handles on the canvas */
-.ze-handle {
-  position:absolute; width:14px; height:14px;
-  border-radius:50%; cursor:grab;
-  border:2px solid #fff;
-  transform:translate(-50%,-50%);
-  transition:transform .1s;
-  pointer-events:all;
-  z-index:10;
-}
-.ze-handle:hover { transform:translate(-50%,-50%) scale(1.35); }
-.ze-handle:active { cursor:grabbing; }
-.ze-handle.line-start, .ze-handle.line-end { border-radius:3px; width:16px; height:16px; }
-#ze-overlay {
-  position:absolute; inset:0; pointer-events:none;
-  z-index:5;
-}
+
 
 /* scrollbars */
 ::-webkit-scrollbar { width:4px; height:4px; }
@@ -730,10 +717,11 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
 
     <!-- Footer -->
     <div class="zm-ftr">
-      <span id="ze-status">Loaded from phaser-scene.js</span>
+      <span id="ze-status">Live Sync Active</span>
       <button class="tbtn" id="ze-reload">↺ Reload from file</button>
-      <button class="tbtn save" id="ze-apply">✅ Apply to Code</button>
-      <button class="tbtn warn" id="ze-cancel">Close</button>
+      <button class="tbtn save" id="ze-apply">✅ Apply & Save</button>
+      <button class="tbtn warn" id="ze-reset-game">🧨 RESET GAME DATA</button>
+      <button class="tbtn" id="ze-close">Close</button>
     </div>
   </div>
 </div>
@@ -1462,10 +1450,18 @@ document.getElementById('btn-zone-edit').addEventListener('click', async () => {
   }
 });
 
-['ze-cancel', 'ze-close'].forEach(id => {
+['ze-close'].forEach(id => {
   document.getElementById(id)?.addEventListener('click', () => {
     zCodeModal.classList.remove('open');
   });
+});
+document.getElementById('ze-reset-game').addEventListener('click', () => {
+  if(confirm("DANGER: Wipe ALL game progress and start fresh from 2016?")) {
+    console.log("Resetting game data...");
+    localStorage.clear();
+    // Refresh to apply the fresh start
+    location.reload();
+  }
 });
 
 // Tabs
@@ -1508,6 +1504,25 @@ const Z_INPUTS = {
   w: ['ze-w-h', 'ze-w-x0', 'ze-w-y0', 'ze-w-x1', 'ze-w-y1', 'ze-w-x2', 'ze-w-y2', 'ze-w-x3', 'ze-w-y3', 'ze-w-x4', 'ze-w-y4'],
   server: ['ze-s-x0','ze-s-y0','ze-s-x1','ze-s-y1','ze-s-x2','ze-s-y2','ze-s-x3','ze-s-y3']
 };
+
+function createHandle(x, y, id, onDrag) {
+  const h = document.createElement('div');
+  h.className = 'ze-handle'; h.id = 'zh_'+id;
+  h.style.left = x + 'px';
+  h.style.top = y + 'px';
+  h.addEventListener('mousedown', e => {
+    if(e.button !== 0) return;
+    e.preventDefault(); e.stopPropagation();
+    zDragData = { 
+      startX: e.clientX, startY: e.clientY, 
+      initX: x, initY: y,
+      handle: h,
+      onDrag 
+    };
+  });
+  zOverlay.appendChild(h);
+  return h;
+}
 
 function populateZInputs() {
   if (!zData) return;
@@ -1600,7 +1615,7 @@ function resizeZCanvas() {
 }
 window.addEventListener('resize', () => { if(zCodeModal.classList.contains('open')) { resizeZCanvas(); renderZones(); }});
 
-function renderZones() {
+function renderZones(isLite = false) {
   zCtx.clearRect(0,0,zw,zh);
   if (zBG.complete) {
     zCtx.drawImage(zBG, 0, 0, zw, zh);
@@ -1608,21 +1623,23 @@ function renderZones() {
     zCtx.fillStyle = '#222';
     zCtx.fillRect(0,0,zw,zh);
   }
-  zOverlay.innerHTML = '';
+  if (!isLite) {
+    zOverlay.innerHTML = '';
+  }
   if (!zData) return;
   
-  if (zActiveTab === 'm') renderMachineZone();
-  if (zActiveTab === 'w') renderWorkerZone();
-  if (zActiveTab === 'server') renderServerZone();
+  if (zActiveTab === 'm') renderMachineZone(isLite);
+  if (zActiveTab === 'w') renderWorkerZone(isLite);
+  if (zActiveTab === 'server') renderServerZone(isLite);
 }
 
-function renderMachineZone() {
-  zCtx.strokeStyle = '#00ffff'; zCtx.lineWidth = 1;
+function renderMachineZone(isLite) {
   const m = zData.machineZone;
   const lx = m.leftMarginFrac * zw;
   const rx = zw - (m.rightMarginFrac * zw);
   const my = m.startYFrac * zh;
-  
+
+  zCtx.strokeStyle = '#00ffff'; zCtx.lineWidth = 1;
   zCtx.beginPath(); zCtx.moveTo(lx, 0); zCtx.lineTo(lx, zh);
   zCtx.moveTo(rx, 0); zCtx.lineTo(rx, zh);
   zCtx.moveTo(0, my); zCtx.lineTo(zw, my); zCtx.stroke();
@@ -1644,16 +1661,20 @@ function renderMachineZone() {
     gcnt++;
   }
   
-  const hX = lx;
-  const hY = my - mH/2;
-
-  createHandle(hX, hY, 'mtl', (dx,dy) => {
-    m.leftMarginFrac = Math.max(0, (hX + dx)/zw); 
-    m.startYFrac = Math.max(0, (hY + dy + mH/2)/zh); 
-  });
+    if (!isLite) {
+      const hX = lx;
+      const hY = my;
+      const h = createHandle(hX, hY, 'mtl', (dx,dy) => {
+        m.leftMarginFrac = Math.max(0, (hX + dx)/zw); 
+        m.startYFrac = Math.max(0, (hY + dy)/zh); 
+      });
+      h.style.width = (mW + 20) + 'px';
+      h.style.height = (mH + 20) + 'px';
+      h.style.transform = 'translate(-50%, -100%)';
+    }
 }
 
-function renderWorkerZone() {
+function renderWorkerZone(isLite) {
   zCtx.strokeStyle = '#ffbb00'; zCtx.lineWidth = 1;
   const m = zData.workerZone;
   if (!m || !m.spots) return;
@@ -1666,6 +1687,7 @@ function renderWorkerZone() {
     const y = s.yFrac * zh;
 
     // Draw a rectangle representing the staff asset (aligned to bottom middle)
+    zCtx.fillStyle = '#ffbb0088';
     zCtx.fillRect(x - staffW/2, y - staffH, staffW, staffH);
     zCtx.strokeRect(x - staffW/2, y - staffH, staffW, staffH);
     
@@ -1674,19 +1696,21 @@ function renderWorkerZone() {
     zCtx.font = '10px Arial';
     zCtx.fillText(`Staff ${i+1}`, x - 20, y - staffH - 5);
 
-    // Place handle in the CENTER of the ghost box to avoid "gap"
-    const handleX = x;
-    const handleY = y - staffH/2;
-
-    createHandle(handleX, handleY, 'w' + i, (dx, dy) => {
-      s.xFrac = Math.max(-0.1, Math.min(1.1, (handleX + dx) / zw));
-      // Convert handle center + offset back to bottom-anchor for game logic
-      s.yFrac = Math.max(-0.1, Math.min(1.1, (handleY + dy + staffH/2) / zh));
-    });
+    if (!isLite) {
+      const hX = x;
+      const hY = y;
+      const h = createHandle(hX, hY, 'w' + i, (dx, dy) => {
+        s.xFrac = Math.max(-0.1, Math.min(1.1, (hX + dx) / zw));
+        s.yFrac = Math.max(-0.1, Math.min(1.1, (hY + dy) / zh));
+      });
+      h.style.width = staffW + 'px';
+      h.style.height = staffH + 'px';
+      h.style.transform = 'translate(-50%, -100%)';
+    }
   });
 }
 
-function renderServerZone() {
+function renderServerZone(isLite) {
   const sp = zData.serverRoom.spots;
   if(!sp) return;
   sp.forEach((s,i) => {
@@ -1695,11 +1719,16 @@ function renderServerZone() {
     const serverH = 80 * zScale;
     zCtx.fillRect(x - 20*zScale, y - serverH, 40*zScale, serverH);
     
-    const hY = y - serverH/2;
-    createHandle(x, hY, `s${i}`, (dx,dy) => {
-      s.xFrac = Math.max(0, Math.min(1, (x+dx)/zw));
-      s.yFrac = Math.max(0, Math.min(1, (hY + dy + serverH/2)/zh));
-    });
+    if (!isLite) {
+      const hY = y;
+      const h = createHandle(x, hY, `s${i}`, (dx,dy) => {
+        s.xFrac = Math.max(0, Math.min(1, (x+dx)/zw));
+        s.yFrac = Math.max(0, Math.min(1, (hY+dy)/zh));
+      });
+      h.style.width = (40*zScale) + 'px';
+      h.style.height = serverH + 'px';
+      h.style.transform = 'translate(-50%, -100%)';
+    }
   });
 }
 
@@ -1708,9 +1737,11 @@ function createHandle(x, y, id, onDrag) {
   const h = document.createElement('div');
   h.className = 'ze-handle'; h.id = 'zh_'+id;
   
-  // Center relative to overlay bounds
   h.style.left = x + 'px';
   h.style.top = y + 'px';
+  h.style.background = 'rgba(255,255,255,0.05)';
+  h.style.border = '1px solid rgba(255,255,0,0.3)';
+  h.innerHTML = `<span style="position:absolute; bottom:2px; left:2px; font-size:9px; color:#fff; background:rgba(0,0,0,0.5); padding:1px 3px; border-radius:3px; pointer-events:none;">${id}</span>`;
   
   h.addEventListener('mousedown', e => {
     if(e.button !== 0) return;
@@ -1730,6 +1761,41 @@ document.addEventListener('mousemove', e => {
 });
 
 document.addEventListener('mouseup', () => { zDragData = null; });
+
+function onMove(e) {
+  if(!zDragData) return;
+  const dx = e.clientX - zDragData.startX;
+  const dy = e.clientY - zDragData.startY;
+  zDragData.onDrag(dx, dy);
+  renderZones(true);
+}
+function onUp() {
+  if(!zDragData) return;
+  zDragData = null;
+  document.removeEventListener('mousemove', onMove);
+  document.removeEventListener('mouseup', onUp);
+  renderZones();
+}
+
+function createHandle(x, y, id, onDrag) {
+  const h = document.createElement('div');
+  h.className = 'ze-handle'; h.id = 'zh_'+id;
+  h.style.left = x + 'px';
+  h.style.top = y + 'px';
+  h.style.background = 'rgba(255,255,255,0.05)';
+  h.style.border = '1px solid rgba(255,255,0,0.3)';
+  h.innerHTML = `<span style="position:absolute; bottom:2px; left:2px; font-size:9px; color:#fff; background:rgba(0,0,0,0.5); padding:1px 3px; border-radius:3px; pointer-events:none;">${id}</span>`;
+  
+  h.addEventListener('mousedown', e => {
+    if(e.button !== 0) return;
+    e.preventDefault(); e.stopPropagation();
+    zDragData = { h, id, onDrag, startX: e.clientX, startY: e.clientY };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+  zOverlay.appendChild(h);
+  return h;
+}
 
 document.getElementById('ze-apply').addEventListener('click', async () => {
   if(!zData) return;
