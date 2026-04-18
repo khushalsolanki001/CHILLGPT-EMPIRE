@@ -244,6 +244,7 @@ function esc(s)  { return s.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&'); }
 // Returns parsed zone config from phaser-scene.js so the editor
 // can show live, editable zone overlays.
 app.get('/api/zones', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   const sceneFile = path.join(ROOT, 'js', 'phaser-scene.js');
   if (!fs.existsSync(sceneFile)) return res.json({ error: 'phaser-scene.js not found' });
   const src = fs.readFileSync(sceneFile, 'utf8');
@@ -269,8 +270,9 @@ app.get('/api/zones', (req, res) => {
       height: parseFloat((src.match(/const mH\s*=\s*([\d.]+)/) || [,'110'])[1]),
     },
     gpuZone: {
-      height: parseFloat((src.match(/[g_]H\s*=\s*([\d.]+)/) || [,'110'])[1]),
-      width: parseFloat((src.match(/[g_]W\s*=\s*([\d.]+)/) || [,'330'])[1]),
+      height: parseFloat((src.match(/\bconst\s+gH\s*=\s*([\d.]+)/) || [,'110'])[1]),
+      width:  parseFloat((src.match(/\bconst\s+gW\s*=\s*([\d.]+)/) || [,'330'])[1]),
+      rotation: parseFloat((src.match(/\bconst\s+gRot\s*=\s*([\d.]+)/) || [,'0'])[1]),
       spots: (() => {
         const block = src.match(/[g_]Spots\s*=\s*\[([\s\S]*?)\];?/);
         if (!block) return [{ xFrac:0.4, yFrac:0.45 }, { xFrac:0.5, yFrac:0.45 }, { xFrac:0.6, yFrac:0.45 }, { xFrac:0.7, yFrac:0.45 }];
@@ -280,7 +282,7 @@ app.get('/api/zones', (req, res) => {
       })(),
     },
     workerZone: {
-      height: parseFloat((src.match(/[w_]H\s*=\s*([\d.]+)/) || [,'150'])[1]),
+      height: parseFloat((src.match(/\bconst\s+wH\s*=\s*([\d.]+)/) || [,'150'])[1]),
       spots: (() => {
         const block = src.match(/[w_]Spots\s*=\s*\[([\s\S]*?)\];?/);
         if (!block) return [
@@ -323,62 +325,75 @@ app.post('/api/zones', (req, res) => {
   const sceneFile = path.join(ROOT, 'js', 'phaser-scene.js');
   if (!fs.existsSync(sceneFile)) return res.status(404).json({ error: 'phaser-scene.js not found' });
 
-  const { machineZone, gpuZone, workerZone, serverRoom } = req.body;
-  let src = fs.readFileSync(sceneFile, 'utf8');
+  try {
+    const { machineZone, gpuZone, workerZone, serverRoom } = req.body;
+    let src = fs.readFileSync(sceneFile, 'utf8');
+    const originalSrc = src;
 
-  // Patch machineZone
-  if (machineZone) {
-    src = src
-      .replace(/(const mStartX\s*=\s*Math\.round\(W\s*\*\s*)[\d.]+(\))/, `$1${machineZone.leftMarginFrac.toFixed(4)}$2`)
-      .replace(/(const RIGHT_MARGIN\s*=\s*Math\.round\(W\s*\*\s*)[\d.]+(\))/, `$1${machineZone.rightMarginFrac.toFixed(4)}$2`)
-      .replace(/(const mStartY\s*=\s*Math\.round\(H\s*\*\s*)[\d.]+(\))/, `$1${machineZone.startYFrac.toFixed(4)}$2`)
-      .replace(/(const mSpacingX\s*=\s*)[\d.]+/, `$1${Math.round(machineZone.spacingX)}`)
-      .replace(/(const mSpacingY\s*=\s*)[\d.]+/, `$1${Math.round(machineZone.spacingY)}`)
-      .replace(/(const mH\s*=\s*)[\d.]+/, `$1${Math.round(machineZone.height)}`);
-  }
+    // Patch machineZone
+    if (machineZone) {
+      src = src
+        .replace(/(\bconst mStartX\s*=\s*Math\.round\(W\s*\*\s*)[\d.]+(\))/, '$1' + machineZone.leftMarginFrac.toFixed(4) + '$2')
+        .replace(/(\bconst RIGHT_MARGIN\s*=\s*Math\.round\(W\s*\*\s*)[\d.]+(\))/, '$1' + machineZone.rightMarginFrac.toFixed(4) + '$2')
+        .replace(/(\bconst mStartY\s*=\s*Math\.round\(H\s*\*\s*)[\d.]+(\))/, '$1' + machineZone.startYFrac.toFixed(4) + '$2')
+        .replace(/(\bconst mSpacingX\s*=\s*)[\d.]+/, '$1' + Math.round(machineZone.spacingX))
+        .replace(/(\bconst mSpacingY\s*=\s*)[\d.]+/, '$1' + Math.round(machineZone.spacingY))
+        .replace(/(\bconst mH\s*=\s*)[\d.]+/, '$1' + Math.round(machineZone.height));
+    }
 
-  // Patch gpuZone (4 spots)
-  if (gpuZone) {
-    src = src.replace(/((?:const g|this\._gpu)H\s*=\s*)[\d.]+/, `$1${Math.round(gpuZone.height)}`);
-    src = src.replace(/((?:const g|this\._gpu)W\s*=\s*)[\d.]+/, `$1${Math.round(gpuZone.width)}`);
-    const spotsStr = gpuZone.spots.map(s => `      { x: W * ${s.xFrac.toFixed(4)}, y: H * ${s.yFrac.toFixed(4)} }`).join(',\n');
-    src = src.replace(/((?:const g|this\._gpu)Spots\s*=\s*\[)[\s\S]*?(\];?)/, `$1\n${spotsStr}\n    $2`);
-  }
+    // Patch gpuZone (4 spots)
+    if (gpuZone) {
+      src = src.replace(/(\bconst\s+gH\s*=\s*)[\d.]+/, '$1' + Math.round(gpuZone.height));
+      src = src.replace(/(\bconst\s+gW\s*=\s*)[\d.]+/, '$1' + Math.round(gpuZone.width));
+      src = src.replace(/(\bconst\s+gRot\s*=\s*)[\d.]+/, '$1' + Math.round(gpuZone.rotation || 0));
+      const spotsStr = gpuZone.spots.map(s => `      { x: W * ${s.xFrac.toFixed(4)}, y: H * ${s.yFrac.toFixed(4)} }`).join(',\n');
+      src = src.replace(/(\bconst\s+gSpots\s*=\s*\[)[\s\S]*?(\];?)/, '$1\n' + spotsStr + '\n    $2');
+    }
 
-  // Patch workerZone
-  if (workerZone) {
-    src = src
-      .replace(/(const wH\s*=\s*)[\d.]+/, `$1${Math.round(workerZone.height)}`);
-    
-    if (workerZone.spots && workerZone.spots.length > 0) {
-      const sp = workerZone.spots;
+    // Patch workerZone
+    if (workerZone) {
+      src = src
+        .replace(/(\bconst\s+wH\s*=\s*)[\d.]+/, '$1' + Math.round(workerZone.height));
+      
+      if (workerZone.spots && workerZone.spots.length > 0) {
+        const sp = workerZone.spots;
+        const newSpots = sp.map((s, i) => {
+          return `      { x: W * ${s.xFrac.toFixed(4)}, y: H * ${s.yFrac.toFixed(4)} }${i < sp.length-1 ? ',' : ''}`;
+        }).join('\n');
+        // Match [ ... ] with or without semicolon
+        src = src.replace(
+          /(\bconst wSpots = \[)[\s\S]*?(\];?)/,
+          '$1\n' + newSpots + '\n    $2'
+        );
+      }
+    }
+
+    // Patch serverRoom spots[]
+    if (serverRoom && serverRoom.spots && serverRoom.spots.length === 4) {
+      const sp = serverRoom.spots;
       const newSpots = sp.map((s, i) => {
-        return `      { x: W * ${s.xFrac.toFixed(4)}, y: H * ${s.yFrac.toFixed(4)} }${i < sp.length-1 ? ',' : ''}`;
+        const label = ['back left','back right','front left','front right'][i];
+        return `      { x: W * ${s.xFrac.toFixed(4)}, y: H * ${s.yFrac.toFixed(4)} }, // ${label}`;
       }).join('\n');
+      // Match [ ... ] with or without semicolon
       src = src.replace(
-        /const wSpots = \[([\s\S]*?)\];/,
-        `const wSpots = [\n${newSpots}\n    ];`
+        /(\bconst spots = \[)[\s\S]*?(\];?)/,
+        '$1\n' + newSpots + '\n    $2'
       );
     }
-  }
 
-  // Patch serverRoom spots[]
-  if (serverRoom && serverRoom.spots && serverRoom.spots.length === 4) {
-    const sp = serverRoom.spots;
-    // Reconstruct offsets from absolute fracs — spots[0] is W*0.5 - offsetX
-    // We now store as plain fracs:
-    const newSpots = sp.map((s, i) => {
-      const label = ['back left','back right','front left','front right'][i];
-      return `      { x: W * ${s.xFrac.toFixed(4)}, y: H * ${s.yFrac.toFixed(4)} }, // ${label}`;
-    }).join('\n');
-    src = src.replace(
-      /const spots = \[([\s\S]*?)\];/,
-      `const spots = [\n${newSpots}\n    ];`
-    );
-  }
+    if (src === originalSrc) {
+      console.warn('[Editor Server] No changes were applied to the file (regex mismatch?)');
+      // We still return ok:true so the UI doesn't toast, 
+      // but this helps us debug.
+    }
 
-  fs.writeFileSync(sceneFile, src, 'utf8');
-  res.json({ ok: true });
+    fs.writeFileSync(sceneFile, src, 'utf8');
+    res.json({ success: true, ok: true });
+  } catch (err) {
+    console.error('[Editor Server] POST /api/zones error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─────────────────────────────────────────────────────────────────

@@ -192,6 +192,13 @@ const Game = (() => {
         }
     }
 
+    if (hwId === 'cluster') {
+        const owned = state.hardware[hwId] || 0;
+        if (owned >= 4) {
+            return { ok: false, message: `❌ Max 4 GPU Clusters reached.` };
+        }
+    }
+
     const cost = getNextHardwareCost(hw);
     if (state.money < cost) {
       return { ok: false, message: `💸 Need ${Fmt.money(cost)} to buy ${hw.name}!` };
@@ -206,6 +213,9 @@ const Game = (() => {
     }));
 
     const bigUpgrade = hwId === 'megaDC' || hwId === 'quantumDC';
+    // Immediate Save
+    if (typeof Save !== 'undefined') Save.save();
+
     return {
       ok: true,
       bigUpgrade,
@@ -242,6 +252,9 @@ const Game = (() => {
       detail: { text: `🧠 ${upg.badge}` },
     }));
 
+    // Immediate Save
+    if (typeof Save !== 'undefined') Save.save();
+
     return {
       ok: true,
       bigUpgrade: true,
@@ -260,21 +273,27 @@ const Game = (() => {
   function hireWorker() {
     const BASE_COST = 50;
     const COST_MULT = 1.18;
-    const owned     = state.inventory ? (state.inventory.workers || 0) : 0;
-    const cost      = Math.floor(BASE_COST * Math.pow(COST_MULT, owned));
+    const owned = state.inventory ? (state.inventory.workers || 0) : 0;
+    if (owned >= 5) {
+        return { ok: false, message: `❌ Max 5 staff members allowed.` };
+    }
 
+    const cost = Math.floor(BASE_COST * Math.pow(COST_MULT, owned));
     if (state.money < cost) {
       return { ok: false, message: `💸 Need ${Fmt.money(cost)} to hire a worker!` };
     }
 
     state.money -= cost;
     if (!state.inventory) state.inventory = { workers: 0, serverRacks: 0, dataCenters: 0 };
-    state.inventory.workers = (state.inventory.workers || 0) + 1;
+    state.inventory.workers++;
 
     // Notify Phaser to place a worker sprite
     window.dispatchEvent(new CustomEvent('SPAWN_WORKER', {
       detail: { type: 'worker' },
     }));
+
+    // Immediate Save
+    if (typeof Save !== 'undefined') Save.save();
 
     return { ok: true, message: `👨‍💻 Hired Worker #${state.inventory.workers}!` };
   }

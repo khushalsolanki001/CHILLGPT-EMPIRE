@@ -673,6 +673,8 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
             <input type="number" id="ze-g-h" min="10" max="400" step="5" /></div>
           <div class="zm-field"><label>GPU Width (px)</label>
             <input type="number" id="ze-g-w" min="10" max="600" step="5" /></div>
+          <div class="zm-field"><label>GPU Rotation (deg)</label>
+            <input type="number" id="ze-g-rot" min="0" max="360" step="90" /></div>
           <div class="zm-divider"></div>
           <div class="zm-field"><label>G0 X (frac)</label><input type="number" id="ze-g-x0" step="0.01"/></div>
           <div class="zm-field"><label>G0 Y (frac)</label><input type="number" id="ze-g-y0" step="0.01"/></div>
@@ -863,7 +865,9 @@ async function loadLayout() {
       refreshHier(); updateStatusCounts();
       toast(`Loaded ${data.objects.length} object(s) from saved layout ✓`, 3000);
     }
-  } catch { /* no saved layout yet */ }
+  } catch (err) {
+    console.warn('[Editor] Failed to load layout.json:', err);
+  }
   // auto-load bg
   const bg = bgImg;
   bg.src = 'assets/images/bg.png';
@@ -1496,14 +1500,22 @@ document.querySelectorAll('.ztab').forEach(t => {
     document.getElementById('ze-panel-gpu').style.display     = zActiveTab==='g'?'block':'none';
     document.getElementById('ze-panel-worker').style.display  = zActiveTab==='w'?'block':'none';
     document.getElementById('ze-panel-server').style.display  = zActiveTab==='server'?'block':'none';
-    renderZones();
+
+    // Switch background based on tab
+    const bgFile = (zActiveTab === 'g' || zActiveTab === 'server') ? 'server1.png' : 'bg.png';
+    if (!zBG.src.includes(bgFile)) {
+      zBG.src = 'assets/images/' + bgFile;
+      zBG.onload = () => renderZones();
+    } else {
+      renderZones();
+    }
   });
 });
 
 async function loadZoneData() {
   $('ze-status').textContent = 'Loading...';
   try {
-    const res = await fetch('http://localhost:3333/api/zones');
+    const res = await fetch(`${SERVER}/api/zones`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     zData = data;
@@ -1521,7 +1533,7 @@ $('ze-reload').addEventListener('click', async () => {
 
 const Z_INPUTS = {
   m: ['ze-m-lm', 'ze-m-rm', 'ze-m-sy', 'ze-m-sx', 'ze-m-sy2', 'ze-m-h'],
-  g: ['ze-g-h', 'ze-g-w', 'ze-g-x0', 'ze-g-y0', 'ze-g-x1', 'ze-g-y1', 'ze-g-x2', 'ze-g-y2', 'ze-g-x3', 'ze-g-y3'],
+  g: ['ze-g-h', 'ze-g-w', 'ze-g-rot', 'ze-g-x0', 'ze-g-y0', 'ze-g-x1', 'ze-g-y1', 'ze-g-x2', 'ze-g-y2', 'ze-g-x3', 'ze-g-y3'],
   w: ['ze-w-h', 'ze-w-x0', 'ze-w-y0', 'ze-w-x1', 'ze-w-y1', 'ze-w-x2', 'ze-w-y2', 'ze-w-x3', 'ze-w-y3', 'ze-w-x4', 'ze-w-y4'],
   server: ['ze-s-x0','ze-s-y0','ze-s-x1','ze-s-y1','ze-s-x2','ze-s-y2','ze-s-x3','ze-s-y3']
 };
@@ -1540,8 +1552,9 @@ function populateZInputs() {
     });
   }
   if (zData.gpuZone) {
-    if (zData.gpuZone.height) $('ze-g-h').value = zData.gpuZone.height;
-    if (zData.gpuZone.width)  $('ze-g-w').value = zData.gpuZone.width;
+    if (zData.gpuZone.height)   $('ze-g-h').value = zData.gpuZone.height;
+    if (zData.gpuZone.width)    $('ze-g-w').value = zData.gpuZone.width;
+    if (zData.gpuZone.rotation !== undefined) $('ze-g-rot').value = zData.gpuZone.rotation;
     if (zData.gpuZone.spots) {
       zData.gpuZone.spots.forEach((s,i) => {
         if ($('ze-g-x'+i)) $('ze-g-x'+i).value = (s.xFrac).toFixed(4);
@@ -1588,8 +1601,9 @@ function syncInputsToData() {
     zData.machineZone.height = val('ze-m-h');
   }
   if (zActiveTab === 'g') {
-    zData.gpuZone.height = val('ze-g-h');
-    zData.gpuZone.width  = val('ze-g-w');
+    zData.gpuZone.height   = val('ze-g-h');
+    zData.gpuZone.width    = val('ze-g-w');
+    zData.gpuZone.rotation = val('ze-g-rot');
     zData.gpuZone.spots.forEach((s,i) => {
       if ($('ze-g-x'+i)) s.xFrac = val('ze-g-x'+i);
       if ($('ze-g-y'+i)) s.yFrac = val('ze-g-y'+i);
@@ -1712,13 +1726,18 @@ function renderGPUZone(isLite) {
     const x = s.xFrac * zw;
     const y = s.yFrac * zh;
     
-    // Fill
+    // Fill & Border with rotation
+    zCtx.save();
+    zCtx.translate(x, y);
+    zCtx.rotate((m.rotation || 0) * Math.PI / 180);
+    
     zCtx.fillStyle = '#00ffaa44';
-    zCtx.fillRect(x - gpuW/2, y - gpuH, gpuW, gpuH);
-    // Border
+    zCtx.fillRect(-gpuW/2, -gpuH, gpuW, gpuH);
+    
     zCtx.strokeStyle = '#00ffaa';
     zCtx.lineWidth = 1;
-    zCtx.strokeRect(x - gpuW/2, y - gpuH, gpuW, gpuH);
+    zCtx.strokeRect(-gpuW/2, -gpuH, gpuW, gpuH);
+    zCtx.restore();
     
     // Label
     zCtx.fillStyle = '#00ffaa';
@@ -1840,19 +1859,22 @@ $('ze-apply').addEventListener('click', async () => {
   if(!zData) return;
   $('ze-status').textContent = 'Saving...';
   try {
-    const res = await fetch('http://localhost:3333/api/zones', {
+    const res = await fetch(`${SERVER}/api/zones`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(zData)
     });
-    const { success, error } = await res.json();
-    if(success) {
+    const data = await res.json();
+    if(data.success || data.ok) {
       $('ze-status').textContent = 'Saved to phaser-scene.js ✅';
       toast('Zone config saved to project!');
     }
-    else throw new Error(error);
+    else {
+      throw new Error(data.error || 'Unknown server error');
+    }
   } catch(err) {
-    $('ze-status').textContent = 'Failed: ' + err.message;
+    console.error(err);
+    $('ze-status').textContent = 'Failed: ' + (err.message || 'Connection Error');
   }
 });
 

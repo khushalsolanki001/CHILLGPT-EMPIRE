@@ -122,8 +122,9 @@ const UI = (() => {
       const cost   = Game.getNextHardwareCost(hw);
       const locked = Game.state.year < hw.requireYear;
       const canBuy = !locked && Game.state.money >= cost;
+      const maxed  = _isMaxed(hw.id);
 
-      const card = _el('div', `shop-card hw${locked ? ' locked' : ''}`);
+      const card = _el('div', `shop-card hw${locked ? ' locked' : ''}${maxed ? ' maxed' : ''}`);
       card.innerHTML = `
         <div class="card-icon">${hw.icon}</div>
         <div class="card-body">
@@ -133,17 +134,18 @@ const UI = (() => {
             <span class="badge badge-blue">+${hw.computePS} TF/s</span>
             <span class="badge badge-red">⚡ +${Fmt.money(hw.elecPS)}/s</span>
             ${locked ? `<span class="badge badge-purple">UNLOCKS ${hw.requireYear}</span>` : ''}
+            ${maxed ? `<span class="badge badge-red">MAX REACHED</span>` : ''}
           </div>
         </div>
         <div class="card-right">
           <div class="card-count">OWNED: <span>${owned}</span></div>
           <button
-            class="buy-btn${canBuy ? '' : ' cant-afford'}"
+            class="buy-btn${canBuy ? '' : ' cant-afford'}${maxed ? ' owned-btn' : ''}"
             data-hw="${hw.id}"
             onclick="UI.handleBuyHardware('${hw.id}')"
-            ${locked ? 'disabled' : ''}
+            ${locked || maxed ? 'disabled' : ''}
             aria-label="Buy ${hw.name} for ${Fmt.money(cost)}"
-          >${locked ? `🔒 ${hw.requireYear}` : Fmt.money(cost)}</button>
+          >${locked ? `🔒 ${hw.requireYear}` : maxed ? 'MAX' : Fmt.money(cost)}</button>
         </div>
       `;
       container.appendChild(card);
@@ -209,9 +211,10 @@ const UI = (() => {
     const owned   = Game.state.inventory ? (Game.state.inventory.workers || 0) : 0;
     const cost    = Game.getNextWorkerCost();
     const canBuy  = Game.state.money >= cost;
+    const maxed   = _isMaxed('worker');
 
     // Worker card
-    const card = _el('div', 'shop-card hw');
+    const card = _el('div', `shop-card hw${maxed ? ' maxed' : ''}`);
     card.innerHTML = `
       <div class="card-icon">👨‍💻</div>
       <div class="card-body">
@@ -220,16 +223,18 @@ const UI = (() => {
         <div class="card-badges">
           <span class="badge badge-green">+$2/s income</span>
           <span class="badge badge-blue">Fills office room</span>
+          ${maxed ? `<span class="badge badge-red">MAX REACHED (5)</span>` : ''}
         </div>
       </div>
       <div class="card-right">
         <div class="card-count">STAFF: <span>${owned}</span></div>
         <button
-          class="buy-btn${canBuy ? '' : ' cant-afford'}"
+          class="buy-btn${canBuy ? '' : ' cant-afford'}${maxed ? ' owned-btn' : ''}"
           id="btn-hire-worker"
           onclick="UI.handleHireWorker()"
+          ${maxed ? 'disabled' : ''}
           aria-label="Hire worker for ${Fmt.money(cost)}"
-        >${Fmt.money(cost)}</button>
+        >${maxed ? 'MAX' : Fmt.money(cost)}</button>
       </div>
     `;
     container.appendChild(card);
@@ -260,8 +265,14 @@ const UI = (() => {
       const locked  = Game.state.year < hw.requireYear;
       const cost    = Game.getNextHardwareCost(hw);
       const canBuy  = !locked && Game.state.money >= cost;
-      btn.classList.toggle('cant-afford', !canBuy);
-      if (!locked) btn.textContent = Fmt.money(cost);
+      const maxed   = _isMaxed(hw.id);
+
+      btn.classList.toggle('cant-afford', !canBuy && !maxed);
+      btn.classList.toggle('owned-btn', maxed);
+      btn.disabled = locked || maxed;
+
+      if (maxed) btn.textContent = 'MAX';
+      else if (!locked) btn.textContent = Fmt.money(cost);
     });
 
     $$('.buy-btn[data-ai]').forEach(btn => {
@@ -281,9 +292,24 @@ const UI = (() => {
     if (workerBtn) {
       const cost   = Game.getNextWorkerCost();
       const canBuy = Game.state.money >= cost;
-      workerBtn.classList.toggle('cant-afford', !canBuy);
-      workerBtn.textContent = Fmt.money(cost);
+      const maxed  = _isMaxed('worker');
+      workerBtn.classList.toggle('cant-afford', !canBuy && !maxed);
+      workerBtn.classList.toggle('owned-btn', maxed);
+      workerBtn.disabled = maxed;
+      workerBtn.textContent = maxed ? 'MAX' : Fmt.money(cost);
     }
+  }
+
+  function _isMaxed(id) {
+    if (id === 'cluster') return (Game.state.hardware[id] || 0) >= 4;
+    const isServer = ['rack', 'megaDC', 'quantumDC', 'server'].includes(id);
+    if (isServer) {
+      let total = 0;
+      ['rack', 'megaDC', 'quantumDC', 'server'].forEach(sid => total += (Game.state.hardware[sid] || 0));
+      return total >= 4;
+    }
+    if (id === 'worker') return (Game.state.inventory?.workers || 0) >= 5;
+    return false;
   }
 
 
@@ -723,7 +749,16 @@ const UI = (() => {
   }
 
   /**
-   * Append a section title row to a container.
+   * Helper to create an element with an optional class.
+   */
+  function _el(tag, cls) {
+    const el = document.createElement(tag);
+    if (cls) el.className = cls;
+    return el;
+  }
+
+  /**
+   * Add a section title row to a container.
    */
   function _sectionTitle(container, text) {
     const t = _el('div', 'shop-section-title');

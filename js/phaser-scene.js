@@ -92,7 +92,6 @@ class GameDevStoryScene extends Phaser.Scene {
     this._machineZone = null;
     this._workerSpots  = [];
     this._workerCount = 0;
-    this._clusterCount = 0;
     this._ok          = {};
   }
 
@@ -225,18 +224,6 @@ class GameDevStoryScene extends Phaser.Scene {
     const RIGHT_MARGIN = Math.round(W * 0.2500);  // ≈ 73px
     const MAX_X        = W - RIGHT_MARGIN;
 
-    const gH = 75;
-    const gW = 175;
-    const gSpots = [
-      { x: W * 0.2533, y: H * 0.8350 },
-      { x: W * 0.4483, y: H * 0.8350 },
-      { x: W * 0.6465, y: H * 0.8383 },
-      { x: W * 0.7583, y: H * 0.3328 }
-    ];
-    this._gpuHeight = gH;
-    this._gpuWidth  = gW;
-    this._gpuSpots  = gSpots;
-
     const mH = 40; // Fallback for other machines
     const mStartX   = Math.round(W * 0.8665);
     const mStartY   = Math.round(H * 0.8067);   // ≈ 456px on 600px canvas
@@ -249,7 +236,7 @@ class GameDevStoryScene extends Phaser.Scene {
     // -- STAFF / WORKER SPOTS (Adjusted by Live Editor) --
     const wH = 200;
     const wSpots = [
-      { x: W * 0.3400, y: H * 0.8176 },
+      { x: W * 0.3434, y: H * 0.8189 },
       { x: W * 0.4514, y: H * 0.8176 },
       { x: W * 0.5710, y: H * 0.8176 },
       { x: W * 0.6877, y: H * 0.8176 },
@@ -356,26 +343,9 @@ class GameDevStoryScene extends Phaser.Scene {
     // Servers are handled by the ServerRoomScene
     if (isServer) return;
 
-    const tH       = (hwId === 'cluster') ? (this._gpuHeight || 110) : (this._machineHeight || 110);
-    const v        = this._clusterCount % 4;
-    const pos      = (hwId === 'cluster') ? (this._gpuSpots[v] || this._nextZonePos(this._machineZone)) : this._nextZonePos(this._machineZone);
-    let   obj;
-
-    if (hwId === 'cluster') {
-      const key = `cluster_${v}`;
-      this._clusterCount++;
-
-      if (this._ok[key]) {
-        obj = this.add.sprite(pos.x, pos.y, key, 0)
-          .setOrigin(0.5, 1)
-          .setDepth(7);
-        const srcH = (v === 1) ? 75 : (v === 3 ? 80 : 81);
-        this._scaleToTargetH(obj, srcH, tH);
-        obj.play(`${key}_anim`);
-      }
-    } else {
-      obj = this._procMachine(pos.x, pos.y, hwId, tH);
-    }
+    const tH       = this._machineHeight || 110;
+    const pos      = this._nextZonePos(this._machineZone);
+    let   obj      = this._procMachine(pos.x, pos.y, hwId, tH);
 
     if (obj) this._popIn(obj);
 
@@ -467,19 +437,14 @@ class GameDevStoryScene extends Phaser.Scene {
     if (typeof Game === 'undefined') return;
     const st = Game.state;
 
-    // Workers — cap at 6 on load to avoid zone overflow
-    const wCount = Math.min(st.inventory?.workers ?? 0, 6);
+    // Workers — cap at 5 (new limit)
+    const wCount = Math.min(st.inventory?.workers ?? 0, 5);
     for (let i = 0; i < wCount; i++) this._onSpawnWorker({});
 
-    // Machines — ignore servers here (handled by ServerRoomScene)
-    const hwOrder = ['cluster'];
+    // Machines — ignore servers and clusters here
+    const hwOrder = []; // Nothing to sync here currently if we only have cluster (which moved)
     hwOrder.forEach(id => {
-      const count = Math.min(st.hardware?.[id] ?? 0, 3);
-      const hw    = typeof HARDWARE !== 'undefined'
-        ? HARDWARE.find(h => h.id === id) : null;
-      for (let i = 0; i < count; i++) {
-        this._onSpawnMachine({ hwId: id, computePS: hw?.computePS ?? 0 });
-      }
+      // Logic for other machines if added back
     });
   }
 
@@ -689,6 +654,7 @@ class ServerRoomScene extends Phaser.Scene {
     super({ key: 'ServerRoomScene' });
     this._ok = {};
     this._serverCount = 0;
+    this._clusterCount = 0;
   }
 
   preload() {
@@ -702,6 +668,14 @@ class ServerRoomScene extends Phaser.Scene {
     this.load.on('filecomplete-spritesheet-server_anim', () => ok('server_anim'));
     this.load.image('server', 'assets/images/server.png');
     this.load.on('filecomplete-image-server', () => ok('server'));
+
+    this.load.spritesheet('cluster_0', 'assets/images/gpu_cluster_sheet.png', { frameWidth: 250, frameHeight: 81 });
+    this.load.spritesheet('cluster_1', 'assets/images/gpu_cluster_sheet_1.png', { frameWidth: 250, frameHeight: 75 });
+    this.load.spritesheet('cluster_2', 'assets/images/gpu_cluster_sheet_2.png', { frameWidth: 250, frameHeight: 81 });
+    this.load.spritesheet('cluster_3', 'assets/images/gpu_cluster_sheet_3.png', { frameWidth: 250, frameHeight: 80 });
+    ['0','1','2','3'].forEach(i => {
+      this.load.on(`filecomplete-spritesheet-cluster_${i}`, () => ok(`cluster_${i}`));
+    });
   }
 
   create() {
@@ -743,6 +717,19 @@ class ServerRoomScene extends Phaser.Scene {
       }
     }
 
+    for (let i=0; i<4; i++) {
+      const key = `cluster_${i}`;
+      if (this.textures.exists(key) && !this.anims.exists(`${key}_anim`)) {
+        this.anims.create({
+          key: `${key}_anim`,
+          frames: this.anims.generateFrameNumbers(key, { start: 0, end: 1 }),
+          frameRate: 3 + i, 
+          repeat: -1,
+          yoyo: true
+        });
+      }
+    }
+
     // 4. Wire events
     window.addEventListener('SPAWN_MACHINE', (e) => this._onSpawnMachine(e.detail));
     
@@ -754,14 +741,51 @@ class ServerRoomScene extends Phaser.Scene {
     const hwId = detail.hwId || 'cluster';
     const isServer = ['rack', 'megaDC', 'quantumDC', 'server'].includes(hwId);
     
-    // Only handle servers
-    if (!isServer) return;
-    
-    // Max 4 servers according to instructions
-    if (this._serverCount >= 4) return;
-    
     const W = this.scale.width;
     const H = this.scale.height;
+
+    // GPU CLUSTER CONFIG (Adjusted by Live Editor)
+    const gH = 50;
+    const gW = 164;
+    const gRot = 90;
+    const gSpots = [
+      { x: W * 0.1888, y: H * 0.7072 },
+      { x: W * 0.1906, y: H * 0.6041 },
+      { x: W * 0.1910, y: H * 0.5070 },
+      { x: W * 0.1931, y: H * 0.4131 }
+    ];
+
+    if (hwId === 'cluster') {
+      const v = this._clusterCount % 4;
+      const pos = gSpots[v] || { x: W * 0.5, y: H * 0.5 };
+      this._clusterCount++;
+
+      const key = `cluster_${v}`;
+      const tH  = gH;
+      let   obj;
+
+      if (this.textures.exists(key)) {
+        obj = this.add.sprite(pos.x, pos.y, key, 0)
+          .setOrigin(0.5, 1)
+          .setAngle(gRot)
+          .setDepth(7);
+        const srcH = (v === 1) ? 75 : (v === 3 ? 80 : 81);
+        this._scaleToTargetH(obj, srcH, tH);
+        if (this.anims.exists(`${key}_anim`)) {
+          obj.play(`${key}_anim`);
+        }
+      }
+
+      if (obj) this._popIn(obj);
+      if (this.scene.isActive()) this.cameras.main.shake(90, 0.002);
+      return;
+    }
+
+    // Only handle servers beyond this point
+    if (!isServer) return;
+    
+    // Max 4 servers 
+    if (this._serverCount >= 4) return;
     
     // 2x2 grid — positions set by Live Zone Editor (W/H fractions, auto-scale)
     const spots = [
@@ -821,8 +845,15 @@ class ServerRoomScene extends Phaser.Scene {
 
   _syncWithGameState() {
     this._serverCount = 0;
+    this._clusterCount = 0;
     if (typeof Game === 'undefined') return;
     const st = Game.state;
+
+    // GPU Clusters
+    const clusterCount = Math.min(st.hardware?.cluster ?? 0, 4);
+    for (let i = 0; i < clusterCount; i++) {
+      this._onSpawnMachine({ hwId: 'cluster' });
+    }
 
     // Hardware checks
     const hwOrder = ['rack', 'megaDC', 'quantumDC', 'server'];
