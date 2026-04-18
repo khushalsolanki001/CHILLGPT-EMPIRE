@@ -230,18 +230,20 @@ class GameDevStoryScene extends Phaser.Scene {
     const MAX_X        = W - RIGHT_MARGIN;
 
     const gH = 110;
+    const gW = 330;
     const gSpots = [
-      { x: W * 0.4000, y: H * 0.4500 },
-      { x: W * 0.5000, y: H * 0.4500 },
-      { x: W * 0.6000, y: H * 0.4500 },
-      { x: W * 0.7000, y: H * 0.4500 }
+      { x: W * 0.2500, y: H * 0.4500 },
+      { x: W * 0.4200, y: H * 0.4500 },
+      { x: W * 0.5900, y: H * 0.4500 },
+      { x: W * 0.7600, y: H * 0.4500 }
     ];
     this._gpuHeight = gH;
+    this._gpuWidth  = gW;
     this._gpuSpots  = gSpots;
 
     const mH = 40; // Fallback for other machines
-    const mStartX   = Math.round(W * 0.3871);
-    const mStartY   = Math.round(H * 0.4244);   // ≈ 456px on 600px canvas
+    const mStartX   = Math.round(W * 0.2963);
+    const mStartY   = Math.round(H * 0.5825);   // ≈ 456px on 600px canvas
     const mSpacingX = 10;   // wide enough for 110–160px‐wide sprite art
     const mSpacingY = 10;    // row-wrap vertical gap
 
