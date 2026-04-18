@@ -670,7 +670,9 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
         <div id="ze-panel-gpu" style="display:none">
           <div class="zm-side-hdr">🔋 GPU Clusters (G0-G3)</div>
           <div class="zm-field"><label>GPU Height (px)</label>
-            <input type="number" id="ze-g-h" min="40" max="300" step="5" /></div>
+            <input type="number" id="ze-g-h" min="10" max="400" step="5" /></div>
+          <div class="zm-field"><label>GPU Width (px)</label>
+            <input type="number" id="ze-g-w" min="10" max="600" step="5" /></div>
           <div class="zm-divider"></div>
           <div class="zm-field"><label>G0 X (frac)</label><input type="number" id="ze-g-x0" step="0.01"/></div>
           <div class="zm-field"><label>G0 Y (frac)</label><input type="number" id="ze-g-y0" step="0.01"/></div>
@@ -754,6 +756,9 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
 <!-- ══════════════════════════════════════════════════════════════ -->
 <script>
 'use strict';
+// ─── UTILS ─────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
 // ─── CONSTANTS — must match GAME_W / GAME_H in phaser-scene.js ────
 const W = 1208, H = 600;        // ← same as Phaser fixed canvas size
 const SERVER = 'http://localhost:3333';
@@ -771,9 +776,11 @@ let isDrag         = false, dragSt   = {};
 let isResize       = false, resizeSt = {}, resizeHdl = '';
 let isRotate       = false, rotateSt = {};
 
-const vp     = document.getElementById('vp');
-const layer  = document.getElementById('obj-layer');
-const bgImg  = document.getElementById('vp-bg');
+let zDragData      = null; // Handle tracking
+
+const vp     = $('vp');
+const layer  = $('obj-layer');
+const bgImg  = $('vp-bg');
 
 // ─── INIT ──────────────────────────────────────────────────────
 async function init() {
@@ -810,7 +817,7 @@ async function loadAssets() {
 }
 
 function buildAssetGrid(list) {
-  const grid = document.getElementById('asset-grid');
+  const grid = $('asset-grid');
   grid.innerHTML = '';
   list.forEach(a => {
     const el = document.createElement('div');
@@ -1354,7 +1361,7 @@ document.getElementById('fi-img').addEventListener('change', e => {
   Array.from(e.target.files).forEach(file => {
     const key = file.name.replace(/\.[^.]+$/,'');
     // add to grid
-    const grid = document.getElementById('asset-grid');
+    const grid = $('asset-grid');
     const el = document.createElement('div');
     el.className = 'at'; el.draggable = true;
     const img = document.createElement('img');
@@ -1381,14 +1388,14 @@ document.getElementById('btn-clear').addEventListener('click', ()=> {
 });
 
 // ─── VIEW CODE ─────────────────────────────────────────────────
-document.getElementById('btn-code').addEventListener('click', ()=> {
-  document.getElementById('code-out').value = buildCodePreview();
-  document.getElementById('code-modal').classList.add('open');
+$('btn-code').addEventListener('click', ()=> {
+  $('code-out').value = buildCodePreview();
+  $('code-modal').classList.add('open');
 });
-document.getElementById('cm-close').addEventListener('click',    ()=> document.getElementById('code-modal').classList.remove('open'));
-document.getElementById('btn-cm-close').addEventListener('click',()=> document.getElementById('code-modal').classList.remove('open'));
-document.getElementById('btn-copy').addEventListener('click',    ()=> {
-  navigator.clipboard.writeText(document.getElementById('code-out').value)
+$('cm-close').addEventListener('click',    ()=> $('code-modal').classList.remove('open'));
+$('btn-cm-close').addEventListener('click',()=> $('code-modal').classList.remove('open'));
+$('btn-copy').addEventListener('click',    ()=> {
+  navigator.clipboard.writeText($('code-out').value)
     .then(()=> toast('Copied! ✓'));
 });
 
@@ -1433,7 +1440,7 @@ function buildCodePreview() {
 }
 
 // ─── SAVE BUTTON ───────────────────────────────────────────────
-document.getElementById('btn-save').addEventListener('click', saveLayout);
+$('btn-save').addEventListener('click', saveLayout);
 
 // ─── TOAST ─────────────────────────────────────────────────────
 let tTimer;
@@ -1444,15 +1451,13 @@ function toast(msg, dur=2600) {
 }
 
 // ─── LIVE ZONE EDITOR ──────────────────────────────────────────────
-const zCodeModal = document.getElementById('zone-modal');
-const zCanvas = document.getElementById('ze-canvas');
+const zCodeModal = $('zone-modal');
+const zCanvas = $('ze-canvas');
 const zCtx = zCanvas.getContext('2d');
-const zOverlay = document.getElementById('ze-overlay');
+const zOverlay = $('ze-overlay');
 
 let zData = null;
-const $ = id => document.getElementById(id);
-let zActiveTab = 'm'; // 'm' | 'g' | 'w' | 'server'
-const RefW = 1208, RefH = 600;
+let zActiveTab = 'm'; 
 let zBG = new Image();
 zBG.src = 'assets/images/bg.png';
 
@@ -1468,11 +1473,11 @@ document.getElementById('btn-zone-edit').addEventListener('click', async () => {
 });
 
 ['ze-close'].forEach(id => {
-  document.getElementById(id)?.addEventListener('click', () => {
+  $(id)?.addEventListener('click', () => {
     zCodeModal.classList.remove('open');
   });
 });
-document.getElementById('ze-reset-game').addEventListener('click', () => {
+$('ze-reset-game').addEventListener('click', () => {
   if(confirm("DANGER: Wipe ALL game progress and start fresh from 2016?")) {
     console.log("Resetting game data...");
     localStorage.clear();
@@ -1499,49 +1504,32 @@ document.querySelectorAll('.ztab').forEach(t => {
 });
 
 async function loadZoneData() {
-  document.getElementById('ze-status').textContent = 'Loading...';
+  $('ze-status').textContent = 'Loading...';
   try {
     const res = await fetch('http://localhost:3333/api/zones');
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     zData = data;
-    document.getElementById('ze-status').textContent = 'Loaded from phaser-scene.js';
+    $('ze-status').textContent = 'Loaded from phaser-scene.js';
     populateZInputs();
   } catch(err) {
-    document.getElementById('ze-status').textContent = 'Error: ' + err.message;
+    $('ze-status').textContent = 'Error: ' + err.message;
   }
 }
 
-document.getElementById('ze-reload').addEventListener('click', async () => {
+$('ze-reload').addEventListener('click', async () => {
   await loadZoneData();
   renderZones();
 });
 
 const Z_INPUTS = {
   m: ['ze-m-lm', 'ze-m-rm', 'ze-m-sy', 'ze-m-sx', 'ze-m-sy2', 'ze-m-h'],
-  g: ['ze-g-h', 'ze-g-x0', 'ze-g-y0', 'ze-g-x1', 'ze-g-y1', 'ze-g-x2', 'ze-g-y2', 'ze-g-x3', 'ze-g-y3'],
+  g: ['ze-g-h', 'ze-g-w', 'ze-g-x0', 'ze-g-y0', 'ze-g-x1', 'ze-g-y1', 'ze-g-x2', 'ze-g-y2', 'ze-g-x3', 'ze-g-y3'],
   w: ['ze-w-h', 'ze-w-x0', 'ze-w-y0', 'ze-w-x1', 'ze-w-y1', 'ze-w-x2', 'ze-w-y2', 'ze-w-x3', 'ze-w-y3', 'ze-w-x4', 'ze-w-y4'],
   server: ['ze-s-x0','ze-s-y0','ze-s-x1','ze-s-y1','ze-s-x2','ze-s-y2','ze-s-x3','ze-s-y3']
 };
 
-function createHandle(x, y, id, onDrag) {
-  const h = document.createElement('div');
-  h.className = 'ze-handle'; h.id = 'zh_'+id;
-  h.style.left = x + 'px';
-  h.style.top = y + 'px';
-  h.addEventListener('mousedown', e => {
-    if(e.button !== 0) return;
-    e.preventDefault(); e.stopPropagation();
-    zDragData = { 
-      startX: e.clientX, startY: e.clientY, 
-      initX: x, initY: y,
-      handle: h,
-      onDrag 
-    };
-  });
-  zOverlay.appendChild(h);
-  return h;
-}
+
 
 function populateZInputs() {
   if (!zData) return;
@@ -1556,6 +1544,7 @@ function populateZInputs() {
   }
   if (zData.gpuZone) {
     if (zData.gpuZone.height) $('ze-g-h').value = zData.gpuZone.height;
+    if (zData.gpuZone.width)  $('ze-g-w').value = zData.gpuZone.width;
     if (zData.gpuZone.spots) {
       zData.gpuZone.spots.forEach((s,i) => {
         if ($('ze-g-x'+i)) $('ze-g-x'+i).value = (s.xFrac).toFixed(4);
@@ -1603,6 +1592,7 @@ function syncInputsToData() {
   }
   if (zActiveTab === 'g') {
     zData.gpuZone.height = val('ze-g-h');
+    zData.gpuZone.width  = val('ze-g-w');
     zData.gpuZone.spots.forEach((s,i) => {
       if ($('ze-g-x'+i)) s.xFrac = val('ze-g-x'+i);
       if ($('ze-g-y'+i)) s.yFrac = val('ze-g-y'+i);
@@ -1626,11 +1616,14 @@ function syncInputsToData() {
 let zw = 604, zh = 300, zScale = 0.5;
 
 function resizeZCanvas() {
-  const p = zCanvas.parentElement.getBoundingClientRect();
-  const ar = RefW/RefH;
-  // Use 85% of space to leave visible padding
-  const availW = p.width * 0.85;
-  const availH = p.height * 0.85;
+  const parent = zCanvas.parentElement;
+  if (!parent) return;
+  const p = parent.getBoundingClientRect();
+  const ar = W / H;
+  
+  // Use 90% of modal space
+  const availW = p.width * 0.9;
+  const availH = p.height * 0.9;
 
   if (availW / availH > ar) {
     zh = availH; zw = zh * ar;
@@ -1646,7 +1639,7 @@ function resizeZCanvas() {
   zOverlay.style.width  = zw + 'px';
   zOverlay.style.height = zh + 'px';
   
-  zScale = zw / RefW;
+  zScale = zw / W;
 }
 window.addEventListener('resize', () => { if(zCodeModal.classList.contains('open')) { resizeZCanvas(); renderZones(); }});
 
@@ -1716,20 +1709,31 @@ function renderGPUZone(isLite) {
   if (!m || !m.spots) return;
 
   const gpuH = (m.height || 110) * zScale;
-  const gpuW = gpuH * 3.0; // 250x81 is roughly 3:1 aspect ratio
+  const gpuW = (m.width || 330) * zScale;
 
   m.spots.forEach((s, i) => {
     const x = s.xFrac * zw;
     const y = s.yFrac * zh;
-    zCtx.fillStyle = '#00ffaa66';
+    
+    // Fill
+    zCtx.fillStyle = '#00ffaa44';
     zCtx.fillRect(x - gpuW/2, y - gpuH, gpuW, gpuH);
+    // Border
+    zCtx.strokeStyle = '#00ffaa';
+    zCtx.lineWidth = 1;
+    zCtx.strokeRect(x - gpuW/2, y - gpuH, gpuW, gpuH);
+    
+    // Label
+    zCtx.fillStyle = '#00ffaa';
+    zCtx.font = '10px Arial';
+    zCtx.fillText(`GPU G${i}`, x - 20, y - gpuH - 5);
 
     if (!isLite) {
       const hX = x;
       const hY = y;
       const h = createHandle(hX, hY, 'g' + i, (dx, dy) => {
-        s.xFrac = Math.max(-0.1, Math.min(1.1, (hX + dx) / zw));
-        s.yFrac = Math.max(-0.1, Math.min(1.1, (hY + dy) / zh));
+        s.xFrac = Math.max(0, Math.min(1, (hX + dx) / zw));
+        s.yFrac = Math.max(0, Math.min(1, (hY + dy) / zh));
       });
       h.style.width = gpuW + 'px';
       h.style.height = gpuH + 'px';
@@ -1795,42 +1799,12 @@ function renderServerZone(isLite) {
     }
   });
 }
-
-let zDragData = null;
-function createHandle(x, y, id, onDrag) {
-  const h = document.createElement('div');
-  h.className = 'ze-handle'; h.id = 'zh_'+id;
-  
-  h.style.left = x + 'px';
-  h.style.top = y + 'px';
-  h.style.background = 'rgba(255,255,255,0.05)';
-  h.style.border = '1px solid rgba(255,255,0,0.3)';
-  h.innerHTML = `<span style="position:absolute; bottom:2px; left:2px; font-size:9px; color:#fff; background:rgba(0,0,0,0.5); padding:1px 3px; border-radius:3px; pointer-events:none;">${id}</span>`;
-  
-  h.addEventListener('mousedown', e => {
-    if(e.button !== 0) return;
-    e.preventDefault(); e.stopPropagation();
-    zDragData = { startX: e.clientX, startY: e.clientY, onDrag };
-  });
-  zOverlay.appendChild(h);
-}
-
-document.addEventListener('mousemove', e => {
-  if(!zDragData) return;
-  const dx = e.clientX - zDragData.startX;
-  const dy = e.clientY - zDragData.startY;
-  zDragData.onDrag(dx, dy);
-  populateZInputs();
-  renderZones();
-});
-
-document.addEventListener('mouseup', () => { zDragData = null; });
-
 function onMove(e) {
   if(!zDragData) return;
   const dx = e.clientX - zDragData.startX;
   const dy = e.clientY - zDragData.startY;
   zDragData.onDrag(dx, dy);
+  populateZInputs(); // Ensure fields update while dragging
   renderZones(true);
 }
 function onUp() {
@@ -1846,13 +1820,17 @@ function createHandle(x, y, id, onDrag) {
   h.className = 'ze-handle'; h.id = 'zh_'+id;
   h.style.left = x + 'px';
   h.style.top = y + 'px';
-  h.style.background = 'rgba(255,255,255,0.05)';
-  h.style.border = '1px solid rgba(255,255,0,0.3)';
+  h.style.position = 'absolute';
+  h.style.pointerEvents = 'auto'; // CRITICAL: ensure handles are clickable
+  h.style.background = 'rgba(255,255,0,0.1)';
+  h.style.border = '2px solid rgba(255,255,0,0.6)';
+  h.style.cursor = 'grab';
   h.innerHTML = `<span style="position:absolute; bottom:2px; left:2px; font-size:9px; color:#fff; background:rgba(0,0,0,0.5); padding:1px 3px; border-radius:3px; pointer-events:none;">${id}</span>`;
   
   h.addEventListener('mousedown', e => {
     if(e.button !== 0) return;
     e.preventDefault(); e.stopPropagation();
+    h.style.cursor = 'grabbing';
     zDragData = { h, id, onDrag, startX: e.clientX, startY: e.clientY };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
@@ -1861,9 +1839,9 @@ function createHandle(x, y, id, onDrag) {
   return h;
 }
 
-document.getElementById('ze-apply').addEventListener('click', async () => {
+$('ze-apply').addEventListener('click', async () => {
   if(!zData) return;
-  document.getElementById('ze-status').textContent = 'Saving...';
+  $('ze-status').textContent = 'Saving...';
   try {
     const res = await fetch('http://localhost:3333/api/zones', {
       method: 'POST',
@@ -1872,12 +1850,12 @@ document.getElementById('ze-apply').addEventListener('click', async () => {
     });
     const { success, error } = await res.json();
     if(success) {
-      document.getElementById('ze-status').textContent = 'Saved to phaser-scene.js ✅';
+      $('ze-status').textContent = 'Saved to phaser-scene.js ✅';
       toast('Zone config saved to project!');
     }
     else throw new Error(error);
   } catch(err) {
-    document.getElementById('ze-status').textContent = 'Failed: ' + err.message;
+    $('ze-status').textContent = 'Failed: ' + err.message;
   }
 });
 
