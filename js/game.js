@@ -42,7 +42,6 @@ const Game = (() => {
 
       /* Counts of each hardware tier purchased */
       hardware: {
-        gpu:       0,
         cluster:   0,
         rack:      0,
         megaDC:    0,
