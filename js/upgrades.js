@@ -11,28 +11,7 @@
  */
 
 const HARDWARE = [
-  {
-    id:          'gpu',
-    name:        'Basic GPU',
-    icon:        '🖥️',
-    desc:        'A trusty NVIDIA consumer GPU. Small but it computes.',
-    /** Compute added per unit per second (TF/s) */
-    computePS:   0.5,
-    /** Electricity cost added per unit per second ($) */
-    elecPS:      0.05,
-    /** Starting purchase price */
-    baseCost:    30,
-    /** Price multiplier per purchase (creates escalating cost curve) */
-    costMult:    1.12,
-    /** Visual machine CSS class */
-    cssClass:    'm-gpu',
-    /** Which display row to slot into */
-    row:         'front',
-    /** Year this hardware becomes available */
-    requireYear: 2016,
-    /** Cap on how many visual copies to render */
-    maxRender:   8,
-  },
+
   {
     id:          'cluster',
     name:        'GPU Cluster',
@@ -202,10 +181,10 @@ const MASCOT_QUIPS = [
   'Vibes & teraflops, bro 😎',
   'Training... and chilling 🧊',
   'We do compute different here 🤙',
-  'GPUs don\'t sleep, neither do I 💪',
+  'Servers don\'t sleep, neither do I 💪',
   'More servers, more chill 🏖️',
   'The AI is real. The stress is not. ✌️',
-  'Buy the dip... in GPUs 📈',
+  'Buy the dip... in compute 📈',
   'We gonna win the Arena fr fr 🏆',
   'Electricity costs? Skill issue 🔥',
   'ChillGPT is inevitable 🤖',
