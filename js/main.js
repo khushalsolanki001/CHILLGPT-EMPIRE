@@ -80,7 +80,7 @@
     if (hasSave) {
       UI.toast('💾 Save loaded! Welcome back to ChillGPT Empire.', 't-green');
     } else {
-      UI.toast('👋 Welcome! Buy your first GPU and start computing.', '');
+      UI.toast('👋 Welcome! Buy your first cluster and start computing.', '');
       UI.mascotSpeak();
     }
   }, 900);
