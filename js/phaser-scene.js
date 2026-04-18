@@ -30,10 +30,10 @@ const FRAME_H = 1024;
 // These are the final rendered sizes. Scale is derived automatically.
 // ─────────────────────────────────────────────────────────────────
 const TARGET_H = {
-  worker:    160,  // desk + seated worker
-  cluster:   130,  // GPU cluster (slightly taller)
-  rack:      160,  // server rack (tall cabinet)
-  megaDC:    185,  // mega DC
+  worker: 160,  // desk + seated worker
+  cluster: 130,  // GPU cluster (slightly taller)
+  rack: 160,  // server rack (tall cabinet)
+  megaDC: 185,  // mega DC
   quantumDC: 210,  // quantum DC (largest)
 };
 
@@ -56,8 +56,8 @@ function makeZone(startX, startY, spacingX, spacingY, maxX) {
     spacingX,  // horizontal gap between item centres
     spacingY,  // vertical gap when wrapping to a new row
     maxX,      // right boundary before row-wrap
-    currentX:  startX,
-    currentY:  startY,
+    currentX: startX,
+    currentY: startY,
   };
 }
 
@@ -65,20 +65,20 @@ function makeZone(startX, startY, spacingX, spacingY, maxX) {
 // WARM RETRO COLOUR PALETTE (procedural fallback only)
 // ─────────────────────────────────────────────────────────────────
 const C = {
-  wall:       0xd4b882,  wallStripe: 0xc0a870,
-  floor:      0xb89050,  floorAlt:   0xa87e40,
-  skirting:   0x7a5230,  ceiling:    0xe8d4a8,
-  lightPanel: 0xfff0c0,  winFrame:   0x6a3c14,
-  winGlass:   0x90c4e8,  winSky:     0x5aa0d0,
-  cityBldg:   0x2a3848,  poster:     0xe8a840,
-  deskWood:   0x9c6830,  deskEdge:   0x5a3810,
-  monCase:    0xd0c8b0,  monScr:     0x2a3c18,
-  chairBack:  0x3850a0,  gpuPCB:     0x6a8c2a,
-  gpuEdge:    0x3a5010,  gpuFan:     0xb0b8c0,
-  rackBody:   0x606870,  rackEdge:   0x2a2e34,
-  ledR:       0xe03030,  ledG:       0x30d050,
-  feedGold:   0xc8960c,  feedGreen:  0x3d7a2e,
-  feedBlue:   0x1e5fa8,  black:      0x000000,
+  wall: 0xd4b882, wallStripe: 0xc0a870,
+  floor: 0xb89050, floorAlt: 0xa87e40,
+  skirting: 0x7a5230, ceiling: 0xe8d4a8,
+  lightPanel: 0xfff0c0, winFrame: 0x6a3c14,
+  winGlass: 0x90c4e8, winSky: 0x5aa0d0,
+  cityBldg: 0x2a3848, poster: 0xe8a840,
+  deskWood: 0x9c6830, deskEdge: 0x5a3810,
+  monCase: 0xd0c8b0, monScr: 0x2a3c18,
+  chairBack: 0x3850a0, gpuPCB: 0x6a8c2a,
+  gpuEdge: 0x3a5010, gpuFan: 0xb0b8c0,
+  rackBody: 0x606870, rackEdge: 0x2a2e34,
+  ledR: 0xe03030, ledG: 0x30d050,
+  feedGold: 0xc8960c, feedGreen: 0x3d7a2e,
+  feedBlue: 0x1e5fa8, black: 0x000000,
 };
 
 // ─────────────────────────────────────────────────────────────────
@@ -90,9 +90,9 @@ class GameDevStoryScene extends Phaser.Scene {
   constructor() {
     super({ key: 'GameDevStoryScene' });
     this._machineZone = null;
-    this._workerSpots  = [];
+    this._workerSpots = [];
     this._workerCount = 0;
-    this._ok          = {};
+    this._ok = {};
   }
 
   // ── PRELOAD ────────────────────────────────────────────────────
@@ -119,15 +119,15 @@ class GameDevStoryScene extends Phaser.Scene {
     this.load.spritesheet('cluster_1', 'assets/images/gpu_cluster_sheet_1.png', { frameWidth: 250, frameHeight: 75 });
     this.load.spritesheet('cluster_2', 'assets/images/gpu_cluster_sheet_2.png', { frameWidth: 250, frameHeight: 81 });
     this.load.spritesheet('cluster_3', 'assets/images/gpu_cluster_sheet_3.png', { frameWidth: 250, frameHeight: 80 });
-    ['0','1','2','3'].forEach(i => {
+    ['0', '1', '2', '3'].forEach(i => {
       this.load.on(`filecomplete-spritesheet-cluster_${i}`, () => ok(`cluster_${i}`));
     });
 
     // Static fallback images
-    this.load.image('desk',   'assets/images/desk1.png');  // file is desk1.png (not desk.png)
+    this.load.image('desk', 'assets/images/desk1.png');  // file is desk1.png (not desk.png)
 
     this.load.image('server', 'assets/images/server.png');
-    this.load.on('filecomplete-image-desk',   () => ok('desk'));
+    this.load.on('filecomplete-image-desk', () => ok('desk'));
     this.load.on('filecomplete-image-server', () => ok('server'));
     // ── EDITOR_PRELOAD_BEGIN ──
     // ── EDITOR_PRELOAD_END ──
@@ -164,15 +164,15 @@ class GameDevStoryScene extends Phaser.Scene {
     this._createAnimations();
 
     // 4. Wire CustomEvents from UI/game.js
-    window.addEventListener('SPAWN_WORKER',   (e) => this._onSpawnWorker(e.detail));
-    window.addEventListener('SPAWN_MACHINE',  (e) => this._onSpawnMachine(e.detail));
+    window.addEventListener('SPAWN_WORKER', (e) => this._onSpawnWorker(e.detail));
+    window.addEventListener('SPAWN_MACHINE', (e) => this._onSpawnMachine(e.detail));
     window.addEventListener('SPAWN_FEEDBACK', (e) => this._onSpawnFeedback(e.detail));
 
     // 5. Ambient tick — typing emoji near workers
     this.time.addEvent({
-      delay:         2400,
-      loop:          true,
-      callback:      this._ambientTick,
+      delay: 2400,
+      loop: true,
+      callback: this._ambientTick,
       callbackScope: this,
     });
 
@@ -220,13 +220,13 @@ class GameDevStoryScene extends Phaser.Scene {
     // LEFT_MARGIN: skip the mascot + window area on the far left.
     // RIGHT_MARGIN: leave a gap before the shop panel shadow.
 
-    const LEFT_MARGIN  = Math.round(W * 0.3200);  // ≈ 267px — past windows+mascot
+    const LEFT_MARGIN = Math.round(W * 0.3200);  // ≈ 267px — past windows+mascot
     const RIGHT_MARGIN = Math.round(W * 0.2500);  // ≈ 73px
-    const MAX_X        = W - RIGHT_MARGIN;
+    const MAX_X = W - RIGHT_MARGIN;
 
     const mH = 40; // Fallback for other machines
-    const mStartX   = Math.round(W * 0.8665);
-    const mStartY   = Math.round(H * 0.8067);   // ≈ 456px on 600px canvas
+    const mStartX = Math.round(W * 0.8665);
+    const mStartY = Math.round(H * 0.8067);   // ≈ 456px on 600px canvas
     const mSpacingX = 10;   // wide enough for 110–160px‐wide sprite art
     const mSpacingY = 10;    // row-wrap vertical gap
 
@@ -262,7 +262,7 @@ class GameDevStoryScene extends Phaser.Scene {
 
     // Wrap to next row when past right boundary
     if (zone.currentX > zone.maxX) {
-      zone.currentX  = zone.startX;
+      zone.currentX = zone.startX;
       zone.currentY += zone.spacingY;   // shift down for new row
     }
 
@@ -287,13 +287,13 @@ class GameDevStoryScene extends Phaser.Scene {
       });
     }
 
-    for (let i=0; i<4; i++) {
+    for (let i = 0; i < 4; i++) {
       const key = `cluster_${i}`;
       if (this._ok[key]) {
         this.anims.create({
           key: `${key}_anim`,
           frames: this.anims.generateFrameNumbers(key, { start: 0, end: 1 }),
-          frameRate: 3 + i, 
+          frameRate: 3 + i,
           repeat: -1,
           yoyo: true
         });
@@ -309,8 +309,8 @@ class GameDevStoryScene extends Phaser.Scene {
     const spots = this._workerSpots || [];
     const pos = spots[this._workerCount % spots.length] || { x: W * 0.5, y: H * 0.9 };
     this._workerCount++;
-    const tH  = this._workerHeight || 150;
-    let   obj;
+    const tH = this._workerHeight || 150;
+    let obj;
 
     if (this._ok['worker_anim']) {
       obj = this.add.sprite(pos.x, pos.y, 'worker_anim', 0)
@@ -337,15 +337,15 @@ class GameDevStoryScene extends Phaser.Scene {
   // ── SPAWN: MACHINE ─────────────────────────────────────────────
 
   _onSpawnMachine(detail) {
-    const hwId     = detail.hwId || 'cluster';
+    const hwId = detail.hwId || 'cluster';
     const isServer = ['rack', 'megaDC', 'quantumDC', 'server'].includes(hwId);
-    
+
     // Servers are handled by the ServerRoomScene
     if (isServer) return;
 
-    const tH       = this._machineHeight || 110;
-    const pos      = this._nextZonePos(this._machineZone);
-    let   obj      = this._procMachine(pos.x, pos.y, hwId, tH);
+    const tH = this._machineHeight || 110;
+    const pos = this._nextZonePos(this._machineZone);
+    let obj = this._procMachine(pos.x, pos.y, hwId, tH);
 
     if (obj) this._popIn(obj);
 
@@ -383,10 +383,10 @@ class GameDevStoryScene extends Phaser.Scene {
     const ts = obj._ts ?? obj.scaleX;
     obj.setScale(0.001);
     this.tweens.add({
-      targets:  obj,
-      scaleX:   ts,
-      scaleY:   ts,
-      ease:     'Back.easeOut',
+      targets: obj,
+      scaleX: ts,
+      scaleY: ts,
+      ease: 'Back.easeOut',
       duration: 420,
     });
   }
@@ -397,18 +397,18 @@ class GameDevStoryScene extends Phaser.Scene {
     const hex = '#' + color.toString(16).padStart(6, '0');
     const txt = this.add.text(x, y, text, {
       fontFamily: '"Press Start 2P", monospace',
-      fontSize:   '9px',
-      color:      hex,
-      stroke:     '#ffffff',
+      fontSize: '9px',
+      color: hex,
+      stroke: '#ffffff',
       strokeThickness: 3,
     }).setOrigin(0.5).setDepth(25);
 
     this.tweens.add({
-      targets:    txt,
-      y:          y - 58,
-      alpha:      { from: 1, to: 0 },
-      duration:   1600,
-      ease:       'Cubic.easeOut',
+      targets: txt,
+      y: y - 58,
+      alpha: { from: 1, to: 0 },
+      duration: 1600,
+      ease: 'Cubic.easeOut',
       onComplete: () => txt.destroy(),
     });
   }
@@ -454,7 +454,7 @@ class GameDevStoryScene extends Phaser.Scene {
   // ─────────────────────────────────────────────────────────────
 
   _drawRetroRoom(W, H) {
-    const g     = this.add.graphics().setDepth(0);
+    const g = this.add.graphics().setDepth(0);
     const wallH = H * 0.44;
 
     // Ceiling
@@ -530,7 +530,7 @@ class GameDevStoryScene extends Phaser.Scene {
     g.fillRect(0, wallH, W, 10);
 
     // Floor parquet
-    const TILE  = 44;
+    const TILE = 44;
     const fRows = Math.ceil((H - wallH) / TILE) + 2;
     const fCols = Math.ceil(W / TILE) + 2;
     for (let r = 0; r < fRows; r++) {
@@ -550,8 +550,8 @@ class GameDevStoryScene extends Phaser.Scene {
 
   /** Procedural desk+worker sprite */
   _procWorker(cx, cy, targetH) {
-    const g  = this.add.graphics().setDepth(8);
-    const s  = targetH / 80;
+    const g = this.add.graphics().setDepth(8);
+    const s = targetH / 80;
     const dW = Math.round(54 * s), dH = Math.round(28 * s);
     const dX = cx - dW / 2, dY = cy - dH;
 
@@ -590,15 +590,15 @@ class GameDevStoryScene extends Phaser.Scene {
   /** Procedural machine — warm colours, no neon */
   _procMachine(cx, cy, hwId, targetH) {
     const defs = {
-      gpu:       { body: C.gpuPCB,  edge: C.gpuEdge,  leds: [C.ledG, C.ledG],                 wR: 0.55 },
-      cluster:   { body: 0x5a7c22, edge: 0x2a4008,    leds: [C.ledG, C.ledG, 0xe0e050],        wR: 0.65 },
-      rack:      { body: C.rackBody, edge: C.rackEdge, leds: [C.ledR, C.ledG, C.ledR, C.ledG], wR: 0.58 },
-      megaDC:    { body: 0x505860, edge: 0x1a1e24,    leds: [C.ledG, C.ledG, C.ledR],          wR: 0.68 },
-      quantumDC: { body: 0x3a2848, edge: 0x18101e,    leds: [0x9050c0, C.ledG, 0x9050c0],      wR: 0.76 },
+      gpu: { body: C.gpuPCB, edge: C.gpuEdge, leds: [C.ledG, C.ledG], wR: 0.55 },
+      cluster: { body: 0x5a7c22, edge: 0x2a4008, leds: [C.ledG, C.ledG, 0xe0e050], wR: 0.65 },
+      rack: { body: C.rackBody, edge: C.rackEdge, leds: [C.ledR, C.ledG, C.ledR, C.ledG], wR: 0.58 },
+      megaDC: { body: 0x505860, edge: 0x1a1e24, leds: [C.ledG, C.ledG, C.ledR], wR: 0.68 },
+      quantumDC: { body: 0x3a2848, edge: 0x18101e, leds: [0x9050c0, C.ledG, 0x9050c0], wR: 0.76 },
     };
     const def = defs[hwId] ?? defs.cluster;
-    const bH  = targetH, bW = Math.round(bH * def.wR);
-    const bX  = cx - bW / 2, bY = cy - bH;
+    const bH = targetH, bW = Math.round(bH * def.wR);
+    const bX = cx - bW / 2, bY = cy - bH;
 
     const g = this.add.graphics().setDepth(7);
     g.fillStyle(def.body); g.fillRect(bX, bY, bW, bH);
@@ -661,7 +661,7 @@ class ServerRoomScene extends Phaser.Scene {
     const ok = (key) => { this._ok[key] = true; };
     this.load.image('server1', 'assets/images/server1.png');
     this.load.on('filecomplete-image-server1', () => ok('server1'));
-    
+
     // We also need server assets, they might be cached from GameDevStoryScene
     // but calling load again is safe (Phaser skips cached)
     this.load.spritesheet('server_anim', 'assets/images/server_sheet.png', { frameWidth: 627, frameHeight: 1254 });
@@ -673,7 +673,7 @@ class ServerRoomScene extends Phaser.Scene {
     this.load.spritesheet('cluster_1', 'assets/images/gpu_cluster_sheet_1.png', { frameWidth: 250, frameHeight: 75 });
     this.load.spritesheet('cluster_2', 'assets/images/gpu_cluster_sheet_2.png', { frameWidth: 250, frameHeight: 81 });
     this.load.spritesheet('cluster_3', 'assets/images/gpu_cluster_sheet_3.png', { frameWidth: 250, frameHeight: 80 });
-    ['0','1','2','3'].forEach(i => {
+    ['0', '1', '2', '3'].forEach(i => {
       this.load.on(`filecomplete-spritesheet-cluster_${i}`, () => ok(`cluster_${i}`));
     });
   }
@@ -717,13 +717,13 @@ class ServerRoomScene extends Phaser.Scene {
       }
     }
 
-    for (let i=0; i<4; i++) {
+    for (let i = 0; i < 4; i++) {
       const key = `cluster_${i}`;
       if (this.textures.exists(key) && !this.anims.exists(`${key}_anim`)) {
         this.anims.create({
           key: `${key}_anim`,
           frames: this.anims.generateFrameNumbers(key, { start: 0, end: 1 }),
-          frameRate: 3 + i, 
+          frameRate: 3 + i,
           repeat: -1,
           yoyo: true
         });
@@ -732,7 +732,7 @@ class ServerRoomScene extends Phaser.Scene {
 
     // 4. Wire events
     window.addEventListener('SPAWN_MACHINE', (e) => this._onSpawnMachine(e.detail));
-    
+
     // 5. Restore state
     this._syncWithGameState();
   }
@@ -740,13 +740,14 @@ class ServerRoomScene extends Phaser.Scene {
   _onSpawnMachine(detail) {
     const hwId = detail.hwId || 'cluster';
     const isServer = ['rack', 'megaDC', 'quantumDC', 'server'].includes(hwId);
-    
+
     const W = this.scale.width;
     const H = this.scale.height;
 
     // GPU CLUSTER CONFIG (Adjusted by Live Editor)
     const gH = 50;
     const gW = 164;
+    //GPU CLUSTER POSITION IN DEGREE
     const gRot = 90;
     const gSpots = [
       { x: W * 0.1888, y: H * 0.7072 },
@@ -761,8 +762,8 @@ class ServerRoomScene extends Phaser.Scene {
       this._clusterCount++;
 
       const key = `cluster_${v}`;
-      const tH  = gH;
-      let   obj;
+      const tH = gH;
+      let obj;
 
       if (this.textures.exists(key)) {
         obj = this.add.sprite(pos.x, pos.y, key, 0)
@@ -783,10 +784,10 @@ class ServerRoomScene extends Phaser.Scene {
 
     // Only handle servers beyond this point
     if (!isServer) return;
-    
+
     // Max 4 servers 
     if (this._serverCount >= 4) return;
-    
+
     // 2x2 grid — positions set by Live Zone Editor (W/H fractions, auto-scale)
     const spots = [
       { x: W * 0.4700, y: H * 0.5692 }, // back left
@@ -794,10 +795,10 @@ class ServerRoomScene extends Phaser.Scene {
       { x: W * 0.4731, y: H * 0.7323 }, // front left
       { x: W * 0.5619, y: H * 0.7259 }, // front right
     ];
-    
+
     const pos = spots[this._serverCount];
     this._serverCount++;
-    
+
     const tH = TARGET_H[hwId] ?? TARGET_H.rack;
     let obj;
 
@@ -817,9 +818,9 @@ class ServerRoomScene extends Phaser.Scene {
         .setDepth(7 + this._serverCount);
       this._scaleToTargetH(obj, tex.height, tH);
     }
-    
+
     if (obj) this._popIn(obj);
-    
+
     if (this.scene.isActive()) {
       this.cameras.main.shake(90, 0.002);
     }
@@ -835,10 +836,10 @@ class ServerRoomScene extends Phaser.Scene {
     const ts = obj._ts ?? obj.scaleX;
     obj.setScale(0.001);
     this.tweens.add({
-      targets:  obj,
-      scaleX:   ts,
-      scaleY:   ts,
-      ease:     'Back.easeOut',
+      targets: obj,
+      scaleX: ts,
+      scaleY: ts,
+      ease: 'Back.easeOut',
       duration: 420,
     });
   }
@@ -878,23 +879,23 @@ function initPhaserGame() {
   if (!factory) { console.warn('[Phaser] #factory not found.'); return; }
 
   const wrapper = document.createElement('div');
-  wrapper.id    = 'phaser-canvas-wrapper';
+  wrapper.id = 'phaser-canvas-wrapper';
   factory.insertBefore(wrapper, factory.firstChild);
 
   window.__phaserGame = new Phaser.Game({
-    type:        Phaser.AUTO,
-    width:       factory.clientWidth  || window.innerWidth  - 320,
-    height:      factory.clientHeight || window.innerHeight - 122,
+    type: Phaser.AUTO,
+    width: factory.clientWidth || window.innerWidth - 320,
+    height: factory.clientHeight || window.innerHeight - 122,
     transparent: true,
-    parent:      wrapper,
-    scene:       [GameDevStoryScene, ServerRoomScene],
+    parent: wrapper,
+    scene: [GameDevStoryScene, ServerRoomScene],
     scale: {
-      mode:       Phaser.Scale.RESIZE,  // fits any display — positions use W*pct/H*pct
+      mode: Phaser.Scale.RESIZE,  // fits any display — positions use W*pct/H*pct
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     render: {
-      antialias:   false,
-      pixelArt:    true,
+      antialias: false,
+      pixelArt: true,
       roundPixels: true,
     },
   });
