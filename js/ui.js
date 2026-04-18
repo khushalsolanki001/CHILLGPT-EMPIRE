@@ -333,7 +333,6 @@ const UI = (() => {
     } else {
       // All others get LEDs
       const ledColors = {
-        gpu:       'blue',
         cluster:   'blue',
         megaDC:    'green',
         quantumDC: 'purple',
@@ -354,7 +353,7 @@ const UI = (() => {
 
     // Machine label
     const shortNames = {
-      gpu: 'GPU', cluster: 'CLUSTER', rack: 'SERVER',
+      cluster: 'CLUSTER', rack: 'SERVER',
       megaDC: 'MEGA DC', quantumDC: 'QUANTUM',
     };
     const tag = _el('div', 'machine-tag');
@@ -686,7 +685,7 @@ const UI = (() => {
       mascotHappy(false);
       mascotSpeak();
     } else {
-      toast('No revenue yet! Buy GPUs first.', '');
+      toast('No revenue yet! Buy hardware first.', '');
     }
   }
 
