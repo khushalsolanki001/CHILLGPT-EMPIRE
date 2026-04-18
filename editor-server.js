@@ -23,11 +23,9 @@ app.use((req, res, next) => { res.set('Access-Control-Allow-Origin', '*'); res.s
 const KNOWN_PRELOADS = {
   'bg':          { file: 'assets/images/bg.png',           type: 'image' },
   'desk':        { file: 'assets/images/desk1.png',         type: 'image' },
-  'gpu':         { file: 'assets/images/gpu.png',           type: 'image' },
   'server':      { file: 'assets/images/server.png',        type: 'image' },
   'server_anim': { file: 'assets/images/server_sheet.png',  type: 'spritesheet', frameW: 512, frameH: 1024 },
   'worker_anim': { file: 'assets/images/worker_sheet.png',  type: 'spritesheet', frameW: 512, frameH: 1024 },
-  'gpu_anim':    { file: 'assets/images/gpu_sheet.png',     type: 'spritesheet', frameW: 512, frameH: 1024 },
   'gpu_anim2':   { file: 'assets/images/gpu_sheet1.png',    type: 'spritesheet', frameW: 512, frameH: 1024 },
   'worker_anim2':{ file: 'assets/images/worker_sheet2.png', type: 'spritesheet', frameW: 512, frameH: 1024 },
 };
