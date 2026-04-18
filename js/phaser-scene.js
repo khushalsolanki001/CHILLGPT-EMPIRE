@@ -1,22 +1,13 @@
 /**
  * phaser-scene.js  ★ RETRO TYCOON — Zoned Grid Placement ★
  * ─────────────────────────────────────────────────────────────────
- * Canvas: 1208 × 600 (dynamic, computed at boot).
- * Floor occupies roughly Y 260–600 (lower 56% of canvas).
- * ─────────────────────────────────────────────────────────────────
  */
 
 /* global Phaser */
 
-// ─────────────────────────────────────────────────────────────────
-// SPRITE SHEET FRAME DIMENSIONS
-// ─────────────────────────────────────────────────────────────────
 const FRAME_W = 512;
 const FRAME_H = 1024;
 
-// ─────────────────────────────────────────────────────────────────
-// TARGET RENDERED HEIGHTS (pixels in canvas space)
-// ─────────────────────────────────────────────────────────────────
 const TARGET_H = {
   worker: 160,
   cluster: 130,
@@ -25,9 +16,6 @@ const TARGET_H = {
   quantumDC: 210,
 };
 
-// ─────────────────────────────────────────────────────────────────
-// WARM RETRO COLOUR PALETTE (procedural fallback only)
-// ─────────────────────────────────────────────────────────────────
 const C = {
   wall: 0xd4b882, wallStripe: 0xc0a870,
   floor: 0xb89050, floorAlt: 0xa87e40,
@@ -45,9 +33,6 @@ const C = {
   feedBlue: 0x1e5fa8, black: 0x000000,
 };
 
-// ─────────────────────────────────────────────────────────────────
-// BASE SCENE (Common helpers)
-// ─────────────────────────────────────────────────────────────────
 class BaseTycoonScene extends Phaser.Scene {
   _scaleToTargetH(obj, naturalH, targetPx) {
     const s = naturalH > 0 ? targetPx / naturalH : 0.15;
@@ -88,9 +73,6 @@ class BaseTycoonScene extends Phaser.Scene {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// MAIN OFFICE SCENE
-// ─────────────────────────────────────────────────────────────────
 class GameDevStoryScene extends BaseTycoonScene {
   constructor() {
     super({ key: 'GameDevStoryScene' });
@@ -102,27 +84,21 @@ class GameDevStoryScene extends BaseTycoonScene {
     const ok = (key) => { this._ok[key] = true; };
     this.load.image('bg', 'assets/images/bg.png');
     this.load.on('filecomplete-image-bg', () => ok('bg'));
-
     this.load.spritesheet('worker_anim', 'assets/images/worker_sheet.png', { frameWidth: FRAME_W, frameHeight: FRAME_H });
     this.load.on('filecomplete-spritesheet-worker_anim', () => ok('worker_anim'));
-
     this.load.image('desk', 'assets/images/desk1.png');
     this.load.on('filecomplete-image-desk', () => ok('desk'));
   }
 
   create() {
-    const W = this.scale.width;
-    const H = this.scale.height;
-
-    // 1. Background
+    const W = this.scale.width, H = this.scale.height;
     if (this._ok['bg']) {
-      this.add.image(W / 2, H / 2, 'bg').setDisplaySize(W, H).setDepth(0);
+      const tex = this.textures.get('bg').getSourceImage();
+      const s = Math.min(W / tex.width, H / tex.height);
+      this.add.image(W / 2, H / 2, 'bg').setScale(s).setDepth(0);
     }
-
-    // 2. Build zones (for the editor to find variables)
     this._buildZones(W, H);
 
-    // Nav Buttons
     const btnServers = this.add.text(W - 20, H / 2, '▶\nSERVERS', {
       fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center'
     }).setOrigin(1, 0.5).setInteractive().setDepth(100);
@@ -133,7 +109,6 @@ class GameDevStoryScene extends BaseTycoonScene {
     }).setOrigin(0, 0.5).setInteractive().setDepth(100);
     btnGPU.on('pointerdown', () => this.scene.switch('GPUClusterRoomScene'));
 
-    // Animations
     if (this._ok['worker_anim'] && !this.anims.exists('worker_type')) {
       this.anims.create({
         key: 'worker_type',
@@ -144,7 +119,6 @@ class GameDevStoryScene extends BaseTycoonScene {
 
     window.addEventListener('SPAWN_WORKER', (e) => this._onSpawnWorker(e.detail));
     window.addEventListener('SPAWN_FEEDBACK', (e) => this._onSpawnFeedback(e.detail));
-
     this._syncWithGameState();
   }
 
@@ -154,19 +128,13 @@ class GameDevStoryScene extends BaseTycoonScene {
     const mStartY = Math.round(H * 0.8067);
     const mSpacingX = 10;
     const mSpacingY = 10;
-    const RIGHT_MARGIN = Math.round(W * 0.2500);
-    const LEFT_MARGIN = Math.round(W * 0.32);
-
     this._machineHeight = mH;
-    this._mStartX = mStartX;
-    this._mStartY = mStartY;
-    this._mSpacingX = mSpacingX;
-    this._mSpacingY = mSpacingY;
+    this._mStartX = mStartX; this._mStartY = mStartY;
+    this._mSpacingX = mSpacingX; this._mSpacingY = mSpacingY;
   }
 
   _onSpawnWorker(_detail) {
     const W = this.scale.width, H = this.scale.height;
-    // -- STAFF / WORKER SPOTS (Adjusted by Live Editor) --
     const wH = 200;
     const wSpots = [
       { x: W * 0.3434, y: H * 0.8189 },
@@ -175,38 +143,30 @@ class GameDevStoryScene extends BaseTycoonScene {
       { x: W * 0.6877, y: H * 0.8176 },
       { x: W * 0.8026, y: H * 0.8176 }
     ];
-
     if (this._workerCount >= wSpots.length) return;
     const pos = wSpots[this._workerCount];
     this._workerCount++;
-
-    let obj;
     if (this._ok['worker_anim']) {
-      obj = this.add.sprite(pos.x, pos.y, 'worker_anim', 0).setOrigin(0.5, 1).setDepth(8);
+      const obj = this.add.sprite(pos.x, pos.y, 'worker_anim', 0).setOrigin(0.5, 1).setDepth(8);
       this._scaleToTargetH(obj, FRAME_H, wH);
       obj.play('worker_type');
+      this._popIn(obj);
     }
-    if (obj) this._popIn(obj);
   }
 
   _onSpawnFeedback(detail) {
     const W = this.scale.width, H = this.scale.height;
-    const x = detail.x ?? W / 2;
-    const y = detail.y ?? H * 0.5;
-    this._spawnFeedbackText(x, y, detail.text, detail.color ?? C.feedGold);
+    this._spawnFeedbackText(detail.x ?? W/2, detail.y ?? H/2, detail.text, detail.color ?? C.feedGold);
   }
 
   _syncWithGameState() {
     this._workerCount = 0;
     if (typeof Game === 'undefined') return;
-    const wCount = Math.min(Game.state.inventory?.workers ?? 0, 5);
-    for (let i = 0; i < wCount; i++) this._onSpawnWorker({});
+    const count = Math.min(Game.state.inventory?.workers ?? 0, 5);
+    for (let i = 0; i < count; i++) this._onSpawnWorker({});
   }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// SERVER ROOM SCENE
-// ─────────────────────────────────────────────────────────────────
 class ServerRoomScene extends BaseTycoonScene {
   constructor() {
     super({ key: 'ServerRoomScene' });
@@ -218,7 +178,6 @@ class ServerRoomScene extends BaseTycoonScene {
     const ok = (key) => { this._ok[key] = true; };
     this.load.image('server1', 'assets/images/server1.png');
     this.load.on('filecomplete-image-server1', () => ok('server1'));
-
     this.load.spritesheet('server_anim', 'assets/images/server_sheet.png', { frameWidth: 627, frameHeight: 1254 });
     this.load.on('filecomplete-spritesheet-server_anim', () => ok('server_anim'));
   }
@@ -226,9 +185,10 @@ class ServerRoomScene extends BaseTycoonScene {
   create() {
     const W = this.scale.width, H = this.scale.height;
     if (this._ok['server1']) {
-      this.add.image(W / 2, H / 2, 'server1').setDisplaySize(W, H).setDepth(0);
+      const tex = this.textures.get('server1').getSourceImage();
+      const s = Math.min(W / tex.width, H / tex.height);
+      this.add.image(W / 2, H / 2, 'server1').setScale(s).setDepth(0);
     }
-
     const btnBack = this.add.text(20, H / 2, '◀\nOFFICE', {
       fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center'
     }).setOrigin(0, 0.5).setInteractive().setDepth(100);
@@ -241,7 +201,6 @@ class ServerRoomScene extends BaseTycoonScene {
         frameRate: 3, repeat: -1,
       });
     }
-
     window.addEventListener('SPAWN_MACHINE', (e) => this._onSpawnMachine(e.detail));
     this._syncWithGameState();
   }
@@ -250,23 +209,16 @@ class ServerRoomScene extends BaseTycoonScene {
     const hwId = detail.hwId;
     if (!['rack', 'megaDC', 'quantumDC', 'server'].includes(hwId)) return;
     if (this._serverCount >= 4) return;
-
     const W = this.scale.width, H = this.scale.height;
-    // -- SERVER SPOTS (Adjusted by Live Editor) --
     const spots = [
-      { x: W * 0.4700, y: H * 0.5692 }, // back left
-      { x: W * 0.5587, y: H * 0.5596 }, // back right
-      { x: W * 0.4731, y: H * 0.7323 }, // front left
-      { x: W * 0.5619, y: H * 0.7259 }, // front right
+      { x: W * 0.4700, y: H * 0.5692 }, { x: W * 0.5587, y: H * 0.5596 },
+      { x: W * 0.4731, y: H * 0.7323 }, { x: W * 0.5619, y: H * 0.7259 },
     ];
-
     const pos = spots[this._serverCount];
     this._serverCount++;
-
-    const tH = TARGET_H[hwId] ?? 160;
     if (this._ok['server_anim']) {
       const obj = this.add.sprite(pos.x, pos.y, 'server_anim', 0).setOrigin(0.5, 1).setDepth(7);
-      this._scaleToTargetH(obj, 1254, tH);
+      this._scaleToTargetH(obj, 1254, TARGET_H[hwId] ?? 160);
       obj.play('server_blink');
       this._popIn(obj);
     }
@@ -276,19 +228,13 @@ class ServerRoomScene extends BaseTycoonScene {
     this._serverCount = 0;
     if (typeof Game === 'undefined') return;
     const st = Game.state;
-    const hwOrder = ['rack', 'megaDC', 'quantumDC', 'server'];
-    hwOrder.forEach(id => {
+    ['rack', 'megaDC', 'quantumDC', 'server'].forEach(id => {
       const count = Math.min(st.hardware?.[id] ?? 0, 4);
-      for (let i = 0; i < count; i++) {
-        if (this._serverCount < 4) this._onSpawnMachine({ hwId: id });
-      }
+      for (let i = 0; i < count; i++) if (this._serverCount < 4) this._onSpawnMachine({ hwId: id });
     });
   }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// GPU CLUSTER ROOM SCENE
-// ─────────────────────────────────────────────────────────────────
 class GPUClusterRoomScene extends BaseTycoonScene {
   constructor() {
     super({ key: 'GPUClusterRoomScene' });
@@ -300,7 +246,6 @@ class GPUClusterRoomScene extends BaseTycoonScene {
     const ok = (key) => { this._ok[key] = true; };
     this.load.image('gpu_bg', 'assets/images/gpu_cluster_room.png');
     this.load.on('filecomplete-image-gpu_bg', () => ok('gpu_bg'));
-
     const gHeights = { 0: 81, 1: 75, 2: 81, 3: 80 };
     for (let i = 0; i < 4; i++) {
       const h = gHeights[i] || 81;
@@ -312,9 +257,10 @@ class GPUClusterRoomScene extends BaseTycoonScene {
   create() {
     const W = this.scale.width, H = this.scale.height;
     if (this._ok['gpu_bg']) {
-      this.add.image(W / 2, H / 2, 'gpu_bg').setDisplaySize(W, H).setDepth(0);
+      const tex = this.textures.get('gpu_bg').getSourceImage();
+      const s = Math.min(W / tex.width, H / tex.height);
+      this.add.image(W / 2, H / 2, 'gpu_bg').setScale(s).setDepth(0);
     }
-
     const btnBack = this.add.text(W - 20, H / 2, '▶\nOFFICE', {
       fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center'
     }).setOrigin(1, 0.5).setInteractive().setDepth(100);
@@ -323,14 +269,9 @@ class GPUClusterRoomScene extends BaseTycoonScene {
     for (let i = 0; i < 4; i++) {
       const key = `cluster_${i}`;
       if (this._ok[key] && !this.anims.exists(`${key}_anim`)) {
-        this.anims.create({
-          key: `${key}_anim`,
-          frames: this.anims.generateFrameNumbers(key, { start: 0, end: 1 }),
-          frameRate: 3 + i, repeat: -1, yoyo: true
-        });
+        this.anims.create({ key: `${key}_anim`, frames: this.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: 3 + i, repeat: -1, yoyo: true });
       }
     }
-
     window.addEventListener('SPAWN_MACHINE', (e) => this._onSpawnMachine(e.detail));
     this._syncWithGameState();
   }
@@ -338,30 +279,20 @@ class GPUClusterRoomScene extends BaseTycoonScene {
   _onSpawnMachine(detail) {
     if (detail.hwId !== 'cluster') return;
     if (this._clusterCount >= 4) return;
-
     const W = this.scale.width, H = this.scale.height;
-    // GPU CLUSTER CONFIG (Adjusted by Live Editor)
-    const gH = 50;
-    const gW = 164;
-    //GPU CLUSTER ROTATION
-    const gRot = 90;
+    const gH = 50, gW = 164, gRot = 90;
     const gSpots = [
-      { x: W * 0.2369, y: H * 0.7407 },
-      { x: W * 0.2338, y: H * 0.4435 },
-      { x: W * 0.5534, y: H * 0.7513 },
-      { x: W * 0.5521, y: H * 0.4599 }
+      { x: W * 0.2369, y: H * 0.7407 }, { x: W * 0.2338, y: H * 0.4435 },
+      { x: W * 0.5534, y: H * 0.7513 }, { x: W * 0.5521, y: H * 0.4599 }
     ];
-
     const idx = this._clusterCount % 4;
     const pos = gSpots[idx];
     this._clusterCount++;
-
-    const key = `cluster_${idx}`;
-    if (this._ok[key]) {
-      const obj = this.add.sprite(pos.x, pos.y, key, 0).setOrigin(0.5, 1).setAngle(gRot).setDepth(7);
+    if (this._ok[`cluster_${idx}`]) {
+      const obj = this.add.sprite(pos.x, pos.y, `cluster_${idx}`, 0).setOrigin(0.5, 1).setAngle(gRot).setDepth(7);
       const srcH = (idx === 1) ? 75 : (idx === 3 ? 80 : 81);
       this._scaleToTargetH(obj, srcH, gH);
-      obj.play(`${key}_anim`);
+      obj.play(`cluster_${idx}_anim`);
       this._popIn(obj);
     }
   }
@@ -374,31 +305,19 @@ class GPUClusterRoomScene extends BaseTycoonScene {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// BOOT
-// ─────────────────────────────────────────────────────────────────
 function initPhaserGame() {
   const factory = document.getElementById('factory');
   if (!factory) return;
-
   const wrapper = document.createElement('div');
   wrapper.id = 'phaser-canvas-wrapper';
   factory.insertBefore(wrapper, factory.firstChild);
-
   window.__phaserGame = new Phaser.Game({
-    type: Phaser.AUTO,
-    width: factory.clientWidth || 1208,
-    height: factory.clientHeight || 600,
-    transparent: true,
-    parent: wrapper,
+    type: Phaser.AUTO, width: factory.clientWidth || 1208, height: factory.clientHeight || 600, transparent: true, parent: wrapper,
     scene: [GameDevStoryScene, ServerRoomScene, GPUClusterRoomScene],
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
     render: { antialias: false, pixelArt: true, roundPixels: true },
   });
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initPhaserGame);
-} else {
-  setTimeout(initPhaserGame, 0);
-}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPhaserGame);
+else setTimeout(initPhaserGame, 0);
