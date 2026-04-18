@@ -156,7 +156,7 @@ class GameDevStoryScene extends BaseTycoonScene {
     const mSpacingY = 10;
     const RIGHT_MARGIN = Math.round(W * 0.25);
     const LEFT_MARGIN = Math.round(W * 0.32);
-    
+
     this._machineHeight = mH;
     this._mStartX = mStartX;
     this._mStartY = mStartY;
@@ -175,7 +175,7 @@ class GameDevStoryScene extends BaseTycoonScene {
       { x: W * 0.6877, y: H * 0.8176 },
       { x: W * 0.8026, y: H * 0.8176 }
     ];
-    
+
     if (this._workerCount >= wSpots.length) return;
     const pos = wSpots[this._workerCount];
     this._workerCount++;
@@ -345,7 +345,8 @@ class GPUClusterRoomScene extends BaseTycoonScene {
     // GPU CLUSTER CONFIG (Adjusted by Live Editor)
     const gH = 100;
     const gW = 164;
-    const gRot = 0;
+    //GPU CLUSTER ROTATION
+    const gRot = 90;
     const gSpots = [
       { x: W * 0.3649, y: H * 0.6001 },
       { x: W * 0.3701, y: H * 0.4769 },
