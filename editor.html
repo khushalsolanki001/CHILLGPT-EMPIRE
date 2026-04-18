@@ -1660,7 +1660,17 @@ window.addEventListener('resize', () => { if(zCodeModal.classList.contains('open
 function renderZones(isLite = false) {
   zCtx.clearRect(0,0,zw,zh);
   if (zBG.complete) {
-    zCtx.drawImage(zBG, 0, 0, zw, zh);
+    const ar = zBG.width / zBG.height;
+    const canvasAR = zw / zh;
+    let dx, dy, dw, dh;
+    if (ar > canvasAR) {
+      dw = zw; dh = zw / ar;
+      dx = 0; dy = (zh - dh) / 2;
+    } else {
+      dh = zh; dw = zh * ar;
+      dx = (zw - dw) / 2; dy = 0;
+    }
+    zCtx.drawImage(zBG, dx, dy, dw, dh);
   } else {
     zCtx.fillStyle = '#222';
     zCtx.fillRect(0,0,zw,zh);
