@@ -301,8 +301,10 @@ class GPUClusterRoomScene extends BaseTycoonScene {
     this.load.image('gpu_bg', 'assets/images/gpu_cluster_room.png');
     this.load.on('filecomplete-image-gpu_bg', () => ok('gpu_bg'));
 
+    const gHeights = { 0: 81, 1: 75, 2: 81, 3: 80 };
     for (let i = 0; i < 4; i++) {
-      this.load.spritesheet(`cluster_${i}`, `assets/images/gpu_cluster_sheet${i === 0 ? '' : '_' + i}.png`, { frameWidth: 250, frameHeight: 81 });
+      const h = gHeights[i] || 81;
+      this.load.spritesheet(`cluster_${i}`, `assets/images/gpu_cluster_sheet${i === 0 ? '' : '_' + i}.png`, { frameWidth: 250, frameHeight: h });
       this.load.on(`filecomplete-spritesheet-cluster_${i}`, () => ok(`cluster_${i}`));
     }
   }
