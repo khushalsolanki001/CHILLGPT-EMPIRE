@@ -154,7 +154,7 @@ class GameDevStoryScene extends BaseTycoonScene {
     const mStartY = Math.round(H * 0.8067);
     const mSpacingX = 10;
     const mSpacingY = 10;
-    const RIGHT_MARGIN = Math.round(W * 0.25);
+    const RIGHT_MARGIN = Math.round(W * 0.2500);
     const LEFT_MARGIN = Math.round(W * 0.32);
 
     this._machineHeight = mH;
@@ -226,9 +226,7 @@ class ServerRoomScene extends BaseTycoonScene {
   create() {
     const W = this.scale.width, H = this.scale.height;
     if (this._ok['server1']) {
-      const tex = this.textures.get('server1').getSourceImage();
-      const s = Math.min(W / tex.width, H / tex.height);
-      this.add.image(W / 2, H / 2, 'server1').setScale(s).setDepth(0);
+      this.add.image(W / 2, H / 2, 'server1').setDisplaySize(W, H).setDepth(0);
     }
 
     const btnBack = this.add.text(20, H / 2, '◀\nOFFICE', {
@@ -256,10 +254,10 @@ class ServerRoomScene extends BaseTycoonScene {
     const W = this.scale.width, H = this.scale.height;
     // -- SERVER SPOTS (Adjusted by Live Editor) --
     const spots = [
-      { x: W * 0.4700, y: H * 0.5692 },
-      { x: W * 0.5587, y: H * 0.5596 },
-      { x: W * 0.4731, y: H * 0.7323 },
-      { x: W * 0.5619, y: H * 0.7259 },
+      { x: W * 0.4700, y: H * 0.5692 }, // back left
+      { x: W * 0.5587, y: H * 0.5596 }, // back right
+      { x: W * 0.4731, y: H * 0.7323 }, // front left
+      { x: W * 0.5619, y: H * 0.7259 }, // front right
     ];
 
     const pos = spots[this._serverCount];
@@ -312,9 +310,7 @@ class GPUClusterRoomScene extends BaseTycoonScene {
   create() {
     const W = this.scale.width, H = this.scale.height;
     if (this._ok['gpu_bg']) {
-      const tex = this.textures.get('gpu_bg').getSourceImage();
-      const s = Math.min(W / tex.width, H / tex.height);
-      this.add.image(W / 2, H / 2, 'gpu_bg').setScale(s).setDepth(0);
+      this.add.image(W / 2, H / 2, 'gpu_bg').setDisplaySize(W, H).setDepth(0);
     }
 
     const btnBack = this.add.text(W - 20, H / 2, '▶\nOFFICE', {
@@ -343,15 +339,15 @@ class GPUClusterRoomScene extends BaseTycoonScene {
 
     const W = this.scale.width, H = this.scale.height;
     // GPU CLUSTER CONFIG (Adjusted by Live Editor)
-    const gH = 100;
+    const gH = 50;
     const gW = 164;
     //GPU CLUSTER ROTATION
     const gRot = 90;
     const gSpots = [
-      { x: W * 0.3649, y: H * 0.6001 },
-      { x: W * 0.3701, y: H * 0.4769 },
-      { x: W * 0.3556, y: H * 0.7145 },
-      { x: W * 0.3693, y: H * 0.3662 }
+      { x: W * 0.2369, y: H * 0.7407 },
+      { x: W * 0.2338, y: H * 0.4435 },
+      { x: W * 0.5534, y: H * 0.7513 },
+      { x: W * 0.5521, y: H * 0.4599 }
     ];
 
     const idx = this._clusterCount % 4;
