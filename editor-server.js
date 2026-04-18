@@ -271,9 +271,10 @@ app.get('/api/zones', (req, res) => {
       height: parseFloat((src.match(/const mH\s*=\s*([\d.]+)/) || [,'110'])[1]),
     },
     gpuZone: {
-      height: parseFloat((src.match(/const gH\s*=\s*([\d.]+)/) || [,'110'])[1]),
+      height: parseFloat((src.match(/[g_]H\s*=\s*([\d.]+)/) || [,'110'])[1]),
+      width: parseFloat((src.match(/[g_]W\s*=\s*([\d.]+)/) || [,'330'])[1]),
       spots: (() => {
-        const block = src.match(/const gSpots = \[([\s\S]*?)\];/);
+        const block = src.match(/[g_]Spots\s*=\s*\[([\s\S]*?)\];?/);
         if (!block) return [{ xFrac:0.4, yFrac:0.45 }, { xFrac:0.5, yFrac:0.45 }, { xFrac:0.6, yFrac:0.45 }, { xFrac:0.7, yFrac:0.45 }];
         const raw = block[1];
         const rows = [...raw.matchAll(/W\s*\*\s*([\d.e-]+)[\s\S]*?H\s*\*\s*([\d.e-]+)/g)];
@@ -281,9 +282,9 @@ app.get('/api/zones', (req, res) => {
       })(),
     },
     workerZone: {
-      height: parseFloat((src.match(/const wH\s*=\s*([\d.]+)/) || [,'150'])[1]),
+      height: parseFloat((src.match(/[w_]H\s*=\s*([\d.]+)/) || [,'150'])[1]),
       spots: (() => {
-        const block = src.match(/const wSpots = \[([\s\S]*?)\];/);
+        const block = src.match(/[w_]Spots\s*=\s*\[([\s\S]*?)\];?/);
         if (!block) return [
           { xFrac:0.35, yFrac:0.85 }, { xFrac:0.50, yFrac:0.85 }, { xFrac:0.65, yFrac:0.85 },
           { xFrac:0.40, yFrac:0.95 }, { xFrac:0.60, yFrac:0.95 }
@@ -340,9 +341,10 @@ app.post('/api/zones', (req, res) => {
 
   // Patch gpuZone (4 spots)
   if (gpuZone) {
-    src = src.replace(/(const gH\s*=\s*)[\d.]+/, `$1${Math.round(gpuZone.height)}`);
+    src = src.replace(/((?:const g|this\._gpu)H\s*=\s*)[\d.]+/, `$1${Math.round(gpuZone.height)}`);
+    src = src.replace(/((?:const g|this\._gpu)W\s*=\s*)[\d.]+/, `$1${Math.round(gpuZone.width)}`);
     const spotsStr = gpuZone.spots.map(s => `      { x: W * ${s.xFrac.toFixed(4)}, y: H * ${s.yFrac.toFixed(4)} }`).join(',\n');
-    src = src.replace(/(const gSpots = \[)[\s\S]*?(\];)/, `$1\n${spotsStr}\n    $2`);
+    src = src.replace(/((?:const g|this\._gpu)Spots\s*=\s*\[)[\s\S]*?(\];?)/, `$1\n${spotsStr}\n    $2`);
   }
 
   // Patch workerZone
