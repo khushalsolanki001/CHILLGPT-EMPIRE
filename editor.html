@@ -1502,7 +1502,10 @@ document.querySelectorAll('.ztab').forEach(t => {
     document.getElementById('ze-panel-server').style.display  = zActiveTab==='server'?'block':'none';
 
     // Switch background based on tab
-    const bgFile = (zActiveTab === 'g' || zActiveTab === 'server') ? 'server1.png' : 'bg.png';
+    let bgFile = 'bg.png';
+    if (zActiveTab === 'g') bgFile = 'gpu_cluster_room.png';
+    else if (zActiveTab === 'server') bgFile = 'server1.png';
+
     if (!zBG.src.includes(bgFile)) {
       zBG.src = 'assets/images/' + bgFile;
       zBG.onload = () => renderZones();
