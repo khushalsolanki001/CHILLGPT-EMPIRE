@@ -17,7 +17,7 @@
 const UI = (() => {
 
   // ── DOM REFERENCES ───────────────────────────────────────────────
-  const $  = (id)  => document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
   const $$ = (sel) => document.querySelectorAll(sel);
 
   // Tab state ('hardware' | 'ai' | 'staff')
@@ -27,8 +27,8 @@ const UI = (() => {
   let _mascotTimer = null;
 
   // Model Builder state
-  let _mbSelectedArch  = 'transformer';
-  let _mbSelectedSize  = 'mini';
+  let _mbSelectedArch = 'transformer';
+  let _mbSelectedSize = 'mini';
   let _mbSelectedTraits = [];
 
 
@@ -69,23 +69,23 @@ const UI = (() => {
    * Called every tick from main.js.
    */
   function updateStats() {
-    const s   = Game.state;
+    const s = Game.state;
     const mps = Game.getNetMoneyPerSecond();
-    const c   = s._computed || {};
+    const c = s._computed || {};
 
-    $('stat-money').textContent      = Fmt.money(s.money);
-    $('stat-compute').textContent    = Fmt.compute(c.compute || 0);
+    $('stat-money').textContent = Fmt.money(s.money);
+    $('stat-compute').textContent = Fmt.compute(c.compute || 0);
     const tfEl = $('stat-tf');
-    if (tfEl) tfEl.textContent       = Fmt.num(s.tf || 0, 0);
+    if (tfEl) tfEl.textContent = Fmt.num(s.tf || 0, 0);
     $('stat-electricity').textContent = Fmt.money(c.elec || 0) + '/s';
-    $('stat-users').textContent      = Fmt.num(c.users || 0, 0);
-    $('stat-net').textContent        = (mps >= 0 ? '+' : '') + Fmt.money(mps) + '/s';
+    $('stat-users').textContent = Fmt.num(c.users || 0, 0);
+    $('stat-net').textContent = (mps >= 0 ? '+' : '') + Fmt.money(mps) + '/s';
     if ($('logo-ai-name')) $('logo-ai-name').textContent = s.aiName;
 
     // Year + Month display
     // Date breakdown display
     const month = (s.currentMonth || 1).toString().padStart(2, '0');
-    const day   = (s.currentDay || 1).toString().padStart(2, '0');
+    const day = (s.currentDay || 1).toString().padStart(2, '0');
     const dateLabelEl = $('date-label');
     if (dateLabelEl) dateLabelEl.textContent = `DAY ${day} MTH ${month}`;
     $('year-value').textContent = s.year;
@@ -101,9 +101,9 @@ const UI = (() => {
 
     // Training progress bar
     const pct = s.trainProgress.toFixed(1);
-    $('train-progress').style.width   = pct + '%';
+    $('train-progress').style.width = pct + '%';
     $('progress-percent').textContent = Math.round(pct) + '%';
-    $('progress-label').textContent   =
+    $('progress-label').textContent =
       `${s.aiName} v${s.year - 2015}.0 — TRAINING`;
 
     // Collect button label
@@ -113,8 +113,8 @@ const UI = (() => {
 
     // Year countdown footer
     const rem = Math.max(0, s.yearDuration - s.yearProgress);
-    const mm  = String(Math.floor(rem / 60)).padStart(2, '0');
-    const ss  = String(Math.floor(rem % 60)).padStart(2, '0');
+    const mm = String(Math.floor(rem / 60)).padStart(2, '0');
+    const ss = String(Math.floor(rem % 60)).padStart(2, '0');
     $('next-comp').textContent = `NEXT ARENA: ${mm}:${ss}`;
   }
 
@@ -136,10 +136,10 @@ const UI = (() => {
 
     $('onboarding-modal').classList.remove('show');
     toast(`Welcome, CEO ${pName}! Let's build ${cName}!`);
-    
+
     // Save immediately
     Save.save();
-    
+
     // Force immediate UI update
     updateStats();
   }
@@ -154,11 +154,11 @@ const UI = (() => {
    */
   function switchTab(tab) {
     _currentTab = tab;
-    const tabs = ['hardware','staff','ai','business','models'];
+    const tabs = ['hardware', 'staff', 'ai', 'business', 'models'];
     tabs.forEach(t => {
       const el = $(`tab-${t}`);
       if (el) {
-        el.classList.toggle('active',         tab === t);
+        el.classList.toggle('active', tab === t);
         el.setAttribute('aria-selected', String(tab === t));
       }
     });
@@ -191,11 +191,11 @@ const UI = (() => {
     _sectionTitle(container, '⚙️ HARDWARE STORE');
 
     for (const hw of HARDWARE) {
-      const owned  = Game.state.hardware[hw.id] || 0;
-      const cost   = Game.getNextHardwareCost(hw);
+      const owned = Game.state.hardware[hw.id] || 0;
+      const cost = Game.getNextHardwareCost(hw);
       const locked = Game.state.year < hw.requireYear;
       const canBuy = !locked && Game.state.money >= cost;
-      const maxed  = _isMaxed(hw.id);
+      const maxed = _isMaxed(hw.id);
 
       const card = _el('div', `shop-card hw${locked ? ' locked' : ''}${maxed ? ' maxed' : ''}`);
       card.innerHTML = `
@@ -248,7 +248,7 @@ const UI = (() => {
     _sectionTitle(container, '🧠 AI RESEARCH LAB');
 
     for (const upg of AI_UPGRADES) {
-      const owned  = Game.state.unlockedUpgrades.includes(upg.id);
+      const owned = Game.state.unlockedUpgrades.includes(upg.id);
       const locked = Game.state.year < upg.requireYear;
       const tfCost = upg.tfCost || 0;
       const canBuy = !locked && !owned && Game.state.money >= upg.cost && Game.state.tf >= tfCost;
@@ -288,7 +288,7 @@ const UI = (() => {
     const training = ModelBuilder.getTrainingJob();
     if (training) {
       const prog = container.appendChild(_el('div', 'shop-card info-card'));
-      const pct  = Math.round(Math.min(training.elapsed / training.totalSec, 1) * 100);
+      const pct = Math.round(Math.min(training.elapsed / training.totalSec, 1) * 100);
       prog.innerHTML = `
         <div class="card-icon" style="font-size:20px;">⚙️</div>
         <div class="card-body" style="width:100%;">
@@ -333,7 +333,7 @@ const UI = (() => {
             <div class="card-desc">${arch ? arch.name : ''} · ${size ? size.label : ''} · Score: ${m.perfScore}</div>
             <div class="card-badges">
               <span class="badge badge-blue">${m.status.toUpperCase()}</span>
-              ${(m.traitIds||[]).map(tid => { const t = ModelBuilder.getTraits().find(t => t.id === tid); return t ? `<span class="badge badge-green">${t.icon}</span>` : ''; }).join('')}
+              ${(m.traitIds || []).map(tid => { const t = ModelBuilder.getTraits().find(t => t.id === tid); return t ? `<span class="badge badge-green">${t.icon}</span>` : ''; }).join('')}
             </div>
           </div>
           <div class="card-right" style="justify-content:center;">${actionBtn}</div>`;
@@ -362,8 +362,8 @@ const UI = (() => {
   }
 
   function openModelBuilder() {
-    _mbSelectedArch   = 'transformer';
-    _mbSelectedSize   = 'mini';
+    _mbSelectedArch = 'transformer';
+    _mbSelectedSize = 'mini';
     _mbSelectedTraits = [];
     _buildModelBuilderModal();
     document.getElementById('model-builder-modal').classList.add('show');
@@ -389,7 +389,7 @@ const UI = (() => {
       ModelBuilder.getModelSizes().forEach(sz => {
         const arch = ModelBuilder.getArchitectures().find(a => a.id === _mbSelectedArch);
         const tfNeeded = Math.floor(sz.tfBase * (arch ? arch.tfMult : 1));
-        const haveTF   = Game.state.tf >= tfNeeded;
+        const haveTF = Game.state.tf >= tfNeeded;
         const btn = document.createElement('button');
         btn.className = `buy-btn ${_mbSelectedSize === sz.id ? 'owned-btn' : ''} ${!haveTF ? 'cant-afford' : ''}`;
         btn.style.cssText = 'text-align:left; padding:8px; font-size:0.38rem;';
@@ -420,9 +420,9 @@ const UI = (() => {
     const prev = $('mb-preview-content');
     if (prev) {
       const arch = ModelBuilder.getArchitectures().find(a => a.id === _mbSelectedArch);
-      const sz   = ModelBuilder.getModelSizes().find(s => s.id === _mbSelectedSize);
+      const sz = ModelBuilder.getModelSizes().find(s => s.id === _mbSelectedSize);
       if (arch && sz) {
-        const tfNeeded  = Math.floor(sz.tfBase * arch.tfMult);
+        const tfNeeded = Math.floor(sz.tfBase * arch.tfMult);
         const perfScore = Math.floor((sz.perfBase + arch.perfBonus) * (1 + _mbSelectedTraits.length * 0.1));
         const canAfford = Game.state.tf >= tfNeeded;
         prev.innerHTML = `
@@ -461,9 +461,9 @@ const UI = (() => {
   function openReleaseModal(modelId) {
     const existing = document.getElementById('release-overlay');
     if (existing) existing.remove();
-    const markets  = Market.getMarkets();
-    const choices  = markets.map(mk =>
-      `<button class="buy-btn" style="margin:4px; padding:8px 12px; font-size:0.4rem;" onclick="UI.handleReleaseModel(${modelId},'${mk.id}')">${mk.icon} ${mk.name}<br><small>Demand: ${Math.round(mk.demand*100)}%</small></button>`
+    const markets = Market.getMarkets();
+    const choices = markets.map(mk =>
+      `<button class="buy-btn" style="margin:4px; padding:8px 12px; font-size:0.4rem;" onclick="UI.handleReleaseModel(${modelId},'${mk.id}')">${mk.icon} ${mk.name}<br><small>Demand: ${Math.round(mk.demand * 100)}%</small></button>`
     ).join('');
     const overlay = document.createElement('div');
     overlay.id = 'release-overlay';
@@ -481,8 +481,8 @@ const UI = (() => {
 
   function showAwards(year) {
     const awards = ModelBuilder.calculateAwards();
-    const body   = $('awards-body');
-    const lbl    = $('awards-year-label');
+    const body = $('awards-body');
+    const lbl = $('awards-year-label');
     if (lbl) lbl.textContent = `YEAR ${year} RESULTS`;
     if (body) {
       body.innerHTML = '';
@@ -490,8 +490,8 @@ const UI = (() => {
       awards.forEach(award => {
         const row = _el('div', '');
         row.style.cssText = 'display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #333;font-family:var(--font-pixel);font-size:0.42rem;gap:10px;flex-wrap:wrap;';
-        const win  = award.playerWins ? `<span style="color:#39d87e;">🏆 YOU WIN — ${award.modelName}</span>` : `<span style="color:#e74c3c;">❌ ${award.modelName}</span>`;
-        const rew  = (award.playerWins && award.reward) ? `<span style="color:#f5c842;margin-left:auto;">+${Fmt.money(award.reward.cash)}</span>` : '';
+        const win = award.playerWins ? `<span style="color:#39d87e;">🏆 YOU WIN — ${award.modelName}</span>` : `<span style="color:#e74c3c;">❌ ${award.modelName}</span>`;
+        const rew = (award.playerWins && award.reward) ? `<span style="color:#f5c842;margin-left:auto;">+${Fmt.money(award.reward.cash)}</span>` : '';
         row.innerHTML = `<b>${award.category}</b>${win}${rew}`;
         body.appendChild(row);
         if (award.playerWins && award.reward) bonus += award.reward.cash;
@@ -532,7 +532,7 @@ const UI = (() => {
       </div>
     `;
     container.appendChild(selBox);
-    
+
     // Marketing
     _sectionTitle(container, '📢 MARKETING CAMPAIGNS');
     const m = Game.state.marketing || { hackathon: 0, gamejam: 0, xCampaign: 0 };
@@ -541,7 +541,7 @@ const UI = (() => {
       { id: 'gamejam', name: 'Sponsor GameJam', desc: 'Sponsor a global GameJam. +5% Users per level.', cost: 10000, lvl: m.gamejam },
       { id: 'xCampaign', name: 'X Viral Campaign', desc: 'Massive visibility on X (formerly Twitter). +10% Users.', cost: 75000, lvl: m.xCampaign },
     ];
-    
+
     for (const c of campaigns) {
       const canBuy = Game.state.money >= c.cost;
       const card = _el('div', 'shop-card');
@@ -566,10 +566,10 @@ const UI = (() => {
   function _renderStaffTab(container) {
     _sectionTitle(container, '👥 HIRE STAFF');
 
-    const owned   = Game.state.inventory ? (Game.state.inventory.workers || 0) : 0;
-    const cost    = Game.getNextWorkerCost();
-    const canBuy  = Game.state.money >= cost;
-    const maxed   = _isMaxed('worker');
+    const owned = Game.state.inventory ? (Game.state.inventory.workers || 0) : 0;
+    const cost = Game.getNextWorkerCost();
+    const canBuy = Game.state.money >= cost;
+    const maxed = _isMaxed('worker');
 
     // Worker card
     const card = _el('div', `shop-card hw${maxed ? ' maxed' : ''}`);
@@ -610,7 +610,7 @@ const UI = (() => {
       </div>
     `;
     container.appendChild(info);
-    
+
     // Roster 
     if (Game.state.inventory && Game.state.inventory.workersList && Game.state.inventory.workersList.length > 0) {
       _sectionTitle(container, '🗂️ ACTIVE ROSTER');
@@ -640,10 +640,10 @@ const UI = (() => {
     $$('.buy-btn[data-hw]').forEach(btn => {
       const hw = HARDWARE.find(h => h.id === btn.dataset.hw);
       if (!hw) return;
-      const locked  = Game.state.year < hw.requireYear;
-      const cost    = Game.getNextHardwareCost(hw);
-      const canBuy  = !locked && Game.state.money >= cost;
-      const maxed   = _isMaxed(hw.id);
+      const locked = Game.state.year < hw.requireYear;
+      const cost = Game.getNextHardwareCost(hw);
+      const canBuy = !locked && Game.state.money >= cost;
+      const maxed = _isMaxed(hw.id);
 
       btn.classList.toggle('cant-afford', !canBuy && !maxed);
       btn.classList.toggle('owned-btn', maxed);
@@ -654,9 +654,9 @@ const UI = (() => {
     });
 
     $$('.buy-btn[data-ai]').forEach(btn => {
-      const upg   = AI_UPGRADES.find(u => u.id === btn.dataset.ai);
+      const upg = AI_UPGRADES.find(u => u.id === btn.dataset.ai);
       if (!upg) return;
-      const owned  = Game.state.unlockedUpgrades.includes(upg.id);
+      const owned = Game.state.unlockedUpgrades.includes(upg.id);
       const locked = Game.state.year < upg.requireYear;
       const canBuy = !locked && !owned && Game.state.money >= upg.cost;
       if (!owned && !locked) {
@@ -668,9 +668,9 @@ const UI = (() => {
     // Worker hire button
     const workerBtn = $('btn-hire-worker');
     if (workerBtn) {
-      const cost   = Game.getNextWorkerCost();
+      const cost = Game.getNextWorkerCost();
       const canBuy = Game.state.money >= cost;
-      const maxed  = _isMaxed('worker');
+      const maxed = _isMaxed('worker');
       workerBtn.classList.toggle('cant-afford', !canBuy && !maxed);
       workerBtn.classList.toggle('owned-btn', maxed);
       workerBtn.disabled = maxed;
@@ -697,9 +697,9 @@ const UI = (() => {
    */
   function renderMachines() {
     const rowFront = $('machine-row-front');
-    const rowBack  = $('machine-row-back');
+    const rowBack = $('machine-row-back');
     rowFront.innerHTML = '';
-    rowBack.innerHTML  = '';
+    rowBack.innerHTML = '';
 
     for (const hw of HARDWARE) {
       const count = Game.state.hardware[hw.id] || 0;
@@ -735,8 +735,8 @@ const UI = (() => {
     } else {
       // All others get LEDs
       const ledColors = {
-        cluster:   'blue',
-        megaDC:    'green',
+        cluster: 'blue',
+        megaDC: 'green',
         quantumDC: 'purple',
       };
       const color = ledColors[hw.id] || 'blue';
@@ -833,12 +833,12 @@ const UI = (() => {
    */
   function showArena(completedYear, nextYear) {
     $('arena-year-label').textContent = `YEAR ${completedYear} RESULTS`;
-    $('next-year-label').textContent  = nextYear;
+    $('next-year-label').textContent = nextYear;
 
     const entries = _buildRankings(completedYear);
-    const body    = $('arena-body');
-    const rEmoji  = ['🥇', '🥈', '🥉', '4️⃣'];
-    const rCls    = ['r1', 'r2', 'r3', 'r4'];
+    const body = $('arena-body');
+    const rEmoji = ['🥇', '🥈', '🥉', '4️⃣'];
+    const rCls = ['r1', 'r2', 'r3', 'r4'];
 
     body.innerHTML = entries.map((e, i) => {
       const statusText = e.isYou
@@ -868,16 +868,10 @@ const UI = (() => {
     return ['', '↑ RISING', '→ STABLE', '↓ FALLING'][rank] || '↓ FALLING';
   }
 
-  /** Close the arena modal, then show AI Awards. */
+  /** Close the arena modal. */
   function closeArena() {
     $('arena-modal').classList.remove('show');
-    if (Game.state.year >= 2026) {
-      _showEndgame();
-    } else if (window._pendingAwardsYear) {
-      const yr = window._pendingAwardsYear;
-      window._pendingAwardsYear = null;
-      setTimeout(() => showAwards(yr), 300);
-    }
+    if (Game.state.year >= 2026) _showEndgame();
   }
 
   function _showEndgame() {
@@ -942,17 +936,17 @@ const UI = (() => {
    */
   function spawnMoneyPop(text) {
     const layer = $('notif-layer');
-    const el    = _el('div', 'money-pop');
+    const el = _el('div', 'money-pop');
     el.textContent = text;
-    el.style.left  = (28 + Math.random() * 42) + '%';
-    el.style.top   = (35 + Math.random() * 25) + '%';
+    el.style.left = (28 + Math.random() * 42) + '%';
+    el.style.top = (35 + Math.random() * 25) + '%';
     layer.appendChild(el);
     setTimeout(() => el.remove(), 1500);
   }
 
   /** Burst confetti particles in the factory area. */
   function spawnParticles() {
-    const layer  = $('notif-layer');
+    const layer = $('notif-layer');
     const colors = [
       'var(--neon-yellow)',
       'var(--neon-blue)',
@@ -960,18 +954,18 @@ const UI = (() => {
       'var(--neon-purple)',
       'var(--neon-orange)',
     ];
-    const count  = 20;
+    const count = 20;
 
     for (let i = 0; i < count; i++) {
       const p = _el('div', 'particle');
       const angle = (Math.PI * 2 * i) / count;
-      const dist  = 55 + Math.random() * 90;
+      const dist = 55 + Math.random() * 90;
       p.style.setProperty('--px', Math.cos(angle) * dist + 'px');
       p.style.setProperty('--py', Math.sin(angle) * dist + 'px');
-      p.style.left       = (42 + Math.random() * 14) + '%';
-      p.style.top        = '60%';
+      p.style.left = (42 + Math.random() * 14) + '%';
+      p.style.top = '60%';
       p.style.background = colors[i % colors.length];
-      p.style.boxShadow  = `0 0 6px ${colors[i % colors.length]}`;
+      p.style.boxShadow = `0 0 6px ${colors[i % colors.length]}`;
       p.style.animationDelay = (Math.random() * 0.1) + 's';
       layer.appendChild(p);
       setTimeout(() => p.remove(), 1000);
@@ -985,7 +979,7 @@ const UI = (() => {
   function flashScreen(big = false) {
     const flash = $('upgrade-flash');
     flash.style.background = big ? 'var(--neon-purple)' : 'var(--neon-blue)';
-    flash.style.opacity    = big ? '0.12' : '0.07';
+    flash.style.opacity = big ? '0.12' : '0.07';
     setTimeout(() => { flash.style.opacity = '0'; }, 200);
   }
 
@@ -997,7 +991,7 @@ const UI = (() => {
    */
   function mascotSpeak() {
     const speech = $('mascot-speech');
-    const quip   = MASCOT_QUIPS[Math.floor(Math.random() * MASCOT_QUIPS.length)];
+    const quip = MASCOT_QUIPS[Math.floor(Math.random() * MASCOT_QUIPS.length)];
     speech.textContent = quip;
     speech.classList.add('show');
     clearTimeout(_mascotTimer);
@@ -1020,10 +1014,10 @@ const UI = (() => {
 
     // Smile goes wider temporarily
     const mouth = $('mascot-mouth');
-    mouth.style.width       = '38px';
+    mouth.style.width = '38px';
     mouth.style.borderColor = 'var(--neon-yellow)';
     setTimeout(() => {
-      mouth.style.width       = '';
+      mouth.style.width = '';
       mouth.style.borderColor = '';
     }, 700);
   }
@@ -1050,8 +1044,8 @@ const UI = (() => {
 
   function handleBuyHardware(hwId) {
     const isServer = ['rack', 'megaDC', 'quantumDC'].includes(hwId);
-    const isGPU    = (hwId === 'cluster');
-    
+    const isGPU = (hwId === 'cluster');
+
     if (window.__phaserGame && (isServer || isGPU)) {
       const sm = window.__phaserGame.scene;
       let targetScene = isServer ? 'ServerRoomScene' : 'GPUClusterRoomScene';
@@ -1104,7 +1098,7 @@ const UI = (() => {
       // Switch back to main Office scene
       sm.switch('ServerRoomScene', 'GameDevStoryScene');
       sm.switch('GPUClusterRoomScene', 'GameDevStoryScene');
-      
+
       toast('Heading back to the Office...', 't-blue');
       setTimeout(() => {
         _performHireWorker();
@@ -1211,8 +1205,8 @@ const UI = (() => {
     for (let i = 0; i < 90; i++) {
       const star = _el('div', 'star');
       star.style.left = Math.random() * 100 + '%';
-      star.style.top  = Math.random() * 65 + '%';
-      star.style.setProperty('--dur',   (1.8 + Math.random() * 4) + 's');
+      star.style.top = Math.random() * 65 + '%';
+      star.style.setProperty('--dur', (1.8 + Math.random() * 4) + 's');
       star.style.setProperty('--delay', (Math.random() * 5) + 's');
       container.appendChild(star);
     }
