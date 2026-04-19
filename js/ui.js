@@ -30,6 +30,7 @@ const UI = (() => {
   let _mbSelectedArch = 'transformer';
   let _mbSelectedSize = 'mini';
   let _mbSelectedTraits = [];
+  const _lastStatText = {};
 
 
   // News Tracker
@@ -73,13 +74,13 @@ const UI = (() => {
     const mps = Game.getNetMoneyPerSecond();
     const c = s._computed || {};
 
-    $('stat-money').textContent = Fmt.money(s.money);
-    $('stat-compute').textContent = Fmt.compute(c.compute || 0);
+    _setStatText('stat-money', Fmt.money(s.money));
+    _setStatText('stat-compute', Fmt.compute(c.compute || 0));
     const tfEl = $('stat-tf');
-    if (tfEl) tfEl.textContent = Fmt.num(s.tf || 0, 0);
-    $('stat-electricity').textContent = Fmt.money(c.elec || 0) + '/s';
-    $('stat-users').textContent = Fmt.num(c.users || 0, 0);
-    $('stat-net').textContent = (mps >= 0 ? '+' : '') + Fmt.money(mps) + '/s';
+    if (tfEl) _setStatText('stat-tf', Fmt.num(s.tf || 0, 0));
+    _setStatText('stat-electricity', Fmt.money(c.elec || 0) + '/s');
+    _setStatText('stat-users', Fmt.num(c.users || 0, 0));
+    _setStatText('stat-net', (mps >= 0 ? '+' : '') + Fmt.money(mps) + '/s');
     if ($('logo-ai-name')) $('logo-ai-name').textContent = s.aiName;
 
     // Year + Month display
@@ -94,7 +95,7 @@ const UI = (() => {
 
     // Workers pill (if element exists)
     const wEl = $('stat-workers');
-    if (wEl) wEl.textContent = (c.workers || 0) + ' staff';
+    if (wEl) _setStatText('stat-workers', (c.workers || 0) + ' staff');
 
     // Electricity danger colour
     $('elec-pill').classList.toggle('danger', mps < 0);
@@ -116,6 +117,19 @@ const UI = (() => {
     const mm = String(Math.floor(rem / 60)).padStart(2, '0');
     const ss = String(Math.floor(rem % 60)).padStart(2, '0');
     $('next-comp').textContent = `NEXT ARENA: ${mm}:${ss}`;
+  }
+
+  function _setStatText(id, text) {
+    const el = $(id);
+    if (!el) return;
+    const value = String(text);
+    if (_lastStatText[id] !== undefined && _lastStatText[id] !== value) {
+      el.classList.remove('value-pulse');
+      void el.offsetWidth;
+      el.classList.add('value-pulse');
+    }
+    _lastStatText[id] = value;
+    el.textContent = value;
   }
 
   // ── ONBOARDING ────────────────────────────────────────────────────
