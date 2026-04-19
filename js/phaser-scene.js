@@ -103,6 +103,7 @@ class GameDevStoryScene extends BaseTycoonScene {
     this.load.on('filecomplete-spritesheet-worker_anim', () => ok('worker_anim'));
 
     this.load.audio('sfx_keyboard', 'assets/sound/keybord.wav');
+    this.load.audio('sfx_coin', 'assets/sound/coin.wav');
   }
 
   create() {
@@ -128,18 +129,26 @@ class GameDevStoryScene extends BaseTycoonScene {
       this.anims.create({
         key: 'worker_type',
         frames: this.anims.generateFrameNumbers('worker_anim', { start: 0, end: 1 }),
+        frameRate: 5,
+        repeat: -1,
       });
     }
 
-    // Keyboard sound loop
-    this._sndKeyboard = this.sound.add('sfx_keyboard', { loop: true, volume: 0.12 });
+    // Keyboard sound loop (Higher volume for feedback)
+    this._sndKeyboard = this.sound.add('sfx_keyboard', { loop: true, volume: 0.35 });
     this.events.on('wake', () => { if (!this._sndKeyboard.isPlaying) this._sndKeyboard.play(); });
     this.events.on('sleep', () => this._sndKeyboard.stop());
-    this.events.on('pause', () => this._sndKeyboard.pause());
-    this.events.on('resume', () => this._sndKeyboard.resume());
     
-    // Auto-start if it's the first scene
-    if (this.scene.isActive()) this._sndKeyboard.play();
+    // Resume AudioContext on any click
+    this.input.on('pointerdown', () => {
+      if (this.sound.context.state === 'suspended') {
+        this.sound.context.resume();
+      }
+    });
+
+    this._addGlobalListener('PLAY_SFX', (detail) => {
+      if (detail.key === 'coin') this.sound.play('sfx_coin', { volume: 0.5 });
+    });
 
     this._addGlobalListener('SPAWN_WORKER', (detail) => this._onSpawnWorker(detail));
     this._addGlobalListener('SPAWN_FEEDBACK', (detail) => this._onSpawnFeedback(detail));
@@ -235,6 +244,10 @@ class ServerRoomScene extends BaseTycoonScene {
       fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center'
     }).setOrigin(0, 0.5).setInteractive().setDepth(100);
     btnBack.on('pointerdown', () => this.scene.switch('GameDevStoryScene'));
+
+    this.input.on('pointerdown', () => {
+      if (this.sound.context.state === 'suspended') this.sound.context.resume();
+    });
 
     this._addGlobalListener('SPAWN_MACHINE', (detail) => this._onSpawnMachine(detail));
     
@@ -352,6 +365,8 @@ class GPUClusterRoomScene extends BaseTycoonScene {
         }
     }
 
+    this._setupResumeOnClick();
+
     // GPU Ambient Sound (Triggered every 3-8s as requested)
     this._gpuTimer = null;
     this.events.on('wake', () => this._startGpuAmbient());
@@ -367,6 +382,9 @@ class GPUClusterRoomScene extends BaseTycoonScene {
   _startGpuAmbient() {
     this._stopGpuAmbient();
     const clusterCount = Game.state.hardware?.cluster || 0;
+    
+    console.log(`[GPU Sound] Attempting start. Scene active: ${this.scene.isActive()}, Cluster count: ${clusterCount}`);
+    
     if (clusterCount <= 0) return;
 
     const playNext = () => {
@@ -374,11 +392,15 @@ class GPUClusterRoomScene extends BaseTycoonScene {
       const delay = Phaser.Math.Between(3000, 8000);
       this._gpuTimer = this.time.delayedCall(delay, () => {
         if (this.scene.isActive()) {
-          this.sound.play('sfx_gpu', { volume: 0.15 });
+          console.log(`[GPU Sound] Playing intermittent hum...`);
+          this.sound.play('sfx_gpu', { volume: 0.45 });
           playNext();
         }
       });
     };
+
+    // Play once immediately
+    this.sound.play('sfx_gpu', { volume: 0.45 });
     playNext();
   }
 
@@ -388,6 +410,13 @@ class GPUClusterRoomScene extends BaseTycoonScene {
       this._gpuTimer = null;
     }
     this.sound.stopByKey('sfx_gpu');
+  }
+
+  // Ensure AudioContext resumes here too
+  _setupResumeOnClick() {
+    this.input.on('pointerdown', () => {
+      if (this.sound.context.state === 'suspended') this.sound.context.resume();
+    });
   }
 
   _onSpawnMachine(detail) {

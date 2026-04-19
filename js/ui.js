@@ -1416,6 +1416,7 @@ const UI = (() => {
   function handleCollect() {
     const result = Game.collectMoney();
     if (result.ok) {
+      window.dispatchEvent(new CustomEvent('PLAY_SFX', { detail: { key: 'coin' } }));
       spawnMoneyPop(`+${Fmt.money(result.amount)}`);
       spawnParticles();
       flashScreen(false);
