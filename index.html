@@ -47,8 +47,17 @@
       <div class="stat-pill compute">
         <span class="pill-icon">🖥️</span>
         <div class="pill-body">
-          <div class="pill-label">COMPUTE</div>
-          <div class="pill-value" id="stat-compute">0 TF/s</div>
+          <div class="pill-label">COMPUTE (TF/s)</div>
+          <div class="pill-value" id="stat-compute">0</div>
+        </div>
+      </div>
+
+      <!-- TF Bank -->
+      <div class="stat-pill compute" style="border-color: #9050c0;">
+        <span class="pill-icon">🧠</span>
+        <div class="pill-body">
+          <div class="pill-label">TF COLLECTED</div>
+          <div class="pill-value" id="stat-tf" style="color: #9050c0;">0</div>
         </div>
       </div>
 
@@ -94,8 +103,8 @@
       <button id="hard-reset-btn" style="background:#a82020; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:10px;" onclick="if(confirm('Wipe ALL progress?')) Save.reset()">HARD RESET</button>
     </div>
 
-    <div class="year-badge" id="year-badge">
-      <span class="year-label">YEAR</span>
+    <div class="year-badge" id="year-badge" style="min-width: 140px;">
+      <span class="year-label" id="date-label">DAY 1 MONTH 1</span>
       <span class="year-value" id="year-value">2016</span>
     </div>
   </header>
@@ -186,16 +195,37 @@
               onclick="UI.switchTab('staff')">👥 STAFF</button>
       <button class="shop-tab" id="tab-ai" role="tab" aria-selected="false"
               onclick="UI.switchTab('ai')">🧠 AI TECH</button>
+      <button class="shop-tab" id="tab-business" role="tab" aria-selected="false"
+              onclick="UI.switchTab('business')">💼 BUSINESS</button>
+      <button class="shop-tab" id="tab-models" role="tab" aria-selected="false"
+              onclick="UI.switchTab('models')">🤖 AI LAB</button>
     </div>
     <!-- Shop items injected here by ui.js -->
     <div class="shop-content" id="shop-content"></div>
   </aside>
 
-  <!-- ── FOOTER LEADERBOARD ────────────────────────────────────── -->
-  <footer id="footer">
-    <div class="footer-label">🏆 GLOBAL AI ARENA</div>
-    <div class="lb-entries" id="lb-entries"></div>
-    <div class="next-comp" id="next-comp">NEXT ARENA: --:--</div>
+  <!-- ── FOOTER LEADERBOARD & NEWS ─────────────────────────────── -->
+  <footer id="footer" style="flex-direction: column; align-items: stretch; padding: 4px 16px;">
+    <!-- Leaderboard Row -->
+    <div style="display: flex; align-items: center; width: 100%; gap: 16px;">
+      <div class="footer-label">🏆 GLOBAL AI ARENA</div>
+      <div class="lb-entries" id="lb-entries" style="flex: 1;"></div>
+      <div class="next-comp" id="next-comp">NEXT ARENA: --:--</div>
+    </div>
+    
+    <!-- X News Ticker Row -->
+    <div style="display: flex; align-items: center; width: 100%; border-top: 2px solid var(--border-mid); padding-top: 4px; margin-top: 2px;">
+      <div class="footer-label" style="color: #1da1f2; margin-right: 12px; font-weight: bold;">✖ NEWS</div>
+      <div style="flex: 1; overflow: hidden; white-space: nowrap; position: relative;">
+        <div id="x-news-ticker" style="font-family: var(--font-pixel); font-size: 0.32rem; color: var(--text-dark); position: absolute; left: 100%; animation: ticker 20s linear infinite;">No major incidents reported. All systems optimal.</div>
+      </div>
+      <style>
+        @keyframes ticker { 
+          0% { left: 100%; } 
+          100% { left: -100%; } 
+        }
+      </style>
+    </div>
   </footer>
 
   <!-- Onboarding Modal (Moved inside #app) -->
@@ -263,6 +293,56 @@
   </div>
 </div>
 
+<!-- ================================================================
+     MODEL BUILDER MODAL
+================================================================ -->
+<div class="modal-overlay" id="model-builder-modal" role="dialog" aria-modal="true" style="z-index:1500;">
+  <div class="modal-box pixel-border" style="width:680px; max-height:90vh; overflow-y:auto;">
+    <div class="modal-title">🤖 CUSTOM AI MODEL BUILDER</div>
+    <div class="modal-subtitle">Design your own AI from scratch</div>
+
+    <!-- Step 1: Name + Architecture -->
+    <div id="mb-step-arch">
+      <div style="margin: 12px 0; display:flex; gap: 12px; align-items:center;">
+        <label style="font-family:var(--font-pixel); font-size:0.55rem; color:var(--accent);">MODEL NAME</label>
+        <input type="text" id="mb-model-name" placeholder="e.g. ChillGPT-Ultra" style="flex:1; background:#1b2340; color:#e8f0ff; border:2px solid var(--accent); padding:6px; font-family:var(--font-pixel); font-size:0.5rem;" />
+      </div>
+
+      <div style="font-family:var(--font-pixel); font-size:0.55rem; color:var(--accent); margin: 8px 0;">CHOOSE ARCHITECTURE</div>
+      <div id="mb-arch-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:12px;"></div>
+
+      <div style="font-family:var(--font-pixel); font-size:0.55rem; color:var(--accent); margin: 8px 0;">CHOOSE SIZE</div>
+      <div id="mb-size-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:12px;"></div>
+
+      <div style="font-family:var(--font-pixel); font-size:0.55rem; color:var(--accent); margin: 8px 0;">CHOOSE TRAITS (max 2)</div>
+      <div id="mb-trait-grid" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px; margin-bottom:12px;"></div>
+
+      <!-- Preview panel -->
+      <div id="mb-preview" style="background:#1b2340; border:2px solid var(--accent); padding:12px; margin-bottom:12px; font-family:var(--font-pixel); font-size:0.45rem; color:var(--text-light);">
+        <div style="font-size:0.6rem; color:var(--accent); margin-bottom:6px;">📊 MODEL PREVIEW</div>
+        <div id="mb-preview-content">Select architecture + size to see preview...</div>
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <button class="modal-close-btn" style="flex:1; background:#333;" onclick="document.getElementById('model-builder-modal').classList.remove('show');">CANCEL</button>
+        <button class="modal-close-btn" style="flex:2;" id="mb-design-btn" onclick="UI.handleDesignModel()">BUILD THIS MODEL →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     AI AWARDS MODAL
+================================================================ -->
+<div class="modal-overlay" id="awards-modal" role="dialog" aria-modal="true" style="z-index:1200;">
+  <div class="modal-box pixel-border" style="width:600px;">
+    <div class="modal-title">🏟️ YEAR-END AI AWARDS</div>
+    <div class="modal-subtitle" id="awards-year-label"></div>
+    <div id="awards-body" style="padding: 8px 0;"></div>
+    <button class="modal-close-btn" onclick="UI.closeAwards()">🚀 NEXT YEAR →</button>
+  </div>
+</div>
+
 <!-- Year transition overlay -->
 <div id="year-transition" aria-live="assertive" aria-label="Year change announcement">
   <div class="year-splash" id="year-splash-num">2017</div>
@@ -277,11 +357,13 @@
 <!-- ================================================================
      SCRIPTS  (order matters — data first, then logic, then UI)
 ================================================================ -->
-<script src="js/upgrades.js?v=2"></script>
-<script src="js/save.js?v=2"></script>
-<script src="js/game.js?v=2"></script>
-<script src="js/ui.js?v=2"></script>
-<script src="js/main.js?v=2"></script>
-<script src="js/phaser-scene.js?v=2"></script>
+<script src="js/upgrades.js?v=3"></script>
+<script src="js/market.js?v=3"></script>
+<script src="js/models.js?v=3"></script>
+<script src="js/save.js?v=3"></script>
+<script src="js/game.js?v=3"></script>
+<script src="js/ui.js?v=3"></script>
+<script src="js/main.js?v=3"></script>
+<script src="js/phaser-scene.js?v=3"></script>
 </body>
 </html>

@@ -94,6 +94,11 @@ class GameDevStoryScene extends BaseTycoonScene {
     const ok = (key) => { this._ok[key] = true; };
     this.load.image('bg', 'assets/images/empty_office_room_wide.png');
     this.load.on('filecomplete-image-bg', () => ok('bg'));
+    
+    // Preload objects used by the Visual Layout Editor
+    this.load.image('desk', 'assets/images/desk1.png');
+    this.load.on('filecomplete-image-desk', () => ok('desk'));
+
     this.load.spritesheet('worker_anim', 'assets/images/staff.png', { frameWidth: UPGRADE_FRAME_W, frameHeight: UPGRADE_FRAME_H });
     this.load.on('filecomplete-spritesheet-worker_anim', () => ok('worker_anim'));
   }
@@ -127,6 +132,17 @@ class GameDevStoryScene extends BaseTycoonScene {
 
     this._addGlobalListener('SPAWN_WORKER', (detail) => this._onSpawnWorker(detail));
     this._addGlobalListener('SPAWN_FEEDBACK', (detail) => this._onSpawnFeedback(detail));
+    
+    // ── Placed objects ──
+    // ── EDITOR_LAYOUT_BEGIN ──
+    // ── Placed by Visual Layout Editor (% of canvas, auto-scales) ──
+    const desk_2 = this.add.image(Math.round(W*0.2663), Math.round(H*0.6539), 'desk')
+      .setOrigin(0.50, 0.50)
+      .setDisplaySize(Math.round(W*0.1060), Math.round(H*0.2133))
+      .setDepth(2).setAlpha(1.00);
+
+    // ── EDITOR_LAYOUT_END ──
+
     this._syncWithGameState();
   }
 

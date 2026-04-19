@@ -26,6 +26,41 @@ const UI = (() => {
   // Mascot speech timer
   let _mascotTimer = null;
 
+  // Model Builder state
+  let _mbSelectedArch  = 'transformer';
+  let _mbSelectedSize  = 'mini';
+  let _mbSelectedTraits = [];
+
+
+  // News Tracker
+  let _lastNewsDay = -1;
+  const NEWS_HEADLINES = [
+    "AI generated art wins state fair competition. Artists furious.",
+    "Major incident: Self-driving AI hallucinated a stop sign. No injuries.",
+    "New AI model passes the bar exam in the 90th percentile.",
+    "Tech CEOs testify before congress about superhuman AI.",
+    "Viral X trend: 'Is my boyfriend actually an AI?'",
+    "Open Source community releases model challenging enterprise leaders.",
+    "Hackathon weekend: Thousands of devs build apps on new AI API.",
+    "AI generated video goes viral, plunging stock markets temporarily.",
+    "AI agents spotted trading cryptos automatically. Markets volatile.",
+    "New study claims AI may soon automate 40% of standard IT tasks.",
+    "Incident: AI assistant ordered 100 pizzas to a user's home."
+  ];
+
+  function _updateNewsTicker(day) {
+    if (day !== _lastNewsDay) {
+      _lastNewsDay = day;
+      if (Math.random() < 0.15) { // 15% chance per day to change news
+        const news = NEWS_HEADLINES[Math.floor(Math.random() * NEWS_HEADLINES.length)];
+        const el = $('x-news-ticker');
+        // Randomly insert the company/AI name
+        const personalizedNews = news.replace(/AI/g, Game.state.aiName);
+        if (el) el.textContent = `[BREAKING] Day ${day}: ${personalizedNews}`;
+      }
+    }
+  }
+
 
   // ── STAT BAR UPDATE ──────────────────────────────────────────────
 
@@ -40,15 +75,22 @@ const UI = (() => {
 
     $('stat-money').textContent      = Fmt.money(s.money);
     $('stat-compute').textContent    = Fmt.compute(c.compute || 0);
+    const tfEl = $('stat-tf');
+    if (tfEl) tfEl.textContent       = Fmt.num(s.tf || 0, 0);
     $('stat-electricity').textContent = Fmt.money(c.elec || 0) + '/s';
     $('stat-users').textContent      = Fmt.num(c.users || 0, 0);
     $('stat-net').textContent        = (mps >= 0 ? '+' : '') + Fmt.money(mps) + '/s';
     if ($('logo-ai-name')) $('logo-ai-name').textContent = s.aiName;
 
     // Year + Month display
-    const month  = s.currentMonth || 1;
-    const mo     = String(month).padStart(2, '0');
-    $('year-value').textContent = `${s.year} / M${mo}`;
+    // Date breakdown display
+    const month = (s.currentMonth || 1).toString().padStart(2, '0');
+    const day   = (s.currentDay || 1).toString().padStart(2, '0');
+    const dateLabelEl = $('date-label');
+    if (dateLabelEl) dateLabelEl.textContent = `DAY ${day} MTH ${month}`;
+    $('year-value').textContent = s.year;
+
+    _updateNewsTicker(s.currentDay);
 
     // Workers pill (if element exists)
     const wEl = $('stat-workers');
@@ -112,15 +154,14 @@ const UI = (() => {
    */
   function switchTab(tab) {
     _currentTab = tab;
-    $('tab-hardware').classList.toggle('active', tab === 'hardware');
-    $('tab-hardware').setAttribute('aria-selected', tab === 'hardware');
-    $('tab-ai').classList.toggle('active',       tab === 'ai');
-    $('tab-ai').setAttribute('aria-selected',       tab === 'ai');
-    const staffTab = $('tab-staff');
-    if (staffTab) {
-      staffTab.classList.toggle('active', tab === 'staff');
-      staffTab.setAttribute('aria-selected', tab === 'staff');
-    }
+    const tabs = ['hardware','staff','ai','business','models'];
+    tabs.forEach(t => {
+      const el = $(`tab-${t}`);
+      if (el) {
+        el.classList.toggle('active',         tab === t);
+        el.setAttribute('aria-selected', String(tab === t));
+      }
+    });
     renderShop();
   }
 
@@ -136,6 +177,10 @@ const UI = (() => {
       _renderHardwareTab(container);
     } else if (_currentTab === 'staff') {
       _renderStaffTab(container);
+    } else if (_currentTab === 'business') {
+      _renderBusinessTab(container);
+    } else if (_currentTab === 'models') {
+      _renderAILabTab(container);
     } else {
       _renderAITab(container);
     }
@@ -205,7 +250,8 @@ const UI = (() => {
     for (const upg of AI_UPGRADES) {
       const owned  = Game.state.unlockedUpgrades.includes(upg.id);
       const locked = Game.state.year < upg.requireYear;
-      const canBuy = !locked && !owned && Game.state.money >= upg.cost;
+      const tfCost = upg.tfCost || 0;
+      const canBuy = !locked && !owned && Game.state.money >= upg.cost && Game.state.tf >= tfCost;
 
       const card = _el('div', `shop-card ai${locked ? ' locked' : ''}${owned ? ' owned' : ''}`);
       card.innerHTML = `
@@ -215,17 +261,301 @@ const UI = (() => {
           <div class="card-desc">${upg.desc.replace(/ChillGPT/g, Game.state.aiName)}</div>
           <div class="card-badges">
             <span class="badge ${upg.badgeClass}">${upg.badge}</span>
+            <span class="badge badge-purple" style="border-color:#9050c0; color:#501880;">Cost: ${Fmt.num(tfCost)} TF</span>
             ${locked ? `<span class="badge badge-red">UNLOCKS ${upg.requireYear}</span>` : ''}
           </div>
         </div>
-        <div class="card-right">
+        <div class="card-right" style="justify-content:center;">
           <button
             class="buy-btn ai-btn${owned ? ' owned-btn' : ''}${!canBuy && !owned ? ' cant-afford' : ''}"
+            style="min-width: 90px; padding: 6px;"
             data-ai="${upg.id}"
             onclick="UI.handleBuyAI('${upg.id}')"
             ${owned || locked ? 'disabled' : ''}
             aria-label="${owned ? upg.name + ' owned' : 'Buy ' + upg.name}"
           >${owned ? '✅ OWNED' : locked ? `🔒 ${upg.requireYear}` : Fmt.money(upg.cost)}</button>
+        </div>
+      `;
+      container.appendChild(card);
+    }
+  }
+
+  // ── AI LAB TAB ────────────────────────────────────────────────────
+
+  function _renderAILabTab(container) {
+    _sectionTitle(container, '🤖 AI MODEL LAB');
+
+    const training = ModelBuilder.getTrainingJob();
+    if (training) {
+      const prog = container.appendChild(_el('div', 'shop-card info-card'));
+      const pct  = Math.round(Math.min(training.elapsed / training.totalSec, 1) * 100);
+      prog.innerHTML = `
+        <div class="card-icon" style="font-size:20px;">⚙️</div>
+        <div class="card-body" style="width:100%;">
+          <div class="card-name" style="font-size:10px;">TRAINING: ${training.modelName}</div>
+          <div style="background:#111; border: 1px solid var(--accent); height:8px; margin:6px 0;">
+            <div style="background: linear-gradient(90deg, #39d87e, #2ba88f); height:100%; width:${pct}%; transition:width 0.5s;"></div>
+          </div>
+          <div style="font-family:var(--font-mono); font-size:0.4rem; color:var(--accent);">${pct}% — ${Math.round(Math.max(0, training.totalSec - training.elapsed))}s remaining</div>
+        </div>`;
+    }
+
+    const openBtn = _el('div', 'shop-card hw');
+    openBtn.innerHTML = `
+      <div class="card-icon" style="font-size:24px;">➕</div>
+      <div class="card-body"><div class="card-name">DESIGN NEW MODEL</div><div class="card-desc">Open the model builder to design a custom AI architecture from scratch.</div></div>
+      <div class="card-right"><button class="buy-btn" onclick="UI.openModelBuilder()" style="min-width:80px;">DESIGN</button></div>`;
+    container.appendChild(openBtn);
+
+    const models = ModelBuilder.getAllModels();
+    if (models.length > 0) {
+      _sectionTitle(container, '📋 YOUR MODELS');
+      for (const m of [...models].reverse()) {
+        const arch = ModelBuilder.getArchitectures().find(a => a.id === m.archId);
+        const size = ModelBuilder.getModelSizes().find(s => s.id === m.sizeId);
+        const card = _el('div', 'shop-card ai');
+        let actionBtn = '';
+        if (m.status === 'designed') {
+          const canTrain = Game.state.tf >= m.tfNeeded && !training;
+          actionBtn = `<button class="buy-btn ${canTrain ? '' : 'cant-afford'}" ${training ? 'disabled' : ''} onclick="UI.handleStartTraining(${m.id})" style="min-width:80px;font-size:8px;">TRAIN<br><small>${Fmt.num(m.tfNeeded)} TF</small></button>`;
+        } else if (m.status === 'training') {
+          actionBtn = `<button class="buy-btn owned-btn" disabled style="min-width:80px;font-size:8px;">TRAINING...</button>`;
+        } else if (m.status === 'trained') {
+          actionBtn = `<button class="buy-btn" onclick="UI.openReleaseModal(${m.id})" style="min-width:80px;font-size:8px;">RELEASE 🚀</button>`;
+        } else if (m.status === 'released') {
+          const mkt = (typeof Market !== 'undefined') ? Market.getMarket(m.marketId) : null;
+          actionBtn = `<div class="card-count" style="text-align:center;">${mkt ? mkt.icon : '🌍'} LIVE<br><small style="color:#39d87e">${Fmt.money(ModelBuilder.getModelIncomePerSecond())}/s</small></div>`;
+        }
+        card.innerHTML = `
+          <div class="card-icon" style="font-size:20px;">${arch ? arch.icon : '🤖'}</div>
+          <div class="card-body">
+            <div class="card-name" style="font-size:10px;">${m.name}</div>
+            <div class="card-desc">${arch ? arch.name : ''} · ${size ? size.label : ''} · Score: ${m.perfScore}</div>
+            <div class="card-badges">
+              <span class="badge badge-blue">${m.status.toUpperCase()}</span>
+              ${(m.traitIds||[]).map(tid => { const t = ModelBuilder.getTraits().find(t => t.id === tid); return t ? `<span class="badge badge-green">${t.icon}</span>` : ''; }).join('')}
+            </div>
+          </div>
+          <div class="card-right" style="justify-content:center;">${actionBtn}</div>`;
+        container.appendChild(card);
+      }
+    } else {
+      const empty = _el('div', 'shop-card info-card');
+      empty.innerHTML = `<div class="card-icon">💡</div><div class="card-body"><div class="card-name">NO MODELS YET</div><div class="card-desc">Design and train your first AI model to start earning AI deployment revenue!</div></div>`;
+      container.appendChild(empty);
+    }
+
+    if (typeof Market !== 'undefined') {
+      _sectionTitle(container, '📈 MARKET DEMAND');
+      const markets = Market.getMarkets();
+      const mktCard = _el('div', 'shop-card info-card');
+      mktCard.innerHTML = `<div class="card-body" style="width:100%;">${markets.map(mk => `
+        <div style="display:flex; align-items:center; margin:4px 0;">
+          <span style="font-family:var(--font-pixel); font-size:0.4rem; min-width:100px;">${mk.icon} ${mk.name}</span>
+          <div style="flex:1; margin:0 8px; background:#111; height:6px; border:1px solid #333;">
+            <div style="background:${mk.demand > 0.7 ? '#39d87e' : mk.demand > 0.4 ? '#f5c842' : '#e74c3c'}; height:100%; width:${Math.round(mk.demand * 100)}%;"></div>
+          </div>
+          <span style="font-family:var(--font-mono); font-size:0.4rem;">${Math.round(mk.demand * 100)}%</span>
+        </div>`).join('')}</div>`;
+      container.appendChild(mktCard);
+    }
+  }
+
+  function openModelBuilder() {
+    _mbSelectedArch   = 'transformer';
+    _mbSelectedSize   = 'mini';
+    _mbSelectedTraits = [];
+    _buildModelBuilderModal();
+    document.getElementById('model-builder-modal').classList.add('show');
+  }
+
+  function _buildModelBuilderModal() {
+    const archGrid = $('mb-arch-grid');
+    if (archGrid) {
+      archGrid.innerHTML = '';
+      ModelBuilder.getArchitectures().forEach(arch => {
+        const btn = document.createElement('button');
+        btn.className = `buy-btn ${_mbSelectedArch === arch.id ? 'owned-btn' : ''}`;
+        btn.style.cssText = 'text-align:left; padding:8px; display:flex; flex-direction:column; gap:2px; font-size:0.38rem;';
+        btn.innerHTML = `<span style="font-size:1.5rem;">${arch.icon}</span><b>${arch.name}</b><small style="font-family:var(--font-mono);">${arch.desc}</small><small style="color:#f5c842;">TF ×${arch.tfMult}</small>`;
+        btn.onclick = () => { _mbSelectedArch = arch.id; _buildModelBuilderModal(); };
+        archGrid.appendChild(btn);
+      });
+    }
+
+    const sizeGrid = $('mb-size-grid');
+    if (sizeGrid) {
+      sizeGrid.innerHTML = '';
+      ModelBuilder.getModelSizes().forEach(sz => {
+        const arch = ModelBuilder.getArchitectures().find(a => a.id === _mbSelectedArch);
+        const tfNeeded = Math.floor(sz.tfBase * (arch ? arch.tfMult : 1));
+        const haveTF   = Game.state.tf >= tfNeeded;
+        const btn = document.createElement('button');
+        btn.className = `buy-btn ${_mbSelectedSize === sz.id ? 'owned-btn' : ''} ${!haveTF ? 'cant-afford' : ''}`;
+        btn.style.cssText = 'text-align:left; padding:8px; font-size:0.38rem;';
+        btn.innerHTML = `${sz.icon} <b>${sz.label}</b> · ${Fmt.num(tfNeeded)} TF · ${sz.timeSec}s`;
+        btn.onclick = () => { _mbSelectedSize = sz.id; _buildModelBuilderModal(); };
+        sizeGrid.appendChild(btn);
+      });
+    }
+
+    const traitGrid = $('mb-trait-grid');
+    if (traitGrid) {
+      traitGrid.innerHTML = '';
+      ModelBuilder.getTraits().forEach(t => {
+        const sel = _mbSelectedTraits.includes(t.id);
+        const btn = document.createElement('button');
+        btn.className = `buy-btn ${sel ? 'owned-btn' : ''}`;
+        btn.style.cssText = 'text-align:left; padding:6px; font-size:0.36rem;';
+        btn.innerHTML = `${t.icon} ${t.name}<br><small style="font-weight:normal;">${t.desc}</small>`;
+        btn.onclick = () => {
+          if (sel) _mbSelectedTraits = _mbSelectedTraits.filter(id => id !== t.id);
+          else if (_mbSelectedTraits.length < 2) _mbSelectedTraits.push(t.id);
+          _buildModelBuilderModal();
+        };
+        traitGrid.appendChild(btn);
+      });
+    }
+
+    const prev = $('mb-preview-content');
+    if (prev) {
+      const arch = ModelBuilder.getArchitectures().find(a => a.id === _mbSelectedArch);
+      const sz   = ModelBuilder.getModelSizes().find(s => s.id === _mbSelectedSize);
+      if (arch && sz) {
+        const tfNeeded  = Math.floor(sz.tfBase * arch.tfMult);
+        const perfScore = Math.floor((sz.perfBase + arch.perfBonus) * (1 + _mbSelectedTraits.length * 0.1));
+        const canAfford = Game.state.tf >= tfNeeded;
+        prev.innerHTML = `
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+            <div><div style="color:#888;">Architecture</div><b>${arch.name}</b></div>
+            <div><div style="color:#888;">Size</div><b>${sz.label}</b></div>
+            <div><div style="color:#888;">Perf Score</div><b style="color:#39d87e;">${perfScore}</b></div>
+            <div><div style="color:#888;">TF Cost</div><b style="color:${canAfford ? '#39d87e' : '#e74c3c'};">${Fmt.num(tfNeeded)} TF</b></div>
+            <div><div style="color:#888;">Train Time</div><b>${sz.timeSec}s</b></div>
+            <div><div style="color:#888;">Traits</div><b>${_mbSelectedTraits.length}/2</b></div>
+          </div>
+          <div style="margin-top:8px; color:#999;">Best Markets: ${arch.markets.join(', ')}</div>
+          ${!canAfford ? `<div style="color:#e74c3c;margin-top:6px;">⚠️ Need ${Fmt.num(tfNeeded - Math.floor(Game.state.tf))} more TF</div>` : ''}`;
+      }
+    }
+  }
+
+  function handleDesignModel() {
+    const nameEl = $('mb-model-name');
+    const result = ModelBuilder.designModel({ name: nameEl ? nameEl.value : '', archId: _mbSelectedArch, sizeId: _mbSelectedSize, traitIds: _mbSelectedTraits });
+    if (result.ok) {
+      document.getElementById('model-builder-modal').classList.remove('show');
+      toast(result.message, 't-green');
+      switchTab('models');
+    } else {
+      toast(result.message, 't-red');
+    }
+  }
+
+  function handleStartTraining(modelId) {
+    const result = ModelBuilder.startTraining(modelId);
+    if (result.ok) { toast(result.message, 't-blue'); renderShop(); }
+    else { toast(result.message, 't-red'); }
+  }
+
+  function openReleaseModal(modelId) {
+    const existing = document.getElementById('release-overlay');
+    if (existing) existing.remove();
+    const markets  = Market.getMarkets();
+    const choices  = markets.map(mk =>
+      `<button class="buy-btn" style="margin:4px; padding:8px 12px; font-size:0.4rem;" onclick="UI.handleReleaseModel(${modelId},'${mk.id}')">${mk.icon} ${mk.name}<br><small>Demand: ${Math.round(mk.demand*100)}%</small></button>`
+    ).join('');
+    const overlay = document.createElement('div');
+    overlay.id = 'release-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:1800;';
+    overlay.innerHTML = `<div class="modal-box pixel-border" style="width:500px;"><div class="modal-title">🚀 RELEASE MODEL</div><div class="modal-subtitle">Choose a market segment</div><div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin:12px 0;">${choices}</div><button class="modal-close-btn" style="background:#333;" onclick="document.getElementById('release-overlay')?.remove()">CANCEL</button></div>`;
+    document.body.appendChild(overlay);
+  }
+
+  function handleReleaseModel(modelId, marketId) {
+    document.getElementById('release-overlay')?.remove();
+    const result = ModelBuilder.releaseModel(modelId, marketId);
+    if (result.ok) { toast(result.message, 't-green'); if (typeof flashScreen === 'function') flashScreen(true); mascotHappy(true); renderShop(); }
+    else { toast(result.message, 't-red'); }
+  }
+
+  function showAwards(year) {
+    const awards = ModelBuilder.calculateAwards();
+    const body   = $('awards-body');
+    const lbl    = $('awards-year-label');
+    if (lbl) lbl.textContent = `YEAR ${year} RESULTS`;
+    if (body) {
+      body.innerHTML = '';
+      let bonus = 0;
+      awards.forEach(award => {
+        const row = _el('div', '');
+        row.style.cssText = 'display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #333;font-family:var(--font-pixel);font-size:0.42rem;gap:10px;flex-wrap:wrap;';
+        const win  = award.playerWins ? `<span style="color:#39d87e;">🏆 YOU WIN — ${award.modelName}</span>` : `<span style="color:#e74c3c;">❌ ${award.modelName}</span>`;
+        const rew  = (award.playerWins && award.reward) ? `<span style="color:#f5c842;margin-left:auto;">+${Fmt.money(award.reward.cash)}</span>` : '';
+        row.innerHTML = `<b>${award.category}</b>${win}${rew}`;
+        body.appendChild(row);
+        if (award.playerWins && award.reward) bonus += award.reward.cash;
+      });
+      if (bonus > 0) {
+        Game.state.money += bonus; Game.state.totalMoneyEarned += bonus;
+        const msg = _el('div', '');
+        msg.style.cssText = 'text-align:center;padding:12px;font-family:var(--font-pixel);font-size:0.5rem;color:#f5c842;';
+        msg.textContent = `🎊 AWARD PAYOUT: +${Fmt.money(bonus)}!`;
+        body.appendChild(msg);
+      }
+    }
+    const modal = $('awards-modal'); if (modal) modal.classList.add('show');
+  }
+
+  function closeAwards() {
+    const modal = $('awards-modal'); if (modal) modal.classList.remove('show');
+  }
+
+  // ── BUSINESS TAB ──────────────────────────────────────────────────
+
+  function _renderBusinessTab(container) {
+    _sectionTitle(container, '💼 BUSINESS STRATEGY');
+
+    // Model Selection
+    const type = Game.state.modelType || 'opensource';
+    const selBox = _el('div', 'shop-card info-card');
+    selBox.innerHTML = `
+      <div class="card-icon">🧠</div>
+      <div class="card-body">
+        <div class="card-name">AI MODEL TYPE</div>
+        <div class="card-desc">Choose how you deploy your AI. This affects revenue and active users.</div>
+        <div style="margin-top: 8px; display: flex; gap: 8px;">
+          <button class="buy-btn ${type === 'opensource' ? 'owned-btn' : ''}" style="padding: 4px; font-size: 8px; flex: 1;" onclick="UI.handleChangeModel('opensource')">OPEN SOURCE</button>
+          <button class="buy-btn ${type === 'subscription' ? 'owned-btn' : ''}" style="padding: 4px; font-size: 8px; flex: 1;" onclick="UI.handleChangeModel('subscription')">SUBSCRIPTION</button>
+          <button class="buy-btn ${type === 'private' ? 'owned-btn' : ''}" style="padding: 4px; font-size: 8px; flex: 1;" onclick="UI.handleChangeModel('private')">PRIVATE</button>
+        </div>
+      </div>
+    `;
+    container.appendChild(selBox);
+    
+    // Marketing
+    _sectionTitle(container, '📢 MARKETING CAMPAIGNS');
+    const m = Game.state.marketing || { hackathon: 0, gamejam: 0, xCampaign: 0 };
+    const campaigns = [
+      { id: 'hackathon', name: 'Sponsor Hackathon', desc: 'Sponsor a local hackathon. +5% Users per level.', cost: 2000, lvl: m.hackathon },
+      { id: 'gamejam', name: 'Sponsor GameJam', desc: 'Sponsor a global GameJam. +5% Users per level.', cost: 10000, lvl: m.gamejam },
+      { id: 'xCampaign', name: 'X Viral Campaign', desc: 'Massive visibility on X (formerly Twitter). +10% Users.', cost: 75000, lvl: m.xCampaign },
+    ];
+    
+    for (const c of campaigns) {
+      const canBuy = Game.state.money >= c.cost;
+      const card = _el('div', 'shop-card');
+      card.innerHTML = `
+        <div class="card-icon">📈</div>
+        <div class="card-body">
+          <div class="card-name">${c.name} <span class="badge badge-purple" style="font-size: 8px;">Lv ${c.lvl}</span></div>
+          <div class="card-desc">${c.desc}</div>
+        </div>
+        <div class="card-right" style="justify-content:center;">
+          <button class="buy-btn ${canBuy ? '' : 'cant-afford'}" style="min-width: 90px; padding: 6px;"
+            onclick="UI.handleBuyMarketing('${c.id}')">
+            ${Fmt.money(c.cost)}
+          </button>
         </div>
       `;
       container.appendChild(card);
@@ -280,6 +610,26 @@ const UI = (() => {
       </div>
     `;
     container.appendChild(info);
+    
+    // Roster 
+    if (Game.state.inventory && Game.state.inventory.workersList && Game.state.inventory.workersList.length > 0) {
+      _sectionTitle(container, '🗂️ ACTIVE ROSTER');
+      for (const w of Game.state.inventory.workersList) {
+        const rosterCard = _el('div', 'shop-card info-card');
+        rosterCard.style.minHeight = '40px';
+        rosterCard.style.padding = '8px';
+        rosterCard.innerHTML = `
+          <div class="card-icon" style="font-size: 20px;">👤</div>
+          <div class="card-body" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            <div class="card-name" style="font-size: 10px;">${w.name}</div>
+            <div class="card-badges">
+              <span class="badge badge-purple" style="font-size: 9px; padding: 4px;">SKILL: ${w.skill}</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(rosterCard);
+      }
+    }
   }
 
   /**
@@ -518,10 +868,16 @@ const UI = (() => {
     return ['', '↑ RISING', '→ STABLE', '↓ FALLING'][rank] || '↓ FALLING';
   }
 
-  /** Close the arena modal. */
+  /** Close the arena modal, then show AI Awards. */
   function closeArena() {
     $('arena-modal').classList.remove('show');
-    if (Game.state.year >= 2026) _showEndgame();
+    if (Game.state.year >= 2026) {
+      _showEndgame();
+    } else if (window._pendingAwardsYear) {
+      const yr = window._pendingAwardsYear;
+      window._pendingAwardsYear = null;
+      setTimeout(() => showAwards(yr), 300);
+    }
   }
 
   function _showEndgame() {
@@ -546,8 +902,13 @@ const UI = (() => {
 
     setTimeout(() => {
       overlay.classList.remove('show');
-      // Small delay before arena pops up
-      setTimeout(() => showArena(prevYear, newYear), 400);
+      // Small delay before arena pops up, then awards
+      setTimeout(() => {
+        showArena(prevYear, newYear);
+        // Schedule awards to show after arena closes (we piggyback on arena close delay)
+        const origClose = window._arenaCloseCallback;
+        window._pendingAwardsYear = prevYear;
+      }, 400);
     }, 2200);
 
     // Update location sign and refresh machines
@@ -779,6 +1140,29 @@ const UI = (() => {
     }
   }
 
+  function handleChangeModel(model) {
+    const result = Game.changeModel(model);
+    if (result.ok) {
+      renderShop();
+      toast(result.message, 't-blue');
+    } else {
+      toast(result.message, 't-red');
+    }
+  }
+
+  function handleBuyMarketing(type) {
+    const result = Game.buyMarketing(type);
+    if (result.ok) {
+      updateStats();
+      renderShop();
+      if (typeof flashScreen === 'function') flashScreen(false);
+      mascotHappy(true);
+      toast(result.message, 't-green');
+    } else {
+      toast(result.message, 't-red');
+    }
+  }
+
   /** Grant $1M and save - developer only */
   function activateDevMode() {
     Game.state.money += 1000000;
@@ -906,6 +1290,17 @@ const UI = (() => {
     handleBuyAI,
     handleHireWorker,
     handleCollect,
+    handleChangeModel,
+    handleBuyMarketing,
+
+    // AI Lab
+    openModelBuilder,
+    handleDesignModel,
+    handleStartTraining,
+    openReleaseModal,
+    handleReleaseModel,
+    showAwards,
+    closeAwards,
 
     // Dev Mode
     activateDevMode,
@@ -922,9 +1317,18 @@ const UI = (() => {
 
 })();
 
-// ── Wire up collect button (HTML onclick calls Game.collectMoney but we want UI.handleCollect)
-// Override the simple reference in index.html
+// ── Wire up collect button
 window.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('collect-btn');
   if (btn) btn.onclick = () => UI.handleCollect();
+});
+
+// ── Listen for training completion event
+window.addEventListener('MODEL_TRAINED', (e) => {
+  const model = e.detail.model;
+  if (model) {
+    UI.toast(`✅ "${model.name}" training complete! Go release it!`, 't-green');
+    UI.mascotHappy(true);
+    UI.switchTab('models');
+  }
 });

@@ -30,8 +30,11 @@ const Game = (() => {
       yearProgress:       0,       // seconds elapsed inside the current year
       yearDuration:       210,     // real seconds per in-game year (3.5 min)
 
-      /** In-game month inside the current year (1–12) */
+      /** Date breakdown */
       currentMonth:       1,
+      currentDay:         1,
+
+      tf:                 0,       // Collected Teraflops (TF) currency
 
       trainProgress:      0,       // 0–100, controls the training bar
 
@@ -54,12 +57,21 @@ const Game = (() => {
       /* Staff / physical room inventory */
       inventory: {
         workers:     1,    // starting with one worker (the founder)
+        workersList: [],   // Array of { id, skill, name }
         serverRacks: 0,
         dataCenters: 0,
       },
 
       /** Array of AI upgrade IDs that have been purchased */
       unlockedUpgrades: [],
+
+      /** Business Data */
+      modelType: 'opensource', // 'opensource', 'subscription', 'private'
+      marketing: {
+        hackathon: 0,
+        gamejam: 0,
+        xCampaign: 0
+      },
 
       lastSave: Date.now(),
     };
@@ -100,11 +112,24 @@ const Game = (() => {
   }
 
   /**
-   * Active user count derived from compute and multiplier.
+   * Active user count derived from compute, multiplier, model type, and marketing.
    * @returns {number}
    */
   function getUsers() {
-    return Math.floor(getTotalCompute() * state.mult.computeToUsers);
+    let baseUsers = getTotalCompute() * state.mult.computeToUsers;
+    
+    // Marketing boosts (+10% per level)
+    const m = state.marketing || { hackathon: 0, gamejam: 0, xCampaign: 0 };
+    const marketMult = 1 + (m.hackathon * 0.05) + (m.gamejam * 0.05) + (m.xCampaign * 0.1);
+    baseUsers *= marketMult;
+
+    // Model type affects user base size
+    const model = state.modelType || 'opensource';
+    if (model === 'opensource') baseUsers *= 1.5;   // Broad reach
+    if (model === 'subscription') baseUsers *= 0.5; // Gated access
+    if (model === 'private') baseUsers *= 0.1;      // Exclusive
+
+    return Math.floor(baseUsers);
   }
 
   /**
@@ -113,10 +138,20 @@ const Game = (() => {
    * @returns {number}
    */
   function getGrossMoneyPerSecond() {
-    const userRevenue   = getUsers() * state.mult.moneyPerUser;
+    let userRevenue = getUsers() * state.mult.moneyPerUser;
+
+    // Model type affects revenue per user
+    const model = state.modelType || 'opensource';
+    if (model === 'opensource') userRevenue *= 0.5;   // Free, maybe ad supported
+    if (model === 'subscription') userRevenue *= 2.0; // Steady income
+    if (model === 'private') userRevenue *= 10.0;     // Enterprise contracts
+
+    // Income from released custom AI models
+    const modelIncome = (typeof ModelBuilder !== 'undefined') ? ModelBuilder.getModelIncomePerSecond() : 0;
+
     const workerCount   = state.inventory ? (state.inventory.workers || 0) : 0;
     const workerRevenue = workerCount * (state.mult.workerIncome || 2.0);
-    return userRevenue + workerRevenue;
+    return userRevenue + workerRevenue + modelIncome;
   }
 
   /**
@@ -242,8 +277,13 @@ const Game = (() => {
     if (state.money < upg.cost) {
       return { ok: false, message: `💸 Need ${Fmt.money(upg.cost)} for ${upg.name}!` };
     }
+    const tfCost = upg.tfCost || 0;
+    if (state.tf < tfCost) {
+      return { ok: false, message: `💻 Need ${Fmt.num(tfCost)} TF for ${upg.name}!` };
+    }
 
     state.money -= upg.cost;
+    state.tf -= tfCost;
     state.unlockedUpgrades.push(upgradeId);
     upg.apply(state);  // Mutate multipliers now
 
@@ -284,18 +324,57 @@ const Game = (() => {
     }
 
     state.money -= cost;
-    if (!state.inventory) state.inventory = { workers: 0, serverRacks: 0, dataCenters: 0 };
+    if (!state.inventory) state.inventory = { workers: 0, workersList: [], serverRacks: 0, dataCenters: 0 };
+    if (!state.inventory.workersList) state.inventory.workersList = [];
+    
     state.inventory.workers++;
+    
+    const possibleSkills = ['Programming', 'Bug Fix', 'Research'];
+    const assignedSkill = possibleSkills[Math.floor(Math.random() * possibleSkills.length)];
+    
+    state.inventory.workersList.push({
+      id: Date.now(),
+      name: `Employee #${state.inventory.workers}`,
+      skill: assignedSkill
+    });
 
     // Notify Phaser to place a worker sprite
     window.dispatchEvent(new CustomEvent('SPAWN_WORKER', {
-      detail: { type: 'worker' },
+      detail: { type: 'worker', skill: assignedSkill },
     }));
 
     // Immediate Save
     if (typeof Save !== 'undefined') Save.save();
 
     return { ok: true, message: `👨‍💻 Hired Worker #${state.inventory.workers}!` };
+  }
+
+  // ── BUSINESS ACTIONS ──────────────────────────────────────────────
+
+  function changeModel(model) {
+    if (!['opensource', 'subscription', 'private'].includes(model)) return {ok: false, message: 'Invalid model'};
+    state.modelType = model;
+    if (typeof Save !== 'undefined') Save.save();
+    return { ok: true, message: `Switched business model to ${model.toUpperCase()}!`};
+  }
+
+  function buyMarketing(type) {
+    const COSTS = {
+      hackathon: 2000,
+      gamejam:   10000,
+      xCampaign: 75000
+    };
+    if (!state.marketing) state.marketing = { hackathon: 0, gamejam: 0, xCampaign: 0 };
+    if (!COSTS[type]) return { ok: false, message: 'Unknown marketing type.' };
+
+    if (state.money < COSTS[type]) {
+      return { ok: false, message: `💸 Need ${Fmt.money(COSTS[type])} for ${type}!` };
+    }
+    
+    state.money -= COSTS[type];
+    state.marketing[type]++;
+    if (typeof Save !== 'undefined') Save.save();
+    return { ok: true, message: `📢 Sponsored ${type}! Active Users +` + (type === 'xCampaign' ? '10%' : '5%') };
   }
 
   /**
@@ -355,18 +434,39 @@ const Game = (() => {
     const computeBonus = Math.min(getTotalCompute() * 0.008, 5);
     state.trainProgress = Math.min(100, state.trainProgress + (0.4 + computeBonus) * dt);
 
-    // Year advancement
+    // TF Generation based on compute power
+    const compute = getTotalCompute();
+    state.tf += compute * dt;
+
+    // Year, Month, Day progression
     state.yearProgress += dt;
     if (state.yearProgress >= state.yearDuration && state.year < 2026) {
-      state.yearProgress = 0;
+      state.yearProgress -= state.yearDuration;
       _triggerNewYear();
     }
 
-    // Month progression (12 months per year)
     const monthsPerYear   = 12;
+    const daysPerMonth    = 30; // Simplified 30-day month
     const secsPerMonth    = state.yearDuration / monthsPerYear;
+    const secsPerDay      = secsPerMonth / daysPerMonth;
+
     const newMonth = Math.floor((state.yearProgress / secsPerMonth) % monthsPerYear) + 1;
-    state.currentMonth = Math.min(newMonth, 12);
+    state.currentMonth = Math.max(1, Math.min(newMonth, 12));
+
+    const monthProgress = state.yearProgress % secsPerMonth;
+    const newDay = Math.floor((monthProgress / secsPerDay)) + 1;
+    state.currentDay = Math.max(1, Math.min(newDay, 30));
+
+    // Tick model training
+    if (typeof ModelBuilder !== 'undefined') {
+      const result = ModelBuilder.tickTraining(dt);
+      if (result && result.done) {
+        // Training complete — notify UI
+        window.dispatchEvent(new CustomEvent('MODEL_TRAINED', {
+          detail: { model: result.model }
+        }));
+      }
+    }
 
     // Expose derived values for UI.js to read
     const workers = state.inventory ? (state.inventory.workers || 0) : 0;
@@ -396,6 +496,9 @@ const Game = (() => {
     // Notify UI (it handles the visual transition + arena modal)
     UI.onNewYear(prevYear, state.year);
 
+    // Refresh market demand for the new year
+    if (typeof Market !== 'undefined') Market.refreshDemand(state.year);
+
     setTimeout(() => { _yearLock = false; }, 500);
   }
 
@@ -423,6 +526,8 @@ const Game = (() => {
     buyAIUpgrade,
     hireWorker,
     collectMoney,
+    changeModel,
+    buyMarketing,
 
     // Loop
     tick,
