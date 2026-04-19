@@ -101,6 +101,8 @@ class GameDevStoryScene extends BaseTycoonScene {
 
     this.load.spritesheet('worker_anim', 'assets/images/staff.png', { frameWidth: UPGRADE_FRAME_W, frameHeight: UPGRADE_FRAME_H });
     this.load.on('filecomplete-spritesheet-worker_anim', () => ok('worker_anim'));
+
+    this.load.audio('sfx_keyboard', 'assets/sound/keybord.wav');
   }
 
   create() {
@@ -126,9 +128,18 @@ class GameDevStoryScene extends BaseTycoonScene {
       this.anims.create({
         key: 'worker_type',
         frames: this.anims.generateFrameNumbers('worker_anim', { start: 0, end: 1 }),
-        frameRate: 5, repeat: -1,
       });
     }
+
+    // Keyboard sound loop
+    this._sndKeyboard = this.sound.add('sfx_keyboard', { loop: true, volume: 0.12 });
+    this.events.on('wake', () => { if (!this._sndKeyboard.isPlaying) this._sndKeyboard.play(); });
+    this.events.on('sleep', () => this._sndKeyboard.stop());
+    this.events.on('pause', () => this._sndKeyboard.pause());
+    this.events.on('resume', () => this._sndKeyboard.resume());
+    
+    // Auto-start if it's the first scene
+    if (this.scene.isActive()) this._sndKeyboard.play();
 
     this._addGlobalListener('SPAWN_WORKER', (detail) => this._onSpawnWorker(detail));
     this._addGlobalListener('SPAWN_FEEDBACK', (detail) => this._onSpawnFeedback(detail));
@@ -313,6 +324,7 @@ class GPUClusterRoomScene extends BaseTycoonScene {
       this.load.spritesheet(`cluster_${i}`, `assets/images/upgrades/gpu.png`, { frameWidth: UPGRADE_FRAME_W, frameHeight: UPGRADE_FRAME_H });
       this.load.on(`filecomplete-spritesheet-cluster_${i}`, () => ok(`cluster_${i}`));
     }
+    this.load.audio('sfx_gpu', 'assets/sound/gpu.wav');
   }
 
   create() {
@@ -339,8 +351,43 @@ class GPUClusterRoomScene extends BaseTycoonScene {
             });
         }
     }
+
+    // GPU Ambient Sound (Triggered every 3-8s as requested)
+    this._gpuTimer = null;
+    this.events.on('wake', () => this._startGpuAmbient());
+    this.events.on('sleep', () => this._stopGpuAmbient());
+    
     this._addGlobalListener('SPAWN_MACHINE', (detail) => this._onSpawnMachine(detail));
     this._syncWithGameState();
+    
+    // Start if active
+    if (this.scene.isActive()) this._startGpuAmbient();
+  }
+
+  _startGpuAmbient() {
+    this._stopGpuAmbient();
+    const clusterCount = Game.state.hardware?.cluster || 0;
+    if (clusterCount <= 0) return;
+
+    const playNext = () => {
+      // Random gap between 3s and 8s
+      const delay = Phaser.Math.Between(3000, 8000);
+      this._gpuTimer = this.time.delayedCall(delay, () => {
+        if (this.scene.isActive()) {
+          this.sound.play('sfx_gpu', { volume: 0.15 });
+          playNext();
+        }
+      });
+    };
+    playNext();
+  }
+
+  _stopGpuAmbient() {
+    if (this._gpuTimer) {
+      this._gpuTimer.remove();
+      this._gpuTimer = null;
+    }
+    this.sound.stopByKey('sfx_gpu');
   }
 
   _onSpawnMachine(detail) {
