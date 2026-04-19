@@ -190,15 +190,15 @@
   <aside id="shop" aria-label="Shop Panel">
     <div class="shop-tabs" role="tablist">
       <button class="shop-tab active" id="tab-hardware" role="tab" aria-selected="true"
-              onclick="UI.switchTab('hardware')">⚙️ HARDWARE</button>
+              onclick="UI.switchTab('hardware')"><span class="tab-icon">⚙️</span><span class="tab-label">HARDWARE</span></button>
       <button class="shop-tab" id="tab-staff" role="tab" aria-selected="false"
-              onclick="UI.switchTab('staff')">👥 STAFF</button>
+              onclick="UI.switchTab('staff')"><span class="tab-icon">👥</span><span class="tab-label">STAFF</span></button>
       <button class="shop-tab" id="tab-ai" role="tab" aria-selected="false"
-              onclick="UI.switchTab('ai')">🧠 AI TECH</button>
+              onclick="UI.switchTab('ai')"><span class="tab-icon">🧠</span><span class="tab-label">AI TECH</span></button>
       <button class="shop-tab" id="tab-business" role="tab" aria-selected="false"
-              onclick="UI.switchTab('business')">💼 BUSINESS</button>
+              onclick="UI.switchTab('business')"><span class="tab-icon">💼</span><span class="tab-label">BUSINESS</span></button>
       <button class="shop-tab" id="tab-models" role="tab" aria-selected="false"
-              onclick="UI.switchTab('models')">🤖 AI LAB</button>
+              onclick="UI.switchTab('models')"><span class="tab-icon">🤖</span><span class="tab-label">AI LAB</span></button>
     </div>
     <!-- Shop items injected here by ui.js -->
     <div class="shop-content" id="shop-content"></div>
@@ -297,7 +297,8 @@
      MODEL BUILDER MODAL
 ================================================================ -->
 <div class="modal-overlay" id="model-builder-modal" role="dialog" aria-modal="true" style="z-index:1500;">
-  <div class="modal-box pixel-border" style="width:680px; max-height:90vh; overflow-y:auto;">
+  <div class="modal-box pixel-border model-builder-box" style="width:min(1040px, 94vw); max-height:92vh; overflow-y:auto;">
+    <button class="modal-x-btn" aria-label="Close model builder" onclick="document.getElementById('model-builder-modal').classList.remove('show');">×</button>
     <div class="modal-title">🤖 CUSTOM AI MODEL BUILDER</div>
     <div class="modal-subtitle">Design your own AI from scratch</div>
 

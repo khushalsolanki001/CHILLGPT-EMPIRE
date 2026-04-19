@@ -858,16 +858,17 @@ const UI = (() => {
       const statusText = e.isYou
         ? (i === 0 ? '⬆️ LEADING' : `⚠️ RANK #${i + 1}`)
         : _trendText(i);
-      const nameColor = e.isYou ? 'var(--neon-green)' : 'var(--text-bright)';
+      const nameColor = e.isYou ? 'var(--retro-green)' : 'var(--text-dark)';
+      const statusColor = e.isYou ? 'var(--retro-green)' : 'var(--text-mid)';
       return `
         <tr class="${e.isYou ? 'arena-you' : ''}">
           <td class="arena-rank-cell ${rCls[i]}">${rEmoji[i]}</td>
           <td>${e.icon}
             <strong style="color:${nameColor}">${e.name}</strong>
-            ${e.isYou ? '<span style="font-size:0.6rem;color:var(--text-muted)">(YOU)</span>' : ''}
+            ${e.isYou ? '<span style="font-size:0.6rem;color:var(--text-mid)">(YOU)</span>' : ''}
           </td>
           <td class="arena-score-cell">${Fmt.num(e.score, 0)}</td>
-          <td style="color:${e.isYou ? 'var(--neon-green)' : 'var(--text-muted)'};font-size:0.7rem">${statusText}</td>
+          <td style="color:${statusColor};font-size:0.7rem">${statusText}</td>
         </tr>
       `;
     }).join('');
