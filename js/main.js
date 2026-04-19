@@ -75,14 +75,21 @@
     }
   });
 
-  // ── WELCOME TOAST ───────────────────────────────────────────────
+  // ── WELCOME TOAST / ONBOARDING ─────────────────────────────────
   setTimeout(() => {
-    if (hasSave) {
-      UI.toast('💾 Save loaded! Welcome back to ChillGPT Empire.', 't-green');
+    const s = Game.state;
+    // For debugging: always try to show if name is missing or we're just testing
+    const needsOnboarding = !s.playerName || s.playerName.trim().length === 0 || s.playerName === 'CEO';
+    
+    if (needsOnboarding) {
+      const obModal = document.getElementById('onboarding-modal');
+      if (obModal) {
+        obModal.classList.add('show');
+        if (typeof UI.mascotSpeak === 'function') UI.mascotSpeak();
+      }
     } else {
-      UI.toast('👋 Welcome! Buy your first cluster and start computing.', '');
-      UI.mascotSpeak();
+       UI.toast(`💾 Welcome back, CEO ${s.playerName}!`, 't-green');
     }
-  }, 900);
+  }, 500);
 
 })();

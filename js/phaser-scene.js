@@ -338,10 +338,10 @@ class GPUClusterRoomScene extends BaseTycoonScene {
     const W = this.scale.width, H = this.scale.height;
     const gH = 310, gW = 164, gRot = 0;
     const gSpots = [
-      { x: W * 0.3516, y: H * 0.7608 },
-      { x: W * 0.2721, y: H * 0.9187 },
-      { x: W * 0.5983, y: H * 0.7145 },
-      { x: W * 0.6934, y: H * 0.8962 }
+      { x: W * 0.3682, y: H * 0.8110 },
+      { x: W * 0.3153, y: H * 0.9789 },
+      { x: W * 0.6698, y: H * 0.8115 },
+      { x: W * 0.7333, y: H * 0.9766 }
     ];
     const idx = this._clusterCount % 4;
     const pos = gSpots[idx];

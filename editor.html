@@ -847,7 +847,7 @@ async function loadLayout() {
   }
   // auto-load bg
   const bg = bgImg;
-  bg.src = 'assets/images/bg.png';
+  bg.src = 'assets/images/empty_office_room_wide.png';
   bg.style.display = 'block';
   bg.onerror = () => bg.style.display = 'none';
 }
@@ -1437,7 +1437,7 @@ const zOverlay = $('ze-overlay');
 let zData = null;
 let zActiveTab = 'm'; 
 let zBG = new Image();
-zBG.src = 'assets/images/bg.png';
+zBG.src = 'assets/images/empty_office_room_wide.png';
 
 document.getElementById('btn-zone-edit').addEventListener('click', async () => {
   zCodeModal.classList.add('open');
@@ -1478,8 +1478,8 @@ document.querySelectorAll('.ztab').forEach(t => {
     document.getElementById('ze-panel-worker').style.display  = zActiveTab==='w'?'block':'none';
 
     // Switch background based on tab
-    let bgFile = 'bg.png';
-    if (zActiveTab === 'g') bgFile = 'gpu_cluster_room.png';
+    let bgFile = 'empty_office_room_wide.png';
+    if (zActiveTab === 'g') bgFile = 'empty_gpu_room_wide.png';
 
     if (!zBG.src.includes(bgFile)) {
       zBG.src = 'assets/images/' + bgFile;

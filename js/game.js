@@ -19,7 +19,10 @@ const Game = (() => {
    */
   function createDefaults() {
     return {
-      money:              1000,    // current cash ($)  [Phase 1: start with more]
+      money:              1000,
+      playerName:         '',
+      companyName:        '',
+      aiName:             'ChillGPT',    // current cash ($)  [Phase 1: start with more]
       pendingRevenue:     0,       // revenue queued up awaiting Collect
       totalMoneyEarned:   1000,    // all-time total for leaderboard/score
 

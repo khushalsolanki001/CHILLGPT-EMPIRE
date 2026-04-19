@@ -43,6 +43,7 @@ const UI = (() => {
     $('stat-electricity').textContent = Fmt.money(c.elec || 0) + '/s';
     $('stat-users').textContent      = Fmt.num(c.users || 0, 0);
     $('stat-net').textContent        = (mps >= 0 ? '+' : '') + Fmt.money(mps) + '/s';
+    if ($('logo-ai-name')) $('logo-ai-name').textContent = s.aiName;
 
     // Year + Month display
     const month  = s.currentMonth || 1;
@@ -61,7 +62,7 @@ const UI = (() => {
     $('train-progress').style.width   = pct + '%';
     $('progress-percent').textContent = Math.round(pct) + '%';
     $('progress-label').textContent   =
-      `CHILLGPT v${s.year - 2015}.0 — TRAINING`;
+      `${s.aiName} v${s.year - 2015}.0 — TRAINING`;
 
     // Collect button label
     const pending = s.pendingRevenue;
@@ -74,6 +75,33 @@ const UI = (() => {
     const ss  = String(Math.floor(rem % 60)).padStart(2, '0');
     $('next-comp').textContent = `NEXT ARENA: ${mm}:${ss}`;
   }
+
+  // ── ONBOARDING ────────────────────────────────────────────────────
+
+  function obNext(step) {
+    $$('.ob-step').forEach(s => s.style.display = 'none');
+    $(`ob-step-${step}`).style.display = 'block';
+  }
+
+  function obFinish() {
+    const pName = $('ob-player-name').value.trim() || 'CEO';
+    const cName = $('ob-company-name').value.trim() || 'Empire Inc';
+    const aName = $('ob-ai-name').value.trim() || 'ChillGPT';
+
+    Game.state.playerName = pName;
+    Game.state.companyName = cName;
+    Game.state.aiName = aName;
+
+    $('onboarding-modal').classList.remove('show');
+    toast(`Welcome, CEO ${pName}! Let's build ${cName}!`);
+    
+    // Save immediately
+    Save.save();
+    
+    // Force immediate UI update
+    updateStats();
+  }
+
 
 
   // ── SHOP ─────────────────────────────────────────────────────────
@@ -129,7 +157,7 @@ const UI = (() => {
         <div class="card-icon">${hw.icon}</div>
         <div class="card-body">
           <div class="card-name">${hw.name}</div>
-          <div class="card-desc">${hw.desc}</div>
+          <div class="card-desc">${hw.desc.replace(/ChillGPT/g, Game.state.aiName)}</div>
           <div class="card-badges">
             <span class="badge badge-blue">+${hw.computePS} TF/s</span>
             <span class="badge badge-red">⚡ +${Fmt.money(hw.elecPS)}/s</span>
@@ -184,7 +212,7 @@ const UI = (() => {
         <div class="card-icon">${upg.icon}</div>
         <div class="card-body">
           <div class="card-name">${upg.name}</div>
-          <div class="card-desc">${upg.desc}</div>
+          <div class="card-desc">${upg.desc.replace(/ChillGPT/g, Game.state.aiName)}</div>
           <div class="card-badges">
             <span class="badge ${upg.badgeClass}">${upg.badge}</span>
             ${locked ? `<span class="badge badge-red">UNLOCKS ${upg.requireYear}</span>` : ''}
@@ -401,7 +429,8 @@ const UI = (() => {
    */
   function updateLocationSign() {
     const loc = [...LOCATIONS].reverse().find(l => Game.state.year >= l.year);
-    if (loc) $('location-sign').textContent = loc.label;
+    const el = $('location-sign');
+    if (loc && el) el.textContent = loc.label;
   }
 
 
@@ -827,6 +856,8 @@ const UI = (() => {
     // Init
     initStars,
     updateLocationSign,
+    obNext,
+    obFinish,
 
     // Tick updates
     updateStats,

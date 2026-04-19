@@ -30,7 +30,7 @@
   <header id="topbar">
     <div class="logo">
       <span class="logo-icon">⚡</span>
-      <span class="logo-text">ChillGPT<br><span class="logo-sub">EMPIRE</span></span>
+      <span class="logo-text"><span id="logo-ai-name">ChillGPT</span><br><span class="logo-sub">EMPIRE</span></span>
     </div>
 
     <div class="stat-pills">
@@ -85,6 +85,7 @@
         <div class="pill-body">
           <div class="pill-label">NET/SEC</div>
           <div class="pill-value" id="stat-net">$0/s</div>
+        </div>
       </div>
       <button id="dev-mode-btn" style="background:#39d87e; color:#0c0d13; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:10px; font-weight:bold;" onclick="UI.activateDevMode()">DEV MODE (+$1M)</button>
       <button id="dev-skip-btn" style="background:#f5c842; color:#0c0d13; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;" onclick="UI.devSkipYear()">SKIP YEAR ⏭</button>
@@ -116,8 +117,7 @@
     <!-- Floor grid -->
     <div class="floor-grid" aria-hidden="true"></div>
 
-    <!-- Location sign (changes each year) -->
-    <div class="location-sign" id="location-sign">🏠 GARAGE SETUP</div>
+
 
     <!-- Machine display rows -->
     <div id="machines-container" aria-label="Machines">
@@ -194,6 +194,46 @@
     <div class="lb-entries" id="lb-entries"></div>
     <div class="next-comp" id="next-comp">NEXT ARENA: --:--</div>
   </footer>
+
+  <!-- Onboarding Modal (Moved inside #app) -->
+  <div class="modal-overlay" id="onboarding-modal" role="dialog" aria-modal="true" style="z-index: 2000;">
+    <div class="modal-box pixel-border onboarding-box" style="width: 450px;">
+      <div class="modal-title onboarding-title">✨ WELCOME CEO!</div>
+      
+      <div id="ob-step-1" class="ob-step">
+        <div class="ob-mascot-row">
+          <div class="ob-bubble">"Hi! I'm your AI assistant. Let's get your empire started! What's your name?"</div>
+        </div>
+        <div class="ob-form">
+          <label>YOUR NAME</label>
+          <input type="text" id="ob-player-name" placeholder="Enter Name..." onkeydown="if(event.key==='Enter')UI.obNext(2)" />
+          <button class="ob-next-btn" onclick="UI.obNext(2)">NEXT →</button>
+        </div>
+      </div>
+
+      <div id="ob-step-2" class="ob-step" style="display:none">
+        <div class="ob-mascot-row">
+          <div class="ob-bubble">"Awesome! And what should we call our company?"</div>
+        </div>
+        <div class="ob-form">
+          <label>COMPANY NAME</label>
+          <input type="text" id="ob-company-name" placeholder="Enter Company Name..." onkeydown="if(event.key==='Enter')UI.obNext(3)" />
+          <button class="ob-next-btn" onclick="UI.obNext(3)">NEXT →</button>
+        </div>
+      </div>
+
+      <div id="ob-step-3" class="ob-step" style="display:none">
+        <div class="ob-mascot-row">
+          <div class="ob-bubble">"Finally, what's the name of the AI we're building? It better be chill!"</div>
+        </div>
+        <div class="ob-form">
+          <label>AI NAME</label>
+          <input type="text" id="ob-ai-name" placeholder="ChillGPT" value="ChillGPT" onkeydown="if(event.key==='Enter')UI.obFinish()" />
+          <button class="ob-next-btn" onclick="UI.obFinish()">START GAME 🚀</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ================================================================
@@ -225,6 +265,8 @@
   <div class="year-splash" id="year-splash-num">2017</div>
   <div class="year-splash-sub" id="year-splash-sub">A new year begins...</div>
 </div>
+
+
 
 <!-- Toast notifications -->
 <div id="toast-container" aria-live="polite"></div>

@@ -1127,3 +1127,73 @@ html, body {
   .logo-text { display: none; }
   #toast-container { right: 8px; }
 }
+
+/* ================================================================
+   ONBOARDING FLOW
+   ================================================================ */
+.onboarding-box {
+  background: var(--bg-panel);
+  border: 4px solid var(--border);
+  box-shadow: 10px 10px 0 rgba(0,0,0,0.4);
+  padding: 24px;
+}
+.onboarding-title {
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 0 var(--retro-gold);
+}
+.ob-mascot-row {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 25px;
+}
+.ob-bubble {
+  background: var(--bg-card);
+  border: 3px solid var(--border);
+  padding: 15px;
+  border-radius: 4px;
+  font-size: 0.42rem;
+  line-height: 1.6;
+  position: relative;
+  box-shadow: var(--btn-shadow-sm);
+}
+.ob-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ob-form label {
+  font-size: 0.35rem;
+  color: var(--text-mid);
+}
+.ob-form input {
+  padding: 12px;
+  font-family: var(--font-pixel);
+  font-size: 0.5rem;
+  border: 3px solid var(--border);
+  background: var(--bg-inset);
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.1);
+  outline: none;
+}
+.ob-form input:focus {
+  border-color: var(--retro-gold);
+  background: #fff;
+}
+.ob-next-btn {
+  margin-top: 10px;
+  background: var(--retro-gold);
+  border: 3px solid var(--border);
+  padding: 12px;
+  font-family: var(--font-pixel);
+  font-size: 0.45rem;
+  cursor: pointer;
+  box-shadow: var(--btn-shadow-sm);
+}
+.ob-next-btn:hover {
+  background: var(--retro-amber);
+  transform: translate(-1px, -1px);
+}
+.ob-next-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
