@@ -122,6 +122,7 @@ const UI = (() => {
     const ss = String(Math.floor(rem % 60)).padStart(2, '0');
     $('next-comp').textContent = `NEXT ARENA: ${mm}:${ss}`;
 
+    _maybeStartAITechIntro();
     _maybeStartServerRackGuide();
   }
 
@@ -183,8 +184,12 @@ const UI = (() => {
         step: '',
         serverRackDone: false,
         serverRackDismissed: false,
+        aiTechIntroDone: false,
+        aiTechIntroDismissed: false,
       };
     }
+    Game.state.tutorial.aiTechIntroDone = !!Game.state.tutorial.aiTechIntroDone;
+    Game.state.tutorial.aiTechIntroDismissed = !!Game.state.tutorial.aiTechIntroDismissed;
     return Game.state.tutorial;
   }
 
@@ -200,6 +205,7 @@ const UI = (() => {
   function _maybeStartServerRackGuide() {
     const t = _tutorialState();
     if (_tutorialActiveStep || t.serverRackDone || t.serverRackDismissed) return;
+    if (t.step === 'ai_tech_intro') return;
     if ($('arena-modal')?.classList.contains('show') || $('year-transition')?.classList.contains('show')) return;
     if ($('onboarding-modal')?.classList.contains('show')) return;
     if (Game.state.year < 2018 || (Game.state.hardware?.rack || 0) > 0) return;
@@ -212,6 +218,20 @@ const UI = (() => {
     setTimeout(() => _showTutorialStep('server_rack'), 180);
   }
 
+  function _maybeStartAITechIntro() {
+    const t = _tutorialState();
+    if (_tutorialActiveStep || t.aiTechIntroDone || t.aiTechIntroDismissed) return;
+    if ($('arena-modal')?.classList.contains('show') || $('year-transition')?.classList.contains('show')) return;
+    if ($('onboarding-modal')?.classList.contains('show')) return;
+    if (Game.state.year !== 2018 || Game.state.yearProgress < Game.state.yearDuration / 2) return;
+
+    t.aiTechIntroDone = true;
+    t.step = 'ai_tech_intro';
+    Save.save();
+    switchTab('ai');
+    setTimeout(() => _showTutorialStep('ai_tech_intro'), 180);
+  }
+
   function _syncTutorialAfterRender() {
     if (!_tutorialActiveStep) return;
     _placeTutorialPointer(_getTutorialTarget(_tutorialActiveStep));
@@ -220,8 +240,9 @@ const UI = (() => {
   function _showTutorialStep(step) {
     const t = _tutorialState();
     if (
-      (step !== 'server_rack' && (t.introDone || t.introDismissed)) ||
-      (step === 'server_rack' && (t.serverRackDone || t.serverRackDismissed))
+      (step !== 'server_rack' && step !== 'ai_tech_intro' && (t.introDone || t.introDismissed)) ||
+      (step === 'server_rack' && (t.serverRackDone || t.serverRackDismissed)) ||
+      (step === 'ai_tech_intro' && t.aiTechIntroDismissed)
     ) {
       _clearTutorialGuide();
       return;
@@ -245,16 +266,32 @@ const UI = (() => {
         title: '2018 upgrade',
         body: 'You have enough cash for a Server Rack. This is the first serious scale jump for the startup floor.',
       },
+      ai_tech_intro: {
+        title: 'AI Tech Lab',
+        body: 'Quick tour: this menu is where research upgrades live. No rush to buy right now. Just remember it when you want stronger growth.',
+      },
     }[step];
 
     _setMascotGuide(copy.title, copy.body);
     setTimeout(() => _placeTutorialPointer(_getTutorialTarget(step)), 60);
+    if (step === 'ai_tech_intro') {
+      clearTimeout(_tutorialTimer);
+      _tutorialTimer = setTimeout(() => {
+        const latest = _tutorialState();
+        if (_tutorialActiveStep !== 'ai_tech_intro') return;
+        latest.step = '';
+        latest.aiTechIntroDone = true;
+        Save.save();
+        _clearTutorialGuide();
+      }, 6500);
+    }
   }
 
   function _getTutorialTarget(step) {
     if (step === 'staff_buy') return $('btn-hire-worker') || $('tab-staff');
     if (step === 'gpu_buy') return document.querySelector('.buy-btn[data-hw="cluster"]') || $('tab-hardware');
     if (step === 'server_rack') return document.querySelector('.buy-btn[data-hw="rack"]') || $('tab-hardware');
+    if (step === 'ai_tech_intro') return null;
     return null;
   }
 
@@ -292,6 +329,8 @@ const UI = (() => {
     const t = _tutorialState();
     if (_tutorialActiveStep === 'server_rack') {
       t.serverRackDismissed = true;
+    } else if (_tutorialActiveStep === 'ai_tech_intro') {
+      t.aiTechIntroDismissed = true;
     } else {
       t.introDismissed = true;
     }
@@ -318,16 +357,22 @@ const UI = (() => {
   function _advanceTutorialAfterStaff() {
     const t = _tutorialState();
     if (_tutorialActiveStep !== 'staff_buy' || t.introDismissed) return;
-    t.step = 'gpu_buy';
+    t.step = 'gpu_buy_wait';
     Save.save();
-    _setMascotGuide('Great hire', 'Perfect. Now let us buy your first GPU Cluster. More compute means more users, more TF, more money.');
-    switchTab('hardware');
-    setTimeout(() => _showTutorialStep('gpu_buy'), 220);
+    _clearTutorialGuide();
+    _tutorialTimer = setTimeout(() => {
+      const latest = _tutorialState();
+      if (latest.introDone || latest.introDismissed || _tutorialActiveStep) return;
+      latest.step = 'gpu_buy';
+      Save.save();
+      switchTab('hardware');
+      setTimeout(() => _showTutorialStep('gpu_buy'), 220);
+    }, 10000);
   }
 
   function _advanceTutorialAfterHardware(hwId) {
     const t = _tutorialState();
-    if (hwId === 'cluster' && _tutorialActiveStep === 'gpu_buy') {
+    if (hwId === 'cluster' && (_tutorialActiveStep === 'gpu_buy' || t.step === 'gpu_buy_wait' || t.step === 'gpu_buy')) {
       t.introDone = true;
       t.step = '';
       Save.save();
@@ -1071,18 +1116,13 @@ const UI = (() => {
     const body = $('arena-body');
     const spotlight = $('arena-spotlight');
     const winner = entries[0];
-    const playerRank = entries.findIndex(e => e.isYou) + 1;
     if (spotlight) {
       spotlight.innerHTML = `
         <div class="arena-winner-medal">${winner.icon}</div>
         <div class="arena-winner-copy">
           <div class="arena-winner-label">#1 THIS YEAR</div>
           <div class="arena-winner-name">${winner.name}</div>
-          <div class="arena-winner-note">${winner.isYou ? 'You are setting the pace.' : `${Game.state.aiName} finished rank #${playerRank}.`}</div>
-        </div>
-        <div class="arena-player-rank ${playerRank === 1 ? 'rank-win' : ''}">
-          <span>YOUR RANK</span>
-          <strong>#${playerRank}</strong>
+          <div class="arena-winner-note">Top AI company of this arena.</div>
         </div>
       `;
     }

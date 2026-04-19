@@ -2178,7 +2178,7 @@ body {
 
 .arena-spotlight {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   gap: 16px;
   align-items: center;
   margin-bottom: 18px;
