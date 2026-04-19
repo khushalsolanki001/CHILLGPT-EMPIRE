@@ -23,8 +23,6 @@ app.use((req, res, next) => { res.set('Access-Control-Allow-Origin', '*'); res.s
 const KNOWN_PRELOADS = {
   'bg':          { file: 'assets/images/bg.png',           type: 'image' },
   'desk':        { file: 'assets/images/desk1.png',         type: 'image' },
-  'server':      { file: 'assets/images/server.png',        type: 'image' },
-  'server_anim': { file: 'assets/images/server_sheet.png',  type: 'spritesheet', frameW: 512, frameH: 1024 },
   'worker_anim': { file: 'assets/images/worker_sheet.png',  type: 'spritesheet', frameW: 512, frameH: 1024 },
   'gpu_anim2':   { file: 'assets/images/gpu_sheet1.png',    type: 'spritesheet', frameW: 512, frameH: 1024 },
   'worker_anim2':{ file: 'assets/images/worker_sheet2.png', type: 'spritesheet', frameW: 512, frameH: 1024 },
@@ -295,24 +293,6 @@ app.get('/api/zones', (req, res) => {
         return rows.map(r => ({ xFrac: parseFloat(r[1]), yFrac: parseFloat(r[2]) }));
       })(),
     },
-    serverRoom: {
-      // Parse the 4 spots from ServerRoomScene._onSpawnMachine
-      spots: (() => {
-        const block = src.match(/const spots = \[(\s*[\s\S]*?)\];/);
-        if (!block) return [
-          { xFrac:0.40, yFrac:0.55 }, { xFrac:0.60, yFrac:0.55 },
-          { xFrac:0.40, yFrac:0.79 }, { xFrac:0.60, yFrac:0.79 },
-        ];
-        const raw = block[1];
-        const rows = [...raw.matchAll(/W\s*\*\s*([\d.]+).*?H\s*\*\s*([\d.]+)/g)];
-        return rows.map(r => ({ xFrac: parseFloat(r[1]), yFrac: parseFloat(r[2]) }));
-      })(),
-      // Parse the +/-90 offset used  (W*0.5 ± offset → derive from first spot xFrac)
-      offsetX: (() => {
-        const m = src.match(/W\s*\*\s*0\.5\s*-\s*([\d.]+)/);
-        return m ? parseFloat(m[1]) : 90;
-      })(),
-    },
     canvasW: 1208,
     canvasH: 600,
   };
@@ -368,19 +348,7 @@ app.post('/api/zones', (req, res) => {
       }
     }
 
-    // Patch serverRoom spots[]
-    if (serverRoom && serverRoom.spots && serverRoom.spots.length === 4) {
-      const sp = serverRoom.spots;
-      const newSpots = sp.map((s, i) => {
-        const label = ['back left','back right','front left','front right'][i];
-        return `      { x: W * ${s.xFrac.toFixed(4)}, y: H * ${s.yFrac.toFixed(4)} }, // ${label}`;
-      }).join('\n');
-      // Match [ ... ] with or without semicolon
-      src = src.replace(
-        /(\bconst spots = \[)[\s\S]*?(\];?)/,
-        '$1\n' + newSpots + '\n    $2'
-      );
-    }
+
 
     if (src === originalSrc) {
       console.warn('[Editor Server] No changes were applied to the file (regex mismatch?)');

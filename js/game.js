@@ -181,22 +181,19 @@ const Game = (() => {
       return { ok: false, message: `🔒 ${hw.name} unlocks in ${hw.requireYear}!` };
     }
 
-    const isServer = ['rack', 'megaDC', 'quantumDC', 'server'].includes(hwId);
-    if (isServer) {
-        let totalServers = 0;
-        ['rack', 'megaDC', 'quantumDC', 'server'].forEach(id => {
-            totalServers += state.hardware[id] || 0;
-        });
-        if (totalServers >= 4) {
-            return { ok: false, message: `❌ Server Room is full! Maximum 4 servers allowed.` };
-        }
+    // Specific hardware limits
+    const owned = state.hardware[hwId] || 0;
+    if (hwId === 'rack' && owned >= 2) {
+      return { ok: false, message: `❌ Max 2 Server Racks allowed.` };
     }
-
-    if (hwId === 'cluster') {
-        const owned = state.hardware[hwId] || 0;
-        if (owned >= 4) {
-            return { ok: false, message: `❌ Max 4 GPU Clusters reached.` };
-        }
+    if (hwId === 'megaDC' && owned >= 1) {
+      return { ok: false, message: `❌ Max 1 Mega Data Center allowed.` };
+    }
+    if (hwId === 'quantumDC' && owned >= 1) {
+      return { ok: false, message: `❌ Max 1 Quantum Data Center allowed.` };
+    }
+    if (hwId === 'cluster' && owned >= 4) {
+      return { ok: false, message: `❌ Max 4 GPU Clusters allowed.` };
     }
 
     const cost = getNextHardwareCost(hw);
@@ -426,6 +423,7 @@ const Game = (() => {
 
     // Loop
     tick,
+    skipYear: _triggerNewYear,
   };
 })();
 

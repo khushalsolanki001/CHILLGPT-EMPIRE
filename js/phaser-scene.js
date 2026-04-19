@@ -5,8 +5,9 @@
 
 /* global Phaser */
 
-const FRAME_W = 512;
-const FRAME_H = 1024;
+// Common frame dimensions for the new 1024x1024 sheets (2 horizontal frames)
+const UPGRADE_FRAME_W = 512;
+const UPGRADE_FRAME_H = 1024;
 
 const TARGET_H = {
   worker: 160,
@@ -71,6 +72,15 @@ class BaseTycoonScene extends Phaser.Scene {
       onComplete: () => txt.destroy(),
     });
   }
+
+  // Helper to add clean event listeners
+  _addGlobalListener(event, callback) {
+    const wrapped = (e) => callback(e.detail);
+    window.addEventListener(event, wrapped);
+    this.events.once('shutdown', () => {
+      window.removeEventListener(event, wrapped);
+    });
+  }
 }
 
 class GameDevStoryScene extends BaseTycoonScene {
@@ -82,19 +92,17 @@ class GameDevStoryScene extends BaseTycoonScene {
 
   preload() {
     const ok = (key) => { this._ok[key] = true; };
-    this.load.image('bg', 'assets/images/bg.png');
+    this.load.image('bg', 'assets/images/empty_office_room_wide.png');
     this.load.on('filecomplete-image-bg', () => ok('bg'));
-    this.load.spritesheet('worker_anim', 'assets/images/worker_sheet.png', { frameWidth: FRAME_W, frameHeight: FRAME_H });
+    this.load.spritesheet('worker_anim', 'assets/images/staff.png', { frameWidth: UPGRADE_FRAME_W, frameHeight: UPGRADE_FRAME_H });
     this.load.on('filecomplete-spritesheet-worker_anim', () => ok('worker_anim'));
-    this.load.image('desk', 'assets/images/desk1.png');
-    this.load.on('filecomplete-image-desk', () => ok('desk'));
   }
 
   create() {
     const W = this.scale.width, H = this.scale.height;
     if (this._ok['bg']) {
       const tex = this.textures.get('bg').getSourceImage();
-      const s = Math.min(W / tex.width, H / tex.height);
+      const s = Math.max(W / tex.width, H / tex.height);
       this.add.image(W / 2, H / 2, 'bg').setScale(s).setDepth(0);
     }
     this._buildZones(W, H);
@@ -117,8 +125,8 @@ class GameDevStoryScene extends BaseTycoonScene {
       });
     }
 
-    window.addEventListener('SPAWN_WORKER', (e) => this._onSpawnWorker(e.detail));
-    window.addEventListener('SPAWN_FEEDBACK', (e) => this._onSpawnFeedback(e.detail));
+    this._addGlobalListener('SPAWN_WORKER', (detail) => this._onSpawnWorker(detail));
+    this._addGlobalListener('SPAWN_FEEDBACK', (detail) => this._onSpawnFeedback(detail));
     this._syncWithGameState();
   }
 
@@ -135,20 +143,20 @@ class GameDevStoryScene extends BaseTycoonScene {
 
   _onSpawnWorker(_detail) {
     const W = this.scale.width, H = this.scale.height;
-    const wH = 200;
+    const wH = 230;
     const wSpots = [
-      { x: W * 0.3434, y: H * 0.8189 },
-      { x: W * 0.4514, y: H * 0.8176 },
-      { x: W * 0.5710, y: H * 0.8176 },
-      { x: W * 0.6877, y: H * 0.8176 },
-      { x: W * 0.8026, y: H * 0.8176 }
+      { x: W * 0.2500, y: H * 0.9700 },
+      { x: W * 0.3766, y: H * 0.9700 },
+      { x: W * 0.4979, y: H * 0.9700 },
+      { x: W * 0.6229, y: H * 0.9733 },
+      { x: W * 0.7428, y: H * 0.9767 }
     ];
     if (this._workerCount >= wSpots.length) return;
     const pos = wSpots[this._workerCount];
     this._workerCount++;
     if (this._ok['worker_anim']) {
       const obj = this.add.sprite(pos.x, pos.y, 'worker_anim', 0).setOrigin(0.5, 1).setDepth(8);
-      this._scaleToTargetH(obj, FRAME_H, wH);
+      this._scaleToTargetH(obj, UPGRADE_FRAME_H, wH);
       obj.play('worker_type');
       this._popIn(obj);
     }
@@ -171,67 +179,111 @@ class ServerRoomScene extends BaseTycoonScene {
   constructor() {
     super({ key: 'ServerRoomScene' });
     this._ok = {};
-    this._serverCount = 0;
+    this._currentTier = 1;
   }
 
   preload() {
     const ok = (key) => { this._ok[key] = true; };
-    this.load.image('server1', 'assets/images/server1.png');
-    this.load.on('filecomplete-image-server1', () => ok('server1'));
-    this.load.spritesheet('server_anim', 'assets/images/server_sheet.png', { frameWidth: 627, frameHeight: 1254 });
-    this.load.on('filecomplete-spritesheet-server_anim', () => ok('server_anim'));
+    // Load 4 tiers of server room backgrounds
+    for (let i = 1; i <= 4; i++) {
+      const key = `server_tier${i}`;
+      this.load.image(key, `assets/images/upgrades/server_room/server_room_${i}.png`);
+      this.load.on(`filecomplete-image-${key}`, () => ok(key));
+    }
   }
 
   create() {
     const W = this.scale.width, H = this.scale.height;
-    if (this._ok['server1']) {
-      const tex = this.textures.get('server1').getSourceImage();
-      const s = Math.min(W / tex.width, H / tex.height);
-      this.add.image(W / 2, H / 2, 'server1').setScale(s).setDepth(0);
-    }
+    
+    // Aesthetic background fill for gaps
+    this._bgFill = this.add.graphics().setDepth(-1);
+    this._renderFill(W, H);
+
+    // Create the background sprite (initially tier 1)
+    this._bg = this.add.image(W / 2, H / 2, 'server_tier1').setDepth(0);
+    this._updateBackgroundTexture();
+
+    // Handle window resizing
+    this.scale.on('resize', (gameSize) => {
+      this._renderFill(gameSize.width, gameSize.height);
+      this._updateBackgroundTexture();
+    });
+
     const btnBack = this.add.text(20, H / 2, '◀\nOFFICE', {
       fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center'
     }).setOrigin(0, 0.5).setInteractive().setDepth(100);
     btnBack.on('pointerdown', () => this.scene.switch('GameDevStoryScene'));
 
-    if (this._ok['server_anim'] && !this.anims.exists('server_blink')) {
-      this.anims.create({
-        key: 'server_blink',
-        frames: this.anims.generateFrameNumbers('server_anim', { start: 0, end: 1 }),
-        frameRate: 3, repeat: -1,
-      });
-    }
-    window.addEventListener('SPAWN_MACHINE', (e) => this._onSpawnMachine(e.detail));
+    this._addGlobalListener('SPAWN_MACHINE', (detail) => this._onSpawnMachine(detail));
+    
+    // Ensure we sync when entering the scene
+    this.events.on('wake', () => this._syncWithGameState());
     this._syncWithGameState();
   }
 
   _onSpawnMachine(detail) {
     const hwId = detail.hwId;
     if (!['rack', 'megaDC', 'quantumDC', 'server'].includes(hwId)) return;
-    if (this._serverCount >= 4) return;
-    const W = this.scale.width, H = this.scale.height;
-    const spots = [
-      { x: W * 0.4700, y: H * 0.5692 }, { x: W * 0.5587, y: H * 0.5596 },
-      { x: W * 0.4731, y: H * 0.7323 }, { x: W * 0.5619, y: H * 0.7259 },
-    ];
-    const pos = spots[this._serverCount];
-    this._serverCount++;
-    if (this._ok['server_anim']) {
-      const obj = this.add.sprite(pos.x, pos.y, 'server_anim', 0).setOrigin(0.5, 1).setDepth(7);
-      this._scaleToTargetH(obj, 1254, TARGET_H[hwId] ?? 160);
-      obj.play('server_blink');
-      this._popIn(obj);
+    
+    // Re-sync background whenever a machine is bought
+    this._syncWithGameState();
+  }
+
+  _updateBackgroundTexture() {
+    if (!this._bg) return;
+    const key = `server_tier${this._currentTier}`;
+    
+    if (this.textures.exists(key)) {
+      this._bg.setTexture(key);
+      const W = this.scale.width, H = this.scale.height;
+      const img = this.textures.get(key).getSourceImage();
+      
+      // Maintain original aspect ratio and fit within the screen (Letterbox/Pillarbox)
+      const scale = Math.min(W / img.width, H / img.height);
+      
+      this._bg.setScale(scale);
+      this._bg.setPosition(W / 2, H / 2);
+    } else {
+      console.warn(`[ServerRoom] Texture not found in cache: ${key}`);
     }
   }
 
+  _renderFill(W, H) {
+    if (!this._bgFill) return;
+    this._bgFill.clear();
+    // Solid Black for a clean, focused look
+    this._bgFill.fillStyle(0x000000, 1);
+    this._bgFill.fillRect(0, 0, W, H);
+  }
+
   _syncWithGameState() {
-    this._serverCount = 0;
     if (typeof Game === 'undefined') return;
     const st = Game.state;
-    ['rack', 'megaDC', 'quantumDC', 'server'].forEach(id => {
-      const count = Math.min(st.hardware?.[id] ?? 0, 4);
-      for (let i = 0; i < count; i++) if (this._serverCount < 4) this._onSpawnMachine({ hwId: id });
-    });
+    const hw = st.hardware || {};
+    
+    // Determine tier based on highest owned hardware
+    let tier = 1; 
+    if (hw.quantumDC > 0) tier = 4;
+    else if (hw.megaDC > 0) tier = 3;
+    else if (hw.rack > 0) tier = 2; // Simplified as 'server' id was redundant/missing in upgrades
+    
+    console.log(`[ServerRoom] Syncing. Hardware:`, hw, `Resolved Tier:`, tier);
+    
+    if (this._currentTier !== tier) {
+      console.log(`[ServerRoom] Tier Change: ${this._currentTier} -> ${tier}`);
+      this._currentTier = tier;
+      this._updateBackgroundTexture();
+      
+      // Screen flash effect on upgrade
+      const flash = this.add.rectangle(this.scale.width/2, this.scale.height/2, this.scale.width, this.scale.height, 0xffffff)
+        .setAlpha(0).setDepth(1000);
+      this.tweens.add({
+        targets: flash,
+        alpha: { from: 0.5, to: 0 },
+        duration: 500,
+        onComplete: () => flash.destroy()
+      });
+    }
   }
 }
 
@@ -244,12 +296,10 @@ class GPUClusterRoomScene extends BaseTycoonScene {
 
   preload() {
     const ok = (key) => { this._ok[key] = true; };
-    this.load.image('gpu_bg', 'assets/images/gpu_cluster_room.png');
+    this.load.image('gpu_bg', 'assets/images/empty_gpu_room_wide.png');
     this.load.on('filecomplete-image-gpu_bg', () => ok('gpu_bg'));
-    const gHeights = { 0: 81, 1: 75, 2: 81, 3: 80 };
     for (let i = 0; i < 4; i++) {
-      const h = gHeights[i] || 81;
-      this.load.spritesheet(`cluster_${i}`, `assets/images/gpu_cluster_sheet${i === 0 ? '' : '_' + i}.png`, { frameWidth: 250, frameHeight: h });
+      this.load.spritesheet(`cluster_${i}`, `assets/images/upgrades/gpu.png`, { frameWidth: UPGRADE_FRAME_W, frameHeight: UPGRADE_FRAME_H });
       this.load.on(`filecomplete-spritesheet-cluster_${i}`, () => ok(`cluster_${i}`));
     }
   }
@@ -258,7 +308,7 @@ class GPUClusterRoomScene extends BaseTycoonScene {
     const W = this.scale.width, H = this.scale.height;
     if (this._ok['gpu_bg']) {
       const tex = this.textures.get('gpu_bg').getSourceImage();
-      const s = Math.min(W / tex.width, H / tex.height);
+      const s = Math.max(W / tex.width, H / tex.height);
       this.add.image(W / 2, H / 2, 'gpu_bg').setScale(s).setDepth(0);
     }
     const btnBack = this.add.text(W - 20, H / 2, '▶\nOFFICE', {
@@ -267,12 +317,18 @@ class GPUClusterRoomScene extends BaseTycoonScene {
     btnBack.on('pointerdown', () => this.scene.switch('GameDevStoryScene'));
 
     for (let i = 0; i < 4; i++) {
-      const key = `cluster_${i}`;
-      if (this._ok[key] && !this.anims.exists(`${key}_anim`)) {
-        this.anims.create({ key: `${key}_anim`, frames: this.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: 3 + i, repeat: -1, yoyo: true });
-      }
+        const key = `cluster_${i}`;
+        if (this._ok[key] && !this.anims.exists(`${key}_anim`)) {
+            this.anims.create({
+                key: `${key}_anim`,
+                frames: this.anims.generateFrameNumbers(key, { start: 0, end: 1 }),
+                frameRate: 3 + i,
+                repeat: -1,
+                yoyo: true
+            });
+        }
     }
-    window.addEventListener('SPAWN_MACHINE', (e) => this._onSpawnMachine(e.detail));
+    this._addGlobalListener('SPAWN_MACHINE', (detail) => this._onSpawnMachine(detail));
     this._syncWithGameState();
   }
 
@@ -280,18 +336,19 @@ class GPUClusterRoomScene extends BaseTycoonScene {
     if (detail.hwId !== 'cluster') return;
     if (this._clusterCount >= 4) return;
     const W = this.scale.width, H = this.scale.height;
-    const gH = 50, gW = 164, gRot = 90;
+    const gH = 310, gW = 164, gRot = 0;
     const gSpots = [
-      { x: W * 0.2369, y: H * 0.7407 }, { x: W * 0.2338, y: H * 0.4435 },
-      { x: W * 0.5534, y: H * 0.7513 }, { x: W * 0.5521, y: H * 0.4599 }
+      { x: W * 0.3516, y: H * 0.7608 },
+      { x: W * 0.2721, y: H * 0.9187 },
+      { x: W * 0.5983, y: H * 0.7145 },
+      { x: W * 0.6934, y: H * 0.8962 }
     ];
     const idx = this._clusterCount % 4;
     const pos = gSpots[idx];
     this._clusterCount++;
     if (this._ok[`cluster_${idx}`]) {
       const obj = this.add.sprite(pos.x, pos.y, `cluster_${idx}`, 0).setOrigin(0.5, 1).setAngle(gRot).setDepth(7);
-      const srcH = (idx === 1) ? 75 : (idx === 3 ? 80 : 81);
-      this._scaleToTargetH(obj, srcH, gH);
+      this._scaleToTargetH(obj, UPGRADE_FRAME_H, gH);
       obj.play(`cluster_${idx}_anim`);
       this._popIn(obj);
     }
@@ -315,7 +372,7 @@ function initPhaserGame() {
     type: Phaser.AUTO, width: factory.clientWidth || 1208, height: factory.clientHeight || 600, transparent: true, parent: wrapper,
     scene: [GameDevStoryScene, ServerRoomScene, GPUClusterRoomScene],
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
-    render: { antialias: false, pixelArt: true, roundPixels: true },
+    render: { antialias: true, pixelArt: false, roundPixels: true },
   });
 }
 

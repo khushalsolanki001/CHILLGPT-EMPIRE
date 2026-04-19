@@ -634,7 +634,6 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
         <button class="ztab active" data-tab="m" id="zt-machine">⚙ Machine Zone</button>
         <button class="ztab" data-tab="g" id="zt-gpu" >🔋 GPU Clusters</button>
         <button class="ztab" data-tab="w"  id="zt-worker" >👷 Staff / Worker</button>
-        <button class="ztab" data-tab="server"  id="zt-server" >🖥 Server Room</button>
       </div>
       <span class="cm-close" id="ze-close" style="margin-left:10px">✕</span>
     </div>
@@ -704,29 +703,7 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg);
           <div class="zm-field"><label>Spot 5 Y (frac)</label><input type="number" id="ze-w-y4" step="0.01"/></div>
         </div>
 
-        <!-- SERVER ROOM -->
-        <div id="ze-panel-server" style="display:none">
-          <div class="zm-side-hdr">🖥 Server Room Spots</div>
-          <div class="zm-field"><label>SPOT 1 X (frac of W)</label>
-            <input type="number" id="ze-s-x0" min="0" max="1" step="0.01" /></div>
-          <div class="zm-field"><label>SPOT 1 Y (frac of H)</label>
-            <input type="number" id="ze-s-y0" min="0" max="1" step="0.01" /></div>
-          <div class="zm-divider"></div>
-          <div class="zm-field"><label>SPOT 2 X (frac of W)</label>
-            <input type="number" id="ze-s-x1" min="0" max="1" step="0.01" /></div>
-          <div class="zm-field"><label>SPOT 2 Y (frac of H)</label>
-            <input type="number" id="ze-s-y1" min="0" max="1" step="0.01" /></div>
-          <div class="zm-divider"></div>
-          <div class="zm-field"><label>SPOT 3 X (frac of W)</label>
-            <input type="number" id="ze-s-x2" min="0" max="1" step="0.01" /></div>
-          <div class="zm-field"><label>SPOT 3 Y (frac of H)</label>
-            <input type="number" id="ze-s-y2" min="0" max="1" step="0.01" /></div>
-          <div class="zm-divider"></div>
-          <div class="zm-field"><label>SPOT 4 X (frac of W)</label>
-            <input type="number" id="ze-s-x3" min="0" max="1" step="0.01" /></div>
-          <div class="zm-field"><label>SPOT 4 Y (frac of H)</label>
-            <input type="number" id="ze-s-y3" min="0" max="1" step="0.01" /></div>
-        </div>
+
 
         <div class="zm-hint">
           <strong>Drag</strong> handles on the preview to reposition.<br>
@@ -1499,12 +1476,10 @@ document.querySelectorAll('.ztab').forEach(t => {
     document.getElementById('ze-panel-machine').style.display = zActiveTab==='m'?'block':'none';
     document.getElementById('ze-panel-gpu').style.display     = zActiveTab==='g'?'block':'none';
     document.getElementById('ze-panel-worker').style.display  = zActiveTab==='w'?'block':'none';
-    document.getElementById('ze-panel-server').style.display  = zActiveTab==='server'?'block':'none';
 
     // Switch background based on tab
     let bgFile = 'bg.png';
     if (zActiveTab === 'g') bgFile = 'gpu_cluster_room.png';
-    else if (zActiveTab === 'server') bgFile = 'server1.png';
 
     if (!zBG.src.includes(bgFile)) {
       zBG.src = 'assets/images/' + bgFile;
@@ -1537,8 +1512,7 @@ $('ze-reload').addEventListener('click', async () => {
 const Z_INPUTS = {
   m: ['ze-m-lm', 'ze-m-rm', 'ze-m-sy', 'ze-m-sx', 'ze-m-sy2', 'ze-m-h'],
   g: ['ze-g-h', 'ze-g-w', 'ze-g-rot', 'ze-g-x0', 'ze-g-y0', 'ze-g-x1', 'ze-g-y1', 'ze-g-x2', 'ze-g-y2', 'ze-g-x3', 'ze-g-y3'],
-  w: ['ze-w-h', 'ze-w-x0', 'ze-w-y0', 'ze-w-x1', 'ze-w-y1', 'ze-w-x2', 'ze-w-y2', 'ze-w-x3', 'ze-w-y3', 'ze-w-x4', 'ze-w-y4'],
-  server: ['ze-s-x0','ze-s-y0','ze-s-x1','ze-s-y1','ze-s-x2','ze-s-y2','ze-s-x3','ze-s-y3']
+  w: ['ze-w-h', 'ze-w-x0', 'ze-w-y0', 'ze-w-x1', 'ze-w-y1', 'ze-w-x2', 'ze-w-y2', 'ze-w-x3', 'ze-w-y3', 'ze-w-x4', 'ze-w-y4']
 };
 
 
@@ -1574,15 +1548,10 @@ function populateZInputs() {
       });
     }
   }
-  if (zData.serverRoom && zData.serverRoom.spots) {
-    zData.serverRoom.spots.forEach((s,i) => {
-      $('ze-s-x'+i).value = (s.xFrac).toFixed(4);
-      $('ze-s-y'+i).value = (s.yFrac).toFixed(4);
-    });
-  }
+
 }
 
-['m','g','w','server'].forEach(k => {
+['m','g','w'].forEach(k => {
   Z_INPUTS[k].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.addEventListener('input', () => {
@@ -1619,12 +1588,7 @@ function syncInputsToData() {
       if ($('ze-w-y'+i)) s.yFrac = val('ze-w-y'+i);
     });
   }
-  if (zActiveTab === 'server') {
-    for(let i=0;i<4;i++) {
-      zData.serverRoom.spots[i].xFrac = val('ze-s-x'+i);
-      zData.serverRoom.spots[i].yFrac = val('ze-s-y'+i);
-    }
-  }
+
 }
 
 let zw = 604, zh = 300, zScale = 0.5;
@@ -1659,19 +1623,19 @@ window.addEventListener('resize', () => { if(zCodeModal.classList.contains('open
 
 function renderZones(isLite = false) {
   zCtx.clearRect(0,0,zw,zh);
-  if (zBG.complete) {
-    const ar = zBG.width / zBG.height;
-    const canvasAR = zw / zh;
-    let dx, dy, dw, dh;
-    if (ar > canvasAR) {
-      dw = zw; dh = zw / ar;
-      dx = 0; dy = (zh - dh) / 2;
+    if (zBG.complete) {
+      const ar = zBG.width / zBG.height;
+      const canvasAR = zw / zh;
+      let dx, dy, dw, dh;
+      if (ar > canvasAR) {
+        dh = zh; dw = zh * ar;
+        dx = (zw - dw) / 2; dy = 0;
+      } else {
+        dw = zw; dh = zw / ar;
+        dx = 0; dy = (zh - dh) / 2;
+      }
+      zCtx.drawImage(zBG, dx, dy, dw, dh);
     } else {
-      dh = zh; dw = zh * ar;
-      dx = (zw - dw) / 2; dy = 0;
-    }
-    zCtx.drawImage(zBG, dx, dy, dw, dh);
-  } else {
     zCtx.fillStyle = '#222';
     zCtx.fillRect(0,0,zw,zh);
   }
@@ -1683,7 +1647,6 @@ function renderZones(isLite = false) {
   if (zActiveTab === 'm') renderMachineZone(isLite);
   if (zActiveTab === 'g') renderGPUZone(isLite);
   if (zActiveTab === 'w') renderWorkerZone(isLite);
-  if (zActiveTab === 'server') renderServerZone(isLite);
 }
 
 function renderMachineZone(isLite) {
@@ -1807,27 +1770,7 @@ function renderWorkerZone(isLite) {
   });
 }
 
-function renderServerZone(isLite) {
-  const sp = zData.serverRoom.spots;
-  if(!sp) return;
-  sp.forEach((s,i) => {
-    const x = s.xFrac * zw, y = s.yFrac * zh;
-    zCtx.fillStyle = '#00ffaa88';
-    const serverH = 80 * zScale;
-    zCtx.fillRect(x - 20*zScale, y - serverH, 40*zScale, serverH);
-    
-    if (!isLite) {
-      const hY = y;
-      const h = createHandle(x, hY, `s${i}`, (dx,dy) => {
-        s.xFrac = Math.max(0, Math.min(1, (x+dx)/zw));
-        s.yFrac = Math.max(0, Math.min(1, (hY+dy)/zh));
-      });
-      h.style.width = (40*zScale) + 'px';
-      h.style.height = serverH + 'px';
-      h.style.transform = 'translate(-50%, -100%)';
-    }
-  });
-}
+
 function onMove(e) {
   if(!zDragData) return;
   const dx = e.clientX - zDragData.startX;

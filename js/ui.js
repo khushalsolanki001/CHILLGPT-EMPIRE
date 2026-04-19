@@ -301,13 +301,11 @@ const UI = (() => {
   }
 
   function _isMaxed(id) {
-    if (id === 'cluster') return (Game.state.hardware[id] || 0) >= 4;
-    const isServer = ['rack', 'megaDC', 'quantumDC', 'server'].includes(id);
-    if (isServer) {
-      let total = 0;
-      ['rack', 'megaDC', 'quantumDC', 'server'].forEach(sid => total += (Game.state.hardware[sid] || 0));
-      return total >= 4;
-    }
+    const owned = Game.state.hardware[id] || 0;
+    if (id === 'cluster') return owned >= 4;
+    if (id === 'rack') return owned >= 2;
+    if (id === 'megaDC') return owned >= 1;
+    if (id === 'quantumDC') return owned >= 1;
     if (id === 'worker') return (Game.state.inventory?.workers || 0) >= 5;
     return false;
   }
@@ -661,6 +659,25 @@ const UI = (() => {
   // These sit in UI because they orchestrate both Game logic + visual feedback.
 
   function handleBuyHardware(hwId) {
+    const isServer = ['rack', 'megaDC', 'quantumDC'].includes(hwId);
+    
+    if (isServer && window.__phaserGame) {
+      // Switch to the server scene first
+      const sm = window.__phaserGame.scene;
+      sm.switch('GameDevStoryScene', 'ServerRoomScene');
+      sm.switch('GPUClusterRoomScene', 'ServerRoomScene');
+
+      // Wait 1 second before processing the purchase to show the transition
+      toast(`Accessing Server Room...`, 't-blue');
+      setTimeout(() => {
+        _performHardwareBuy(hwId);
+      }, 1000);
+    } else {
+      _performHardwareBuy(hwId);
+    }
+  }
+
+  function _performHardwareBuy(hwId) {
     const result = Game.buyHardware(hwId);
     if (result.ok) {
       renderMachines();
@@ -713,6 +730,43 @@ const UI = (() => {
     } else {
       toast('No revenue yet! Buy hardware first.', '');
     }
+  }
+
+  /** Grant $1M and save - developer only */
+  function activateDevMode() {
+    Game.state.money += 1000000;
+    Game.state.totalMoneyEarned += 1000000;
+    updateStats();
+    if (typeof Save !== 'undefined') Save.save();
+    toast('🚀 DEV MODE: +$1,000,000!', 't-green');
+    spawnParticles();
+    flashScreen(true);
+  }
+
+  /** Skip to next year - developer only */
+  function devSkipYear() {
+    if (Game.state.year >= 2026) {
+      toast('Empire complete! No more years to skip.', 't-red');
+      return;
+    }
+    Game.state.yearProgress = Game.state.yearDuration; // Force jump
+    Game.skipYear();
+    toast('🚀 DEV MODE: Skipping to next year...', 't-purple');
+  }
+
+  /** Manually trigger a tier level for testing */
+  function devSetTier(t) {
+    if (t === 3) {
+      Game.state.hardware.megaDC = 1;
+      toast('🚀 DEV MODE: Simulating Mega Data Center (Tier 3)', 't-blue');
+    } else if (t === 4) {
+      Game.state.hardware.quantumDC = 1;
+      toast('🚀 DEV MODE: Simulating Quantum Center (Tier 4)', 't-purple');
+    }
+    // Fire event to update Phaser
+    window.dispatchEvent(new CustomEvent('SPAWN_MACHINE', { detail: { hwId: t === 3 ? 'megaDC' : 'quantumDC' } }));
+    updateStats();
+    if (typeof Save !== 'undefined') Save.save();
   }
 
   // helper alias so flashScreen can be called as plain 'flash(big)'
@@ -803,6 +857,11 @@ const UI = (() => {
     handleBuyAI,
     handleHireWorker,
     handleCollect,
+
+    // Dev Mode
+    activateDevMode,
+    devSkipYear,
+    devSetTier,
 
     // Mascot
     mascotSpeak,

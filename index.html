@@ -86,6 +86,10 @@
           <div class="pill-label">NET/SEC</div>
           <div class="pill-value" id="stat-net">$0/s</div>
       </div>
+      <button id="dev-mode-btn" style="background:#39d87e; color:#0c0d13; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:10px; font-weight:bold;" onclick="UI.activateDevMode()">DEV MODE (+$1M)</button>
+      <button id="dev-skip-btn" style="background:#f5c842; color:#0c0d13; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;" onclick="UI.devSkipYear()">SKIP YEAR ⏭</button>
+      <button id="dev-t3-btn" style="background:#4287f5; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;" onclick="UI.devSetTier(3)">TEST T3</button>
+      <button id="dev-t4-btn" style="background:#9342f5; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;" onclick="UI.devSetTier(4)">TEST T4</button>
       <button id="hard-reset-btn" style="background:#a82020; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:10px;" onclick="if(confirm('Wipe ALL progress?')) Save.reset()">HARD RESET</button>
     </div>
 
