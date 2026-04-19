@@ -78,8 +78,10 @@ const Save = (() => {
    * Wipe the save and reload the page (fresh start).
    */
   function reset() {
-    isResetting = true;
+    isResetting = true; 
     localStorage.removeItem(SAVE_KEY);
+    // Explicitly nullify the state in memory too
+    Game.state = null;
     location.reload();
   }
 

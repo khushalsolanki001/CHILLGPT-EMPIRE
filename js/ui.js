@@ -462,7 +462,7 @@ const UI = (() => {
    */
   function _buildRankings(year) {
     const entries = [
-      { name: 'ChillGPT', icon: '🤖', score: Game.getArenaScore(), isYou: true },
+      { name: Game.state.aiName, icon: '🤖', score: Game.getArenaScore(), isYou: true },
       ...COMPETITORS.map(c => ({
         name: c.name,
         icon: c.icon,
@@ -525,7 +525,7 @@ const UI = (() => {
   }
 
   function _showEndgame() {
-    toast('🏆 GAME COMPLETE! ChillGPT dominates 2026! Refresh to play again.', 't-green');
+    toast(`🏆 GAME COMPLETE! ${Game.state.aiName} dominates 2026! Refresh to play again.`, 't-green');
   }
 
 
@@ -567,7 +567,7 @@ const UI = (() => {
       2023: 'The multimodal era begins.',
       2024: 'AI Agents take over the world.',
       2025: 'One year left. Make it count.',
-      2026: 'ChillGPT Empire is complete. 👑',
+      2026: `${Game.state.aiName} Empire is complete. 👑`,
     };
     return subs[year] || 'A new year begins...';
   }

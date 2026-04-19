@@ -143,13 +143,13 @@ class GameDevStoryScene extends BaseTycoonScene {
 
   _onSpawnWorker(_detail) {
     const W = this.scale.width, H = this.scale.height;
-    const wH = 230;
+    const wH = 275;
     const wSpots = [
-      { x: W * 0.2500, y: H * 0.9700 },
-      { x: W * 0.3766, y: H * 0.9700 },
-      { x: W * 0.4979, y: H * 0.9700 },
-      { x: W * 0.6229, y: H * 0.9733 },
-      { x: W * 0.7428, y: H * 0.9767 }
+      { x: W * 0.2500, y: H * 1.0200 },
+      { x: W * 0.3766, y: H * 1.0200 },
+      { x: W * 0.4979, y: H * 1.0200 },
+      { x: W * 0.6229, y: H * 1.0200 },
+      { x: W * 0.7428, y: H * 1.0200 }
     ];
     if (this._workerCount >= wSpots.length) return;
     const pos = wSpots[this._workerCount];
