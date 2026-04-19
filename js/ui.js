@@ -25,12 +25,15 @@ const UI = (() => {
 
   // Mascot speech timer
   let _mascotTimer = null;
+  let _tutorialTimer = null;
+  let _tutorialActiveStep = '';
 
   // Model Builder state
   let _mbSelectedArch = 'transformer';
   let _mbSelectedSize = 'mini';
   let _mbSelectedTraits = [];
   const _lastStatText = {};
+  let _lastTfBrainFlow = 0;
 
 
   // News Tracker
@@ -96,6 +99,7 @@ const UI = (() => {
     // Workers pill (if element exists)
     const wEl = $('stat-workers');
     if (wEl) _setStatText('stat-workers', (c.workers || 0) + ' staff');
+    _maybeSpawnTfBrainFlow(c.workers || 0);
 
     // Electricity danger colour
     $('elec-pill').classList.toggle('danger', mps < 0);
@@ -117,6 +121,8 @@ const UI = (() => {
     const mm = String(Math.floor(rem / 60)).padStart(2, '0');
     const ss = String(Math.floor(rem % 60)).padStart(2, '0');
     $('next-comp').textContent = `NEXT ARENA: ${mm}:${ss}`;
+
+    _maybeStartServerRackGuide();
   }
 
   function _setStatText(id, text) {
@@ -130,6 +136,214 @@ const UI = (() => {
     }
     _lastStatText[id] = value;
     el.textContent = value;
+  }
+
+  function _maybeSpawnTfBrainFlow(workerCount) {
+    if (workerCount <= 0 || document.hidden) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+
+    const now = performance.now();
+    const interval = Math.max(900, 1900 - Math.min(workerCount, 5) * 180);
+    if (now - _lastTfBrainFlow < interval) return;
+    _lastTfBrainFlow = now;
+
+    const from = $('stat-workers')?.closest('.stat-pill');
+    const to = $('stat-tf-pill') || $('stat-tf')?.closest('.stat-pill');
+    if (!from || !to) return;
+
+    const a = from.getBoundingClientRect();
+    const b = to.getBoundingClientRect();
+    if (!a.width || !b.width) return;
+
+    const icon = _el('div', 'tf-brain-fly');
+    icon.textContent = '🧠';
+    const endX = b.left + b.width / 2;
+    const endY = b.top + b.height / 2;
+    const startX = endX;
+    const startY = b.bottom + 68;
+    icon.style.left = startX + 'px';
+    icon.style.top = startY + 'px';
+    const dx = endX - startX;
+    const dy = endY - startY;
+    icon.style.setProperty('--tf-dx', dx + 'px');
+    icon.style.setProperty('--tf-dy', dy + 'px');
+    icon.style.setProperty('--tf-mid-x', (dx * 0.62) + 'px');
+    icon.style.setProperty('--tf-mid-y', (dy * 0.62 - 28) + 'px');
+    document.body.appendChild(icon);
+    setTimeout(() => icon.remove(), 1250);
+  }
+
+  // ── MASCOT GUIDE ─────────────────────────────────────────────────
+
+  function _tutorialState() {
+    if (!Game.state.tutorial) {
+      Game.state.tutorial = {
+        introDone: false,
+        introDismissed: false,
+        step: '',
+        serverRackDone: false,
+        serverRackDismissed: false,
+      };
+    }
+    return Game.state.tutorial;
+  }
+
+  function startNewUserGuide() {
+    const t = _tutorialState();
+    if (t.introDone || t.introDismissed) return;
+    t.step = 'staff_buy';
+    Save.save();
+    switchTab('staff');
+    setTimeout(() => _showTutorialStep('staff_buy'), 180);
+  }
+
+  function _maybeStartServerRackGuide() {
+    const t = _tutorialState();
+    if (_tutorialActiveStep || t.serverRackDone || t.serverRackDismissed) return;
+    if ($('arena-modal')?.classList.contains('show') || $('year-transition')?.classList.contains('show')) return;
+    if ($('onboarding-modal')?.classList.contains('show')) return;
+    if (Game.state.year < 2018 || (Game.state.hardware?.rack || 0) > 0) return;
+    const rack = HARDWARE.find(h => h.id === 'rack');
+    if (!rack || Game.state.money < Game.getNextHardwareCost(rack)) return;
+
+    t.step = 'server_rack';
+    Save.save();
+    switchTab('hardware');
+    setTimeout(() => _showTutorialStep('server_rack'), 180);
+  }
+
+  function _syncTutorialAfterRender() {
+    if (!_tutorialActiveStep) return;
+    _placeTutorialPointer(_getTutorialTarget(_tutorialActiveStep));
+  }
+
+  function _showTutorialStep(step) {
+    const t = _tutorialState();
+    if (
+      (step !== 'server_rack' && (t.introDone || t.introDismissed)) ||
+      (step === 'server_rack' && (t.serverRackDone || t.serverRackDismissed))
+    ) {
+      _clearTutorialGuide();
+      return;
+    }
+
+    _tutorialActiveStep = step;
+    document.body.classList.add('tutorial-mode');
+    document.body.dataset.tutorialStep = step;
+    $('mascot')?.classList.add('guide-active');
+
+    const copy = {
+      staff_buy: {
+        title: 'First hire',
+        body: `Staff make steady income even before the big servers arrive. Hire one worker for ${Fmt.money(Game.getNextWorkerCost())}, then I will take you to hardware.`,
+      },
+      gpu_buy: {
+        title: 'First compute',
+        body: 'Great hire. Now buy a GPU Cluster so your AI starts generating real compute and TF.',
+      },
+      server_rack: {
+        title: '2018 upgrade',
+        body: 'You have enough cash for a Server Rack. This is the first serious scale jump for the startup floor.',
+      },
+    }[step];
+
+    _setMascotGuide(copy.title, copy.body);
+    setTimeout(() => _placeTutorialPointer(_getTutorialTarget(step)), 60);
+  }
+
+  function _getTutorialTarget(step) {
+    if (step === 'staff_buy') return $('btn-hire-worker') || $('tab-staff');
+    if (step === 'gpu_buy') return document.querySelector('.buy-btn[data-hw="cluster"]') || $('tab-hardware');
+    if (step === 'server_rack') return document.querySelector('.buy-btn[data-hw="rack"]') || $('tab-hardware');
+    return null;
+  }
+
+  function _setMascotGuide(title, body) {
+    const speech = $('mascot-speech');
+    if (!speech) return;
+    clearTimeout(_mascotTimer);
+    speech.innerHTML = `
+      <button class="guide-close" type="button" onclick="UI.dismissTutorial()" aria-label="Close guide">×</button>
+      <strong>${title}</strong>
+      <span>${body}</span>
+    `;
+    speech.classList.add('show', 'guide-speech');
+  }
+
+  function _placeTutorialPointer(target) {
+    if (!target) return;
+    $$('.tutorial-target').forEach(el => el.classList.remove('tutorial-target'));
+    target.classList.add('tutorial-target');
+
+    let pointer = $('tutorial-pointer');
+    if (!pointer) {
+      pointer = _el('div', 'tutorial-pointer');
+      pointer.id = 'tutorial-pointer';
+      pointer.innerHTML = '<span>CLICK</span>';
+      document.body.appendChild(pointer);
+    }
+
+    const r = target.getBoundingClientRect();
+    pointer.style.left = Math.max(12, r.left + r.width / 2 - 28) + 'px';
+    pointer.style.top = Math.max(72, r.top - 58) + 'px';
+  }
+
+  function dismissTutorial() {
+    const t = _tutorialState();
+    if (_tutorialActiveStep === 'server_rack') {
+      t.serverRackDismissed = true;
+    } else {
+      t.introDismissed = true;
+    }
+    t.step = '';
+    Save.save();
+    _clearTutorialGuide();
+  }
+
+  function _clearTutorialGuide() {
+    _tutorialActiveStep = '';
+    clearTimeout(_tutorialTimer);
+    document.body.classList.remove('tutorial-mode');
+    delete document.body.dataset.tutorialStep;
+    $('mascot')?.classList.remove('guide-active');
+    $('tutorial-pointer')?.remove();
+    $$('.tutorial-target').forEach(el => el.classList.remove('tutorial-target'));
+    const speech = $('mascot-speech');
+    if (speech) {
+      speech.classList.remove('show', 'guide-speech');
+      speech.innerHTML = '';
+    }
+  }
+
+  function _advanceTutorialAfterStaff() {
+    const t = _tutorialState();
+    if (_tutorialActiveStep !== 'staff_buy' || t.introDismissed) return;
+    t.step = 'gpu_buy';
+    Save.save();
+    _setMascotGuide('Great hire', 'Perfect. Now let us buy your first GPU Cluster. More compute means more users, more TF, more money.');
+    switchTab('hardware');
+    setTimeout(() => _showTutorialStep('gpu_buy'), 220);
+  }
+
+  function _advanceTutorialAfterHardware(hwId) {
+    const t = _tutorialState();
+    if (hwId === 'cluster' && _tutorialActiveStep === 'gpu_buy') {
+      t.introDone = true;
+      t.step = '';
+      Save.save();
+      _setMascotGuide('Empire online', 'Nice. You have staff plus compute now. Keep collecting revenue and scaling.');
+      mascotHappy(false);
+      setTimeout(() => _clearTutorialGuide(), 2600);
+    }
+
+    if (hwId === 'rack' && _tutorialActiveStep === 'server_rack') {
+      t.serverRackDone = true;
+      t.step = '';
+      Save.save();
+      _setMascotGuide('Server room unlocked', 'Beautiful. That rack is your 2018 power move.');
+      mascotHappy(false);
+      setTimeout(() => _clearTutorialGuide(), 2600);
+    }
   }
 
   // ── ONBOARDING ────────────────────────────────────────────────────
@@ -156,6 +370,8 @@ const UI = (() => {
 
     // Force immediate UI update
     updateStats();
+
+    setTimeout(() => startNewUserGuide(), 650);
   }
 
 
@@ -177,6 +393,7 @@ const UI = (() => {
       }
     });
     renderShop();
+    setTimeout(() => _syncTutorialAfterRender(), 60);
   }
 
   /**
@@ -198,6 +415,7 @@ const UI = (() => {
     } else {
       _renderAITab(container);
     }
+    setTimeout(() => _syncTutorialAfterRender(), 30);
   }
 
   /** Render the hardware purchase list */
@@ -851,6 +1069,23 @@ const UI = (() => {
 
     const entries = _buildRankings(completedYear);
     const body = $('arena-body');
+    const spotlight = $('arena-spotlight');
+    const winner = entries[0];
+    const playerRank = entries.findIndex(e => e.isYou) + 1;
+    if (spotlight) {
+      spotlight.innerHTML = `
+        <div class="arena-winner-medal">${winner.icon}</div>
+        <div class="arena-winner-copy">
+          <div class="arena-winner-label">#1 THIS YEAR</div>
+          <div class="arena-winner-name">${winner.name}</div>
+          <div class="arena-winner-note">${winner.isYou ? 'You are setting the pace.' : `${Game.state.aiName} finished rank #${playerRank}.`}</div>
+        </div>
+        <div class="arena-player-rank ${playerRank === 1 ? 'rank-win' : ''}">
+          <span>YOUR RANK</span>
+          <strong>#${playerRank}</strong>
+        </div>
+      `;
+    }
     const rEmoji = ['🥇', '🥈', '🥉', '4️⃣'];
     const rCls = ['r1', 'r2', 'r3', 'r4'];
 
@@ -858,17 +1093,17 @@ const UI = (() => {
       const statusText = e.isYou
         ? (i === 0 ? '⬆️ LEADING' : `⚠️ RANK #${i + 1}`)
         : _trendText(i);
-      const nameColor = e.isYou ? 'var(--retro-green)' : 'var(--text-dark)';
-      const statusColor = e.isYou ? 'var(--retro-green)' : 'var(--text-mid)';
+      const statusClass = e.isYou ? 'status-you' : (i === 0 ? 'status-win' : 'status-normal');
       return `
-        <tr class="${e.isYou ? 'arena-you' : ''}">
+        <tr class="${e.isYou ? 'arena-you' : ''}" style="--row-delay:${i * 70}ms">
           <td class="arena-rank-cell ${rCls[i]}">${rEmoji[i]}</td>
-          <td>${e.icon}
-            <strong style="color:${nameColor}">${e.name}</strong>
-            ${e.isYou ? '<span style="font-size:0.6rem;color:var(--text-mid)">(YOU)</span>' : ''}
+          <td class="arena-company-cell">
+            <span class="arena-company-icon">${e.icon}</span>
+            <strong>${e.name}</strong>
+            ${e.isYou ? '<span class="arena-you-tag">YOU</span>' : ''}
           </td>
           <td class="arena-score-cell">${Fmt.num(e.score, 0)}</td>
-          <td style="color:${statusColor};font-size:0.7rem">${statusText}</td>
+          <td><span class="arena-status ${statusClass}">${statusText}</span></td>
         </tr>
       `;
     }).join('');
@@ -1074,7 +1309,7 @@ const UI = (() => {
       toast(msg, 't-blue');
       setTimeout(() => {
         _performHardwareBuy(hwId);
-      }, 1000);
+      }, 370);
     } else {
       _performHardwareBuy(hwId);
     }
@@ -1089,6 +1324,7 @@ const UI = (() => {
       if (typeof flashScreen === 'function') flashScreen(result.bigUpgrade);
       if (result.bigUpgrade) mascotHappy(true);
       toast(result.message, 't-green');
+      _advanceTutorialAfterHardware(hwId);
     } else {
       toast(result.message, 't-red');
     }
@@ -1117,7 +1353,7 @@ const UI = (() => {
       toast('Heading back to the Office...', 't-blue');
       setTimeout(() => {
         _performHireWorker();
-      }, 1000);
+      }, 500);
     } else {
       _performHireWorker();
     }
@@ -1130,6 +1366,7 @@ const UI = (() => {
       if (typeof flashScreen === 'function') flashScreen(false);
       mascotHappy(true);
       toast(result.message, 't-green');
+      _advanceTutorialAfterStaff();
     } else {
       toast(result.message, 't-red');
     }
@@ -1269,6 +1506,8 @@ const UI = (() => {
     updateLocationSign,
     obNext,
     obFinish,
+    startNewUserGuide,
+    dismissTutorial,
 
     // Tick updates
     updateStats,

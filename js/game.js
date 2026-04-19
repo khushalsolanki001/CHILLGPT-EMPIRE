@@ -73,6 +73,14 @@ const Game = (() => {
         xCampaign: 0
       },
 
+      tutorial: {
+        introDone: false,
+        introDismissed: false,
+        step: '',
+        serverRackDone: false,
+        serverRackDismissed: false,
+      },
+
       lastSave: Date.now(),
     };
   }

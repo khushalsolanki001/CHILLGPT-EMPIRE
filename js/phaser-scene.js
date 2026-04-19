@@ -136,11 +136,6 @@ class GameDevStoryScene extends BaseTycoonScene {
     // ── Placed objects ──
     // ── EDITOR_LAYOUT_BEGIN ──
     // ── Placed by Visual Layout Editor (% of canvas, auto-scales) ──
-    const desk_2 = this.add.image(Math.round(W*0.2663), Math.round(H*0.6539), 'desk')
-      .setOrigin(0.50, 0.50)
-      .setDisplaySize(Math.round(W*0.1060), Math.round(H*0.2133))
-      .setDepth(2).setAlpha(1.00);
-
     // ── EDITOR_LAYOUT_END ──
 
     this._syncWithGameState();

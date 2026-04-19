@@ -44,7 +44,7 @@
       </div>
 
       <!-- Compute -->
-      <div class="stat-pill compute">
+      <div class="stat-pill compute" hidden>
         <span class="pill-icon">🖥️</span>
         <div class="pill-body">
           <div class="pill-label">COMPUTE (TF/s)</div>
@@ -53,11 +53,11 @@
       </div>
 
       <!-- TF Bank -->
-      <div class="stat-pill compute" style="border-color: #9050c0;">
+      <div class="stat-pill tf-bank" id="stat-tf-pill">
         <span class="pill-icon">🧠</span>
         <div class="pill-body">
           <div class="pill-label">TF COLLECTED</div>
-          <div class="pill-value" id="stat-tf" style="color: #9050c0;">0</div>
+          <div class="pill-value" id="stat-tf">0</div>
         </div>
       </div>
 
@@ -273,9 +273,10 @@
      ARENA MODAL
 ================================================================ -->
 <div class="modal-overlay" id="arena-modal" role="dialog" aria-modal="true" aria-label="Global AI Arena Results">
-  <div class="modal-box pixel-border">
+  <div class="modal-box pixel-border arena-box">
     <div class="modal-title">⚔️ GLOBAL AI ARENA</div>
     <div class="modal-subtitle" id="arena-year-label">YEAR 2016 RESULTS</div>
+    <div class="arena-spotlight" id="arena-spotlight"></div>
     <table class="arena-table" aria-label="Competition Results">
       <thead>
         <tr>
@@ -346,8 +347,12 @@
 
 <!-- Year transition overlay -->
 <div id="year-transition" aria-live="assertive" aria-label="Year change announcement">
-  <div class="year-splash" id="year-splash-num">2017</div>
-  <div class="year-splash-sub" id="year-splash-sub">A new year begins...</div>
+  <div class="year-splash-card">
+    <div class="year-splash-kicker">NEW YEAR UNLOCKED</div>
+    <div class="year-splash" id="year-splash-num">2017</div>
+    <div class="year-splash-sub" id="year-splash-sub">A new year begins...</div>
+    <div class="year-splash-rail" aria-hidden="true"><span></span></div>
+  </div>
 </div>
 
 
