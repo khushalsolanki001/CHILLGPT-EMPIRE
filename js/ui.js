@@ -689,15 +689,19 @@ const UI = (() => {
 
   function handleBuyHardware(hwId) {
     const isServer = ['rack', 'megaDC', 'quantumDC'].includes(hwId);
+    const isGPU    = (hwId === 'cluster');
     
-    if (isServer && window.__phaserGame) {
-      // Switch to the server scene first
+    if (window.__phaserGame && (isServer || isGPU)) {
       const sm = window.__phaserGame.scene;
-      sm.switch('GameDevStoryScene', 'ServerRoomScene');
-      sm.switch('GPUClusterRoomScene', 'ServerRoomScene');
+      let targetScene = isServer ? 'ServerRoomScene' : 'GPUClusterRoomScene';
+      let msg = isServer ? 'Accessing Server Room...' : 'Accessing GPU Cluster Room...';
 
-      // Wait 1 second before processing the purchase to show the transition
-      toast(`Accessing Server Room...`, 't-blue');
+      // Switch to the target scene first
+      sm.switch('GameDevStoryScene', targetScene);
+      sm.switch('ServerRoomScene', targetScene);
+      sm.switch('GPUClusterRoomScene', targetScene);
+
+      toast(msg, 't-blue');
       setTimeout(() => {
         _performHardwareBuy(hwId);
       }, 1000);
@@ -711,10 +715,10 @@ const UI = (() => {
     if (result.ok) {
       renderMachines();
       renderShop();
-      flash(result.bigUpgrade);
+      // use the correct function name (flashScreen)
+      if (typeof flashScreen === 'function') flashScreen(result.bigUpgrade);
       if (result.bigUpgrade) mascotHappy(true);
       toast(result.message, 't-green');
-      // Phaser SPAWN_MACHINE already fired from game.js
     } else {
       toast(result.message, 't-red');
     }
@@ -724,10 +728,9 @@ const UI = (() => {
     const result = Game.buyAIUpgrade(upgradeId);
     if (result.ok) {
       renderShop();
-      flashScreen(true);
+      if (typeof flashScreen === 'function') flashScreen(true);
       mascotHappy(true);
       toast(result.message, 't-purple');
-      // Phaser SPAWN_FEEDBACK already fired from game.js
     } else {
       toast(result.message, 't-red');
     }
@@ -735,13 +738,28 @@ const UI = (() => {
 
   /** Handle hiring a worker — updates state, visual room, and toast. */
   function handleHireWorker() {
+    if (window.__phaserGame) {
+      const sm = window.__phaserGame.scene;
+      // Switch back to main Office scene
+      sm.switch('ServerRoomScene', 'GameDevStoryScene');
+      sm.switch('GPUClusterRoomScene', 'GameDevStoryScene');
+      
+      toast('Heading back to the Office...', 't-blue');
+      setTimeout(() => {
+        _performHireWorker();
+      }, 1000);
+    } else {
+      _performHireWorker();
+    }
+  }
+
+  function _performHireWorker() {
     const result = Game.hireWorker();
     if (result.ok) {
       renderShop();
-      flashScreen(false);
+      if (typeof flashScreen === 'function') flashScreen(false);
       mascotHappy(true);
       toast(result.message, 't-green');
-      // Phaser SPAWN_WORKER already fired from game.js
     } else {
       toast(result.message, 't-red');
     }
