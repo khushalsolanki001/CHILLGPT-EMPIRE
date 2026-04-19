@@ -81,6 +81,44 @@ class BaseTycoonScene extends Phaser.Scene {
       window.removeEventListener(event, wrapped);
     });
   }
+
+  _musicEnabled() {
+    return !window.GameAudio || window.GameAudio.isMusicEnabled();
+  }
+
+  _sfxEnabled() {
+    return !window.GameAudio || window.GameAudio.isSfxEnabled();
+  }
+
+  _listenForAudioSettings() {
+    const apply = () => this._applyAudioSettings();
+    window.addEventListener('AUDIO_SETTINGS_CHANGED', apply);
+    this.events.once('shutdown', () => window.removeEventListener('AUDIO_SETTINGS_CHANGED', apply));
+    apply();
+  }
+
+  _applyAudioSettings() {
+    const bgm = this.sound?.get?.('bgm');
+    if (bgm) {
+      bgm.setMute(!this._musicEnabled());
+      bgm.setVolume(this._musicEnabled() ? 0.25 : 0);
+      if (!this._musicEnabled() && bgm.isPlaying) bgm.pause();
+      if (this._musicEnabled() && this.scene.isActive() && !bgm.isPlaying) {
+        try {
+          if (bgm.isPaused) bgm.resume();
+          else bgm.play();
+        } catch(e) {}
+      }
+    }
+    if (this._sndKeyboard) {
+      this._sndKeyboard.setMute(!this._sfxEnabled());
+      this._sndKeyboard.setVolume(this._sfxEnabled() ? 0.35 : 0);
+      if (!this._sfxEnabled() && this._sndKeyboard.isPlaying) this._sndKeyboard.stop();
+      if (this._sfxEnabled() && this.scene.isActive() && !this._sndKeyboard.isPlaying) {
+        try { this._sndKeyboard.play(); } catch(e) {}
+      }
+    }
+  }
 }
 
 class GameDevStoryScene extends BaseTycoonScene {
@@ -104,6 +142,7 @@ class GameDevStoryScene extends BaseTycoonScene {
 
     this.load.audio('sfx_keyboard', 'assets/sound/keybord.wav');
     this.load.audio('sfx_coin', 'assets/sound/coin.wav');
+    this.load.audio('bgm', 'assets/sound/music.mp3');
   }
 
   create() {
@@ -134,24 +173,48 @@ class GameDevStoryScene extends BaseTycoonScene {
       });
     }
 
-    // Keyboard sound loop (Higher volume for feedback)
+    // Audio setup
+    if (!this.sound.get('bgm')) {
+      this._sndBGM = this.sound.add('bgm', { loop: true, volume: 0.25 });
+    } else {
+      this._sndBGM = this.sound.get('bgm');
+    }
+
     this._sndKeyboard = this.sound.add('sfx_keyboard', { loop: true, volume: 0.35 });
-    this.events.on('wake', () => { if (!this._sndKeyboard.isPlaying) this._sndKeyboard.play(); });
+
+    const unlockAudio = () => {
+      if (this.sound.context.state === 'suspended') {
+        this.sound.context.resume().then(() => {
+          console.log('[Audio] Context resumed via interaction.');
+          if (this._musicEnabled() && !this._sndBGM.isPlaying) this._sndBGM.play();
+          if (this._sfxEnabled() && this.scene.isActive() && !this._sndKeyboard.isPlaying) this._sndKeyboard.play();
+          this._applyAudioSettings();
+        });
+      } else {
+        if (this._musicEnabled() && !this._sndBGM.isPlaying) this._sndBGM.play();
+        if (this._sfxEnabled() && this.scene.isActive() && !this._sndKeyboard.isPlaying) this._sndKeyboard.play();
+        this._applyAudioSettings();
+      }
+    };
+
+    this.input.on('pointerdown', unlockAudio);
+    this.events.on('wake', () => { if (this._sfxEnabled() && !this._sndKeyboard.isPlaying) this._sndKeyboard.play(); this._applyAudioSettings(); });
     this.events.on('sleep', () => this._sndKeyboard.stop());
     
-    // Resume AudioContext on any click
-    this.input.on('pointerdown', () => {
-      if (this.sound.context.state === 'suspended') {
-        this.sound.context.resume();
-      }
-    });
-
-    this._addGlobalListener('PLAY_SFX', (detail) => {
-      if (detail.key === 'coin') this.sound.play('sfx_coin', { volume: 0.5 });
-    });
+    // Initial attempt to play (might fail but handled by click)
+    try { 
+      if (this._sfxEnabled()) this._sndKeyboard.play(); 
+      if (this._musicEnabled()) this._sndBGM.play();
+    } catch(e) {}
+    this._listenForAudioSettings();
 
     this._addGlobalListener('SPAWN_WORKER', (detail) => this._onSpawnWorker(detail));
     this._addGlobalListener('SPAWN_FEEDBACK', (detail) => this._onSpawnFeedback(detail));
+    
+    this._addGlobalListener('PLAY_SFX', (detail) => {
+      if (!this._sfxEnabled()) return;
+      if (detail.key === 'coin') this.sound.play('sfx_coin', { volume: 0.5 });
+    });
     
     // ── Placed objects ──
     // ── EDITOR_LAYOUT_BEGIN ──
@@ -245,9 +308,19 @@ class ServerRoomScene extends BaseTycoonScene {
     }).setOrigin(0, 0.5).setInteractive().setDepth(100);
     btnBack.on('pointerdown', () => this.scene.switch('GameDevStoryScene'));
 
-    this.input.on('pointerdown', () => {
-      if (this.sound.context.state === 'suspended') this.sound.context.resume();
-    });
+    const unlockAudio = () => {
+      if (this.sound.context.state === 'suspended') {
+        this.sound.context.resume().then(() => {
+          const bgm = this.sound.get('bgm');
+          if (this._musicEnabled() && bgm && !bgm.isPlaying) bgm.play();
+          this._applyAudioSettings();
+        });
+      } else {
+        this._applyAudioSettings();
+      }
+    };
+    this.input.on('pointerdown', unlockAudio);
+    this._listenForAudioSettings();
 
     this._addGlobalListener('SPAWN_MACHINE', (detail) => this._onSpawnMachine(detail));
     
@@ -365,11 +438,28 @@ class GPUClusterRoomScene extends BaseTycoonScene {
         }
     }
 
-    this._setupResumeOnClick();
+    const unlockAudio = () => {
+      if (this.sound.context.state === 'suspended') {
+        this.sound.context.resume().then(() => {
+          this._startGpuAmbient();
+          // Ensure BGM keeps playing
+          const bgm = this.sound.get('bgm');
+          if (this._musicEnabled() && bgm && !bgm.isPlaying) bgm.play();
+          this._applyAudioSettings();
+        });
+      } else {
+        this._startGpuAmbient();
+        const bgm = this.sound.get('bgm');
+        if (this._musicEnabled() && bgm && !bgm.isPlaying) bgm.play();
+        this._applyAudioSettings();
+      }
+    };
 
     // GPU Ambient Sound (Triggered every 3-8s as requested)
     this._gpuTimer = null;
-    this.events.on('wake', () => this._startGpuAmbient());
+    this.input.on('pointerdown', unlockAudio);
+    this._listenForAudioSettings();
+    this.events.on('wake', () => { this._applyAudioSettings(); this._startGpuAmbient(); });
     this.events.on('sleep', () => this._stopGpuAmbient());
     
     this._addGlobalListener('SPAWN_MACHINE', (detail) => this._onSpawnMachine(detail));
@@ -385,13 +475,13 @@ class GPUClusterRoomScene extends BaseTycoonScene {
     
     console.log(`[GPU Sound] Attempting start. Scene active: ${this.scene.isActive()}, Cluster count: ${clusterCount}`);
     
-    if (clusterCount <= 0) return;
+    if (clusterCount <= 0 || !this._sfxEnabled()) return;
 
     const playNext = () => {
       // Random gap between 3s and 8s
       const delay = Phaser.Math.Between(3000, 8000);
       this._gpuTimer = this.time.delayedCall(delay, () => {
-        if (this.scene.isActive()) {
+        if (this.scene.isActive() && this._sfxEnabled()) {
           console.log(`[GPU Sound] Playing intermittent hum...`);
           this.sound.play('sfx_gpu', { volume: 0.45 });
           playNext();
@@ -400,7 +490,7 @@ class GPUClusterRoomScene extends BaseTycoonScene {
     };
 
     // Play once immediately
-    this.sound.play('sfx_gpu', { volume: 0.45 });
+    if (this._sfxEnabled()) this.sound.play('sfx_gpu', { volume: 0.45 });
     playNext();
   }
 
@@ -410,6 +500,15 @@ class GPUClusterRoomScene extends BaseTycoonScene {
       this._gpuTimer = null;
     }
     this.sound.stopByKey('sfx_gpu');
+  }
+
+  _applyAudioSettings() {
+    super._applyAudioSettings();
+    if (!this._sfxEnabled()) {
+      this._stopGpuAmbient();
+    } else if (this.scene.isActive() && !this._gpuTimer) {
+      this._startGpuAmbient();
+    }
   }
 
   // Ensure AudioContext resumes here too

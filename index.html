@@ -109,6 +109,21 @@
     </div>
   </header>
 
+  <div id="settings-panel">
+    <button id="settings-toggle" type="button" onclick="UI.toggleSettingsMenu()" aria-label="Open settings" aria-expanded="false">⚙</button>
+    <div id="settings-menu" role="dialog" aria-label="Sound settings" aria-hidden="true">
+      <div class="settings-title">SETTINGS</div>
+      <label class="audio-toggle">
+        <span>Music</span>
+        <input id="setting-music" type="checkbox" onchange="UI.setAudioSetting('music', this.checked)" checked />
+      </label>
+      <label class="audio-toggle">
+        <span>Sound effect</span>
+        <input id="setting-sfx" type="checkbox" onchange="UI.setAudioSetting('sfx', this.checked)" checked />
+      </label>
+    </div>
+  </div>
+
   <!-- ── FACTORY AREA ──────────────────────────────────────────── -->
   <main id="factory" aria-label="Factory Area">
 
@@ -368,6 +383,7 @@
 <script src="js/models.js?v=3"></script>
 <script src="js/save.js?v=3"></script>
 <script src="js/game.js?v=3"></script>
+<script src="js/audio.js?v=3"></script>
 <script src="js/ui.js?v=3"></script>
 <script src="js/main.js?v=3"></script>
 <script src="js/phaser-scene.js?v=3"></script>

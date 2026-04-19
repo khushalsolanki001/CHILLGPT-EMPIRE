@@ -1491,6 +1491,51 @@ const UI = (() => {
   function flash(big) { flashScreen(big); }
 
 
+  // ── SETTINGS MENU ────────────────────────────────────────────────
+
+  function initAudioSettings() {
+    _syncAudioSettingsUI();
+    window.addEventListener('AUDIO_SETTINGS_CHANGED', _syncAudioSettingsUI);
+    document.addEventListener('click', (e) => {
+      const panel = $('settings-panel');
+      if (!panel || panel.contains(e.target)) return;
+      _setSettingsMenuOpen(false);
+    });
+  }
+
+  function toggleSettingsMenu() {
+    const menu = $('settings-menu');
+    _setSettingsMenuOpen(!menu?.classList.contains('show'));
+  }
+
+  function _setSettingsMenuOpen(open) {
+    const menu = $('settings-menu');
+    const btn = $('settings-toggle');
+    if (!menu || !btn) return;
+    menu.classList.toggle('show', open);
+    menu.setAttribute('aria-hidden', String(!open));
+    btn.setAttribute('aria-expanded', String(open));
+  }
+
+  function _syncAudioSettingsUI() {
+    const settings = window.GameAudio?.getSettings?.() || { music: true, sfx: true };
+    const music = $('setting-music');
+    const sfx = $('setting-sfx');
+    if (music) music.checked = !!settings.music;
+    if (sfx) sfx.checked = !!settings.sfx;
+  }
+
+  function setAudioSetting(type, enabled) {
+    if (!window.GameAudio) return;
+    if (type === 'music') {
+      window.GameAudio.setMusicEnabled(enabled);
+    } else if (type === 'sfx') {
+      window.GameAudio.setSfxEnabled(enabled);
+    }
+    toast(`${type === 'music' ? 'Music' : 'Sound effects'} ${enabled ? 'ON' : 'OFF'}`);
+  }
+
+
   // ── STAR FIELD INIT ──────────────────────────────────────────────
 
   function initStars() {
@@ -1558,6 +1603,7 @@ const UI = (() => {
     renderShop,
     renderMachines,
     updateLeaderboard,
+    initAudioSettings,
 
     // Tab control
     switchTab,
@@ -1602,6 +1648,10 @@ const UI = (() => {
 
     // Notifications
     toast,
+
+    // Settings
+    toggleSettingsMenu,
+    setAudioSetting,
   };
 
 })();

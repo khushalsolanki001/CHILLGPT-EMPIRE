@@ -25,6 +25,7 @@
   UI.renderShop();
   UI.updateLeaderboard();
   UI.updateStats();
+  UI.initAudioSettings();
 
   // ── GAME LOOPS ─────────────────────────────────────────────────
 
