@@ -119,6 +119,99 @@ class BaseTycoonScene extends Phaser.Scene {
       }
     }
   }
+
+  /**
+   * Creates a premium, animated navigation button.
+   */
+  _createNavButton(x, y, label, targetScene, isRight = true) {
+    const width = 100;
+    const height = 54;
+    const container = this.add.container(x, y).setDepth(200);
+
+    // Drop shadow for depth
+    const shadow = this.add.graphics();
+    shadow.fillStyle(0x000000, 0.4);
+    shadow.fillRoundedRect(isRight ? -width - 4 : 4, -height / 2 + 4, width, height, 12);
+
+    // Main Glass Panel Background
+    const bg = this.add.graphics();
+    const drawBg = (glow = false) => {
+      bg.clear();
+      // Glass gradient feel
+      bg.fillStyle(glow ? 0x2a2e4a : 0x1a1c2c, 0.9);
+      bg.fillRoundedRect(isRight ? -width : 0, -height / 2, width, height, 12);
+
+      // Cyber-border
+      const borderColor = glow ? 0x00f0ff : 0x6a3c14;
+      const thickness = glow ? 3 : 2;
+      bg.lineStyle(thickness, borderColor, 1);
+      bg.strokeRoundedRect(isRight ? -width : 0, -height / 2, width, height, 12);
+
+      if (glow) {
+        // Inner highlight
+        bg.lineStyle(1, 0xffffff, 0.3);
+        bg.strokeRoundedRect(isRight ? -width + 3 : 3, -height / 2 + 3, width - 6, height - 6, 10);
+      }
+    };
+    drawBg(false);
+
+    // Text Label
+    const text = this.add.text(isRight ? -width / 2 - 10 : width / 2 + 10, 0, label, {
+      fontFamily: '"Press Start 2P", monospace',
+      fontSize: '9px',
+      color: '#ffffff',
+      align: 'center'
+    }).setOrigin(0.5);
+
+    // Animated Arrow Icon
+    const arrowSym = isRight ? '▶' : '◀';
+    const arrow = this.add.text(isRight ? -18 : 5, 0, arrowSym, {
+      fontFamily: '"Press Start 2P", monospace',
+      fontSize: '14px',
+      color: '#00f0ff'
+    }).setOrigin(0.5);
+
+    // Floating animation
+    this.tweens.add({
+      targets: arrow,
+      x: isRight ? '-=6' : '+=6',
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+
+    container.add([shadow, bg, text, arrow]);
+
+    const rect = new Phaser.Geom.Rectangle(isRight ? -width : 0, -height / 2, width, height);
+    container.setInteractive(rect, Phaser.Geom.Rectangle.Contains);
+
+    container.on('pointerover', () => {
+      drawBg(true);
+      this.tweens.add({ targets: container, scale: 1.05, duration: 200, ease: 'Back.easeOut' });
+      arrow.setColor('#ffffff');
+      text.setTint(0x00f0ff);
+      if (typeof document !== 'undefined' && document.body) document.body.style.cursor = 'pointer';
+    });
+
+    container.on('pointerout', () => {
+      drawBg(false);
+      this.tweens.add({ targets: container, scale: 1.0, duration: 200, ease: 'Cubic.easeOut' });
+      arrow.setColor('#00f0ff');
+      text.clearTint();
+      if (typeof document !== 'undefined' && document.body) document.body.style.cursor = 'default';
+    });
+
+    container.on('pointerdown', () => {
+      if (window.GameAudio) window.GameAudio.playClick();
+      container.setScale(0.95);
+      this.time.delayedCall(120, () => {
+        this.scene.switch(targetScene);
+      });
+    });
+
+    return container;
+  }
 }
 
 class GameDevStoryScene extends BaseTycoonScene {
@@ -152,20 +245,8 @@ class GameDevStoryScene extends BaseTycoonScene {
 
     this._buildZones(W, H);
 
-    const createNavBtn = (x, y, text, sceneKey, originX) => {
-      const btn = this.add.text(x, y, text, {
-        fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center',
-        stroke: '#000000', strokeThickness: 2
-      }).setOrigin(originX, 0.5).setInteractive({ useHandCursor: true }).setDepth(100);
-      
-      btn.on('pointerover', () => { btn.setBackgroundColor('#8b5a2b'); btn.setScale(1.1); });
-      btn.on('pointerout', () => { btn.setBackgroundColor('#5a3810'); btn.setScale(1.0); });
-      btn.on('pointerdown', () => { if(window.GameAudio) window.GameAudio.playClick(); this.scene.switch(sceneKey); });
-      return btn;
-    };
-
-    createNavBtn(W - 20, H / 2, '▶\nSERVERS', 'ServerRoomScene', 1);
-    createNavBtn(20, H / 2, '◀\nGPU ROOM', 'GPUClusterRoomScene', 0);
+    this._createNavButton(W - 20, H / 2, 'SERVERS', 'ServerRoomScene', true);
+    this._createNavButton(20, H / 2, 'GPU ROOM', 'GPUClusterRoomScene', false);
 
     if (this.textures.exists('worker_anim') && !this.anims.exists('worker_type')) {
       this.anims.create({
@@ -304,14 +385,7 @@ class ServerRoomScene extends BaseTycoonScene {
       this._updateBackgroundTexture();
     });
 
-    const btnBack = this.add.text(20, H / 2, '◀\nOFFICE', {
-      fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center',
-      stroke: '#000000', strokeThickness: 2
-    }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true }).setDepth(100);
-    
-    btnBack.on('pointerover', () => { btnBack.setBackgroundColor('#8b5a2b'); btnBack.setScale(1.1); });
-    btnBack.on('pointerout', () => { btnBack.setBackgroundColor('#5a3810'); btnBack.setScale(1.0); });
-    btnBack.on('pointerdown', () => { if(window.GameAudio) window.GameAudio.playClick(); this.scene.switch('GameDevStoryScene'); });
+    this._createNavButton(20, H / 2, 'OFFICE', 'GameDevStoryScene', false);
 
     const unlockAudio = () => {
       if (this.sound.context.state === 'suspended') {
@@ -422,14 +496,7 @@ class GPUClusterRoomScene extends BaseTycoonScene {
       const s = Math.max(W / tex.width, H / tex.height);
       this.add.image(W / 2, H / 2, 'gpu_bg').setScale(s).setDepth(0);
     }
-    const btnBack = this.add.text(W - 20, H / 2, '▶\nOFFICE', {
-      fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center',
-      stroke: '#000000', strokeThickness: 2
-    }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true }).setDepth(100);
-    
-    btnBack.on('pointerover', () => { btnBack.setBackgroundColor('#8b5a2b'); btnBack.setScale(1.1); });
-    btnBack.on('pointerout', () => { btnBack.setBackgroundColor('#5a3810'); btnBack.setScale(1.0); });
-    btnBack.on('pointerdown', () => { if(window.GameAudio) window.GameAudio.playClick(); this.scene.switch('GameDevStoryScene'); });
+    this._createNavButton(W - 20, H / 2, 'OFFICE', 'GameDevStoryScene', true);
 
     for (let i = 0; i < 4; i++) {
       const key = `cluster_${i}`;
