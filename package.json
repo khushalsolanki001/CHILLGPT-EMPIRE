@@ -2,7 +2,8 @@
   "scripts": {
     "start":  "npx serve .",
     "dev":    "npx serve .",
-    "editor": "node editor-server.js"
+    "editor": "node editor-server.js",
+    "build": "if exist dist rmdir /s /q dist & mkdir dist & xcopy /E /I /Y assets dist\\assets & xcopy /E /I /Y css dist\\css & xcopy /E /I /Y js dist\\js & copy index.html dist\\index.html & powershell Compress-Archive -Path dist\\* -DestinationPath game_release.zip -Force"
   },
   "dependencies": {
     "phaser": "^4.0.0"

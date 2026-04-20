@@ -107,7 +107,7 @@ class BaseTycoonScene extends Phaser.Scene {
         try {
           if (bgm.isPaused) bgm.resume();
           else bgm.play();
-        } catch(e) {}
+        } catch (e) { }
       }
     }
     if (this._sndKeyboard) {
@@ -115,7 +115,7 @@ class BaseTycoonScene extends Phaser.Scene {
       this._sndKeyboard.setVolume(this._sfxEnabled() ? 0.35 : 0);
       if (!this._sfxEnabled() && this._sndKeyboard.isPlaying) this._sndKeyboard.stop();
       if (this._sfxEnabled() && this.scene.isActive() && !this._sndKeyboard.isPlaying) {
-        try { this._sndKeyboard.play(); } catch(e) {}
+        try { this._sndKeyboard.play(); } catch (e) { }
       }
     }
   }
@@ -129,16 +129,9 @@ class GameDevStoryScene extends BaseTycoonScene {
   }
 
   preload() {
-    const ok = (key) => { this._ok[key] = true; };
     this.load.image('bg', 'assets/images/empty_office_room_wide.png');
-    this.load.on('filecomplete-image-bg', () => ok('bg'));
-    
-    // Preload objects used by the Visual Layout Editor
     this.load.image('desk', 'assets/images/desk1.png');
-    this.load.on('filecomplete-image-desk', () => ok('desk'));
-
     this.load.spritesheet('worker_anim', 'assets/images/staff.png', { frameWidth: UPGRADE_FRAME_W, frameHeight: UPGRADE_FRAME_H });
-    this.load.on('filecomplete-spritesheet-worker_anim', () => ok('worker_anim'));
 
     this.load.audio('sfx_keyboard', 'assets/sound/keybord.wav');
     this.load.audio('sfx_coin', 'assets/sound/coin.wav');
@@ -147,24 +140,34 @@ class GameDevStoryScene extends BaseTycoonScene {
 
   create() {
     const W = this.scale.width, H = this.scale.height;
-    if (this._ok['bg']) {
-      const tex = this.textures.get('bg').getSourceImage();
+
+    // Add background directly (Phaser handles missing textures with a fallback box)
+    const bgImage = this.add.image(W / 2, H / 2, 'bg');
+    const tex = this.textures.get('bg').getSourceImage();
+    if (tex && tex.width > 0) {
       const s = Math.max(W / tex.width, H / tex.height);
-      this.add.image(W / 2, H / 2, 'bg').setScale(s).setDepth(0);
+      bgImage.setScale(s);
     }
+    bgImage.setDepth(0);
+
     this._buildZones(W, H);
 
-    const btnServers = this.add.text(W - 20, H / 2, '▶\nSERVERS', {
-      fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center'
-    }).setOrigin(1, 0.5).setInteractive().setDepth(100);
-    btnServers.on('pointerdown', () => this.scene.switch('ServerRoomScene'));
+    const createNavBtn = (x, y, text, sceneKey, originX) => {
+      const btn = this.add.text(x, y, text, {
+        fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center',
+        stroke: '#000000', strokeThickness: 2
+      }).setOrigin(originX, 0.5).setInteractive({ useHandCursor: true }).setDepth(100);
+      
+      btn.on('pointerover', () => { btn.setBackgroundColor('#8b5a2b'); btn.setScale(1.1); });
+      btn.on('pointerout', () => { btn.setBackgroundColor('#5a3810'); btn.setScale(1.0); });
+      btn.on('pointerdown', () => { if(window.GameAudio) window.GameAudio.playClick(); this.scene.switch(sceneKey); });
+      return btn;
+    };
 
-    const btnGPU = this.add.text(20, H / 2, '◀\nGPU ROOM', {
-      fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center'
-    }).setOrigin(0, 0.5).setInteractive().setDepth(100);
-    btnGPU.on('pointerdown', () => this.scene.switch('GPUClusterRoomScene'));
+    createNavBtn(W - 20, H / 2, '▶\nSERVERS', 'ServerRoomScene', 1);
+    createNavBtn(20, H / 2, '◀\nGPU ROOM', 'GPUClusterRoomScene', 0);
 
-    if (this._ok['worker_anim'] && !this.anims.exists('worker_type')) {
+    if (this.textures.exists('worker_anim') && !this.anims.exists('worker_type')) {
       this.anims.create({
         key: 'worker_type',
         frames: this.anims.generateFrameNumbers('worker_anim', { start: 0, end: 1 }),
@@ -200,22 +203,22 @@ class GameDevStoryScene extends BaseTycoonScene {
     this.input.on('pointerdown', unlockAudio);
     this.events.on('wake', () => { if (this._sfxEnabled() && !this._sndKeyboard.isPlaying) this._sndKeyboard.play(); this._applyAudioSettings(); });
     this.events.on('sleep', () => this._sndKeyboard.stop());
-    
+
     // Initial attempt to play (might fail but handled by click)
-    try { 
-      if (this._sfxEnabled()) this._sndKeyboard.play(); 
+    try {
+      if (this._sfxEnabled()) this._sndKeyboard.play();
       if (this._musicEnabled()) this._sndBGM.play();
-    } catch(e) {}
+    } catch (e) { }
     this._listenForAudioSettings();
 
     this._addGlobalListener('SPAWN_WORKER', (detail) => this._onSpawnWorker(detail));
     this._addGlobalListener('SPAWN_FEEDBACK', (detail) => this._onSpawnFeedback(detail));
-    
+
     this._addGlobalListener('PLAY_SFX', (detail) => {
       if (!this._sfxEnabled()) return;
       if (detail.key === 'coin') this.sound.play('sfx_coin', { volume: 0.5 });
     });
-    
+
     // ── Placed objects ──
     // ── EDITOR_LAYOUT_BEGIN ──
     // ── Placed by Visual Layout Editor (% of canvas, auto-scales) ──
@@ -248,7 +251,7 @@ class GameDevStoryScene extends BaseTycoonScene {
     if (this._workerCount >= wSpots.length) return;
     const pos = wSpots[this._workerCount];
     this._workerCount++;
-    if (this._ok['worker_anim']) {
+    if (this.textures.exists('worker_anim')) {
       const obj = this.add.sprite(pos.x, pos.y, 'worker_anim', 0).setOrigin(0.5, 1).setDepth(8);
       this._scaleToTargetH(obj, UPGRADE_FRAME_H, wH);
       obj.play('worker_type');
@@ -258,7 +261,7 @@ class GameDevStoryScene extends BaseTycoonScene {
 
   _onSpawnFeedback(detail) {
     const W = this.scale.width, H = this.scale.height;
-    this._spawnFeedbackText(detail.x ?? W/2, detail.y ?? H/2, detail.text, detail.color ?? C.feedGold);
+    this._spawnFeedbackText(detail.x ?? W / 2, detail.y ?? H / 2, detail.text, detail.color ?? C.feedGold);
   }
 
   _syncWithGameState() {
@@ -277,18 +280,16 @@ class ServerRoomScene extends BaseTycoonScene {
   }
 
   preload() {
-    const ok = (key) => { this._ok[key] = true; };
     // Load 4 tiers of server room backgrounds
     for (let i = 1; i <= 4; i++) {
       const key = `server_tier${i}`;
       this.load.image(key, `assets/images/upgrades/server_room/server_room_${i}.png`);
-      this.load.on(`filecomplete-image-${key}`, () => ok(key));
     }
   }
 
   create() {
     const W = this.scale.width, H = this.scale.height;
-    
+
     // Aesthetic background fill for gaps
     this._bgFill = this.add.graphics().setDepth(-1);
     this._renderFill(W, H);
@@ -304,9 +305,13 @@ class ServerRoomScene extends BaseTycoonScene {
     });
 
     const btnBack = this.add.text(20, H / 2, '◀\nOFFICE', {
-      fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center'
-    }).setOrigin(0, 0.5).setInteractive().setDepth(100);
-    btnBack.on('pointerdown', () => this.scene.switch('GameDevStoryScene'));
+      fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center',
+      stroke: '#000000', strokeThickness: 2
+    }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true }).setDepth(100);
+    
+    btnBack.on('pointerover', () => { btnBack.setBackgroundColor('#8b5a2b'); btnBack.setScale(1.1); });
+    btnBack.on('pointerout', () => { btnBack.setBackgroundColor('#5a3810'); btnBack.setScale(1.0); });
+    btnBack.on('pointerdown', () => { if(window.GameAudio) window.GameAudio.playClick(); this.scene.switch('GameDevStoryScene'); });
 
     const unlockAudio = () => {
       if (this.sound.context.state === 'suspended') {
@@ -323,7 +328,7 @@ class ServerRoomScene extends BaseTycoonScene {
     this._listenForAudioSettings();
 
     this._addGlobalListener('SPAWN_MACHINE', (detail) => this._onSpawnMachine(detail));
-    
+
     // Ensure we sync when entering the scene
     this.events.on('wake', () => this._syncWithGameState());
     this._syncWithGameState();
@@ -332,7 +337,7 @@ class ServerRoomScene extends BaseTycoonScene {
   _onSpawnMachine(detail) {
     const hwId = detail.hwId;
     if (!['rack', 'megaDC', 'quantumDC', 'server'].includes(hwId)) return;
-    
+
     // Re-sync background whenever a machine is bought
     this._syncWithGameState();
   }
@@ -340,15 +345,15 @@ class ServerRoomScene extends BaseTycoonScene {
   _updateBackgroundTexture() {
     if (!this._bg) return;
     const key = `server_tier${this._currentTier}`;
-    
+
     if (this.textures.exists(key)) {
       this._bg.setTexture(key);
       const W = this.scale.width, H = this.scale.height;
       const img = this.textures.get(key).getSourceImage();
-      
+
       // Maintain original aspect ratio and fit within the screen (Letterbox/Pillarbox)
       const scale = Math.min(W / img.width, H / img.height);
-      
+
       this._bg.setScale(scale);
       this._bg.setPosition(W / 2, H / 2);
     } else {
@@ -368,22 +373,22 @@ class ServerRoomScene extends BaseTycoonScene {
     if (typeof Game === 'undefined') return;
     const st = Game.state;
     const hw = st.hardware || {};
-    
+
     // Determine tier based on highest owned hardware
-    let tier = 1; 
+    let tier = 1;
     if (hw.quantumDC > 0) tier = 4;
     else if (hw.megaDC > 0) tier = 3;
     else if (hw.rack > 0) tier = 2; // Simplified as 'server' id was redundant/missing in upgrades
-    
+
     console.log(`[ServerRoom] Syncing. Hardware:`, hw, `Resolved Tier:`, tier);
-    
+
     if (this._currentTier !== tier) {
       console.log(`[ServerRoom] Tier Change: ${this._currentTier} -> ${tier}`);
       this._currentTier = tier;
       this._updateBackgroundTexture();
-      
+
       // Screen flash effect on upgrade
-      const flash = this.add.rectangle(this.scale.width/2, this.scale.height/2, this.scale.width, this.scale.height, 0xffffff)
+      const flash = this.add.rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0xffffff)
         .setAlpha(0).setDepth(1000);
       this.tweens.add({
         targets: flash,
@@ -403,39 +408,40 @@ class GPUClusterRoomScene extends BaseTycoonScene {
   }
 
   preload() {
-    const ok = (key) => { this._ok[key] = true; };
     this.load.image('gpu_bg', 'assets/images/empty_gpu_room_wide.png');
-    this.load.on('filecomplete-image-gpu_bg', () => ok('gpu_bg'));
     for (let i = 0; i < 4; i++) {
       this.load.spritesheet(`cluster_${i}`, `assets/images/upgrades/gpu.png`, { frameWidth: UPGRADE_FRAME_W, frameHeight: UPGRADE_FRAME_H });
-      this.load.on(`filecomplete-spritesheet-cluster_${i}`, () => ok(`cluster_${i}`));
     }
     this.load.audio('sfx_gpu', 'assets/sound/gpu.wav');
   }
 
   create() {
     const W = this.scale.width, H = this.scale.height;
-    if (this._ok['gpu_bg']) {
+    if (this.textures.exists('gpu_bg')) {
       const tex = this.textures.get('gpu_bg').getSourceImage();
       const s = Math.max(W / tex.width, H / tex.height);
       this.add.image(W / 2, H / 2, 'gpu_bg').setScale(s).setDepth(0);
     }
     const btnBack = this.add.text(W - 20, H / 2, '▶\nOFFICE', {
-      fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center'
-    }).setOrigin(1, 0.5).setInteractive().setDepth(100);
-    btnBack.on('pointerdown', () => this.scene.switch('GameDevStoryScene'));
+      fontFamily: '"Press Start 2P", monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#5a3810', padding: 8, align: 'center',
+      stroke: '#000000', strokeThickness: 2
+    }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true }).setDepth(100);
+    
+    btnBack.on('pointerover', () => { btnBack.setBackgroundColor('#8b5a2b'); btnBack.setScale(1.1); });
+    btnBack.on('pointerout', () => { btnBack.setBackgroundColor('#5a3810'); btnBack.setScale(1.0); });
+    btnBack.on('pointerdown', () => { if(window.GameAudio) window.GameAudio.playClick(); this.scene.switch('GameDevStoryScene'); });
 
     for (let i = 0; i < 4; i++) {
-        const key = `cluster_${i}`;
-        if (this._ok[key] && !this.anims.exists(`${key}_anim`)) {
-            this.anims.create({
-                key: `${key}_anim`,
-                frames: this.anims.generateFrameNumbers(key, { start: 0, end: 1 }),
-                frameRate: 3 + i,
-                repeat: -1,
-                yoyo: true
-            });
-        }
+      const key = `cluster_${i}`;
+      if (this.textures.exists(key) && !this.anims.exists(`${key}_anim`)) {
+        this.anims.create({
+          key: `${key}_anim`,
+          frames: this.anims.generateFrameNumbers(key, { start: 0, end: 1 }),
+          frameRate: 3 + i,
+          repeat: -1,
+          yoyo: true
+        });
+      }
     }
 
     const unlockAudio = () => {
@@ -461,10 +467,10 @@ class GPUClusterRoomScene extends BaseTycoonScene {
     this._listenForAudioSettings();
     this.events.on('wake', () => { this._applyAudioSettings(); this._startGpuAmbient(); });
     this.events.on('sleep', () => this._stopGpuAmbient());
-    
+
     this._addGlobalListener('SPAWN_MACHINE', (detail) => this._onSpawnMachine(detail));
     this._syncWithGameState();
-    
+
     // Start if active
     if (this.scene.isActive()) this._startGpuAmbient();
   }
@@ -472,9 +478,9 @@ class GPUClusterRoomScene extends BaseTycoonScene {
   _startGpuAmbient() {
     this._stopGpuAmbient();
     const clusterCount = Game.state.hardware?.cluster || 0;
-    
+
     console.log(`[GPU Sound] Attempting start. Scene active: ${this.scene.isActive()}, Cluster count: ${clusterCount}`);
-    
+
     if (clusterCount <= 0 || !this._sfxEnabled()) return;
 
     const playNext = () => {
@@ -532,7 +538,7 @@ class GPUClusterRoomScene extends BaseTycoonScene {
     const idx = this._clusterCount % 4;
     const pos = gSpots[idx];
     this._clusterCount++;
-    if (this._ok[`cluster_${idx}`]) {
+    if (this.textures.exists(`cluster_${idx}`)) {
       const obj = this.add.sprite(pos.x, pos.y, `cluster_${idx}`, 0).setOrigin(0.5, 1).setAngle(gRot).setDepth(7);
       this._scaleToTargetH(obj, UPGRADE_FRAME_H, gH);
       obj.play(`cluster_${idx}_anim`);
@@ -554,11 +560,14 @@ function initPhaserGame() {
   const wrapper = document.createElement('div');
   wrapper.id = 'phaser-canvas-wrapper';
   factory.insertBefore(wrapper, factory.firstChild);
+
+  // Use './' as baseURL so assets resolve relative to index.html on any host
   window.__phaserGame = new Phaser.Game({
     type: Phaser.AUTO, width: factory.clientWidth || 1208, height: factory.clientHeight || 600, transparent: true, parent: wrapper,
     scene: [GameDevStoryScene, ServerRoomScene, GPUClusterRoomScene],
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
     render: { antialias: true, pixelArt: false, roundPixels: true },
+    loader: { baseURL: './' },
   });
 }
 
