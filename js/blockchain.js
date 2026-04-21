@@ -748,9 +748,18 @@ const Blockchain = (() => {
       return;
     }
     const bal = await getOnChainTFBalance();
-    el.textContent = Fmt.num(bal) + ' $TF';
-    const pill = el.closest('.stat-pill');
-    if (pill) pill.style.display = '';
+    if (el) {
+      el.textContent = Fmt.num(bal) + ' $TF';
+      const pill = el.closest('.stat-pill');
+      if (pill) pill.style.display = '';
+    }
+    
+    // Update top bar wallet display
+    const topBarWallet = document.getElementById('stat-wallet-tf');
+    if (topBarWallet) {
+      topBarWallet.style.display = 'inline';
+      topBarWallet.textContent = `(💼 ${Fmt.num(bal)} $TF)`;
+    }
   }
 
   // ── GETTERS ───────────────────────────────────────────────────────

@@ -161,11 +161,12 @@ body {
   position: fixed;
   top: calc(var(--topbar-h) + 12px);
   left: 14px;
-  z-index: 2400;
+  z-index: 1000;
   font-family: var(--font-pixel);
 }
 
 #settings-toggle,
+#store-toggle,
 #arena-toggle {
   width: 42px;
   height: 42px;
@@ -182,12 +183,14 @@ body {
 }
 
 #settings-toggle:hover,
+#store-toggle:hover,
 #arena-toggle:hover {
   transform: translateY(-1px);
   box-shadow: 0 5px 0 #10130f, 0 14px 22px rgba(0, 0, 0, 0.2);
 }
 
-#settings-menu {
+#settings-menu,
+#store-menu {
   position: absolute;
   top: 50px;
   left: 0;
@@ -203,7 +206,8 @@ body {
   transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
-#settings-menu.show {
+#settings-menu.show,
+#store-menu.show {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0) scale(1);

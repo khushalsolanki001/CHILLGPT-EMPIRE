@@ -114,7 +114,14 @@ const UI = (() => {
     // Collect button label
     const pending = s.pendingRevenue;
     $('collect-label').textContent =
-      pending > 0.01 ? Fmt.money(pending) : 'COLLECT';
+      pending > 0.01 ? 'CLAIM ' + Fmt.money(pending) : 'COLLECT';
+
+    // Claim TF button label
+    const claimTfBtn = $('claim-tf-btn');
+    if (claimTfBtn && s.tf > 0) {
+      const span = claimTfBtn.querySelector('span:nth-child(2)');
+      if (span) span.textContent = `CLAIM $TF ${Fmt.num(s.tf, 0)}`;
+    }
 
     // Year countdown footer
     const rem = Math.max(0, s.yearDuration - s.yearProgress);
@@ -717,7 +724,7 @@ const UI = (() => {
             <div class="card-desc" style="font-size:0.55rem;">${arch.desc}</div>
           </div>
           <div class="card-right">
-            <span class="badge badge-blue" style="font-size:0.22rem;">${arch.tfMult}x TF</span>
+            <span class="badge badge-blue" style="font-size:0.3rem;">${arch.tfMult}x TF</span>
           </div>`;
         card.onclick = () => { _mbSelectedArch = arch.id; _renderMbGrids(); };
         archGrid.appendChild(card);
@@ -738,9 +745,9 @@ const UI = (() => {
         card.style.cssText = 'cursor:pointer; flex-direction:column; align-items:flex-start; padding:8px;';
         if (sel) card.style.boxShadow = 'inset 0 3px 0 var(--retro-gold), var(--btn-shadow-sm)';
         card.innerHTML = `
-          <div class="card-name" style="font-size:0.32rem;">${sz.icon} ${sz.label}</div>
+          <div class="card-name" style="font-size:0.38rem;">${sz.icon} ${sz.label}</div>
           <div class="card-badges" style="margin-top:2px;">
-            <span class="badge ${haveTF ? 'badge-green' : 'badge-red'}" style="font-size:0.22rem;">${Fmt.num(tfNeeded)} TF</span>
+            <span class="badge ${haveTF ? 'badge-green' : 'badge-red'}" style="font-size:0.3rem;">${Fmt.num(tfNeeded)} TF</span>
           </div>`;
         card.onclick = () => { if (haveTF) { _mbSelectedSize = sz.id; _renderMbGrids(); } };
         sizeGrid.appendChild(card);
@@ -1906,11 +1913,27 @@ const UI = (() => {
   function toggleSettingsMenu() {
     const menu = $('settings-menu');
     _setSettingsMenuOpen(!menu?.classList.contains('show'));
+    if (!menu?.classList.contains('show')) _setStoreMenuOpen(false); // Close store if open
+  }
+
+  function toggleStoreMenu() {
+    const menu = $('store-menu');
+    _setStoreMenuOpen(!menu?.classList.contains('show'));
+    if (!menu?.classList.contains('show')) _setSettingsMenuOpen(false); // Close settings if open
   }
 
   function _setSettingsMenuOpen(open) {
     const menu = $('settings-menu');
     const btn = $('settings-toggle');
+    if (!menu || !btn) return;
+    menu.classList.toggle('show', open);
+    menu.setAttribute('aria-hidden', String(!open));
+    btn.setAttribute('aria-expanded', String(open));
+  }
+
+  function _setStoreMenuOpen(open) {
+    const menu = $('store-menu');
+    const btn = $('store-toggle');
     if (!menu || !btn) return;
     menu.classList.toggle('show', open);
     menu.setAttribute('aria-hidden', String(!open));
@@ -2150,8 +2173,9 @@ const UI = (() => {
     // Notifications
     toast,
 
-    // Settings
+    // Settings & Store
     toggleSettingsMenu,
+    toggleStoreMenu,
     setAudioSetting,
 
     // Start Screen
