@@ -965,35 +965,30 @@ body {
 /* ── COLLECT SECTION ────────────────────────────────────────────── */
 #collect-section {
   position: absolute;
-  bottom: 18px;
-  right: 18px;
+  bottom: 14px;
+  right: 14px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
+  gap: 2px;
   z-index: 30;
+  opacity: 1;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
 
 .progress-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-
-.progress-label {
-  font-family: var(--font-pixel);
-  font-size: 0.3rem;
-  color: var(--text-mid);
-  letter-spacing: 1px;
+  display: none !important;
 }
 
 .progress-bar-track {
-  width: 200px;
-  height: 12px;
+  width: 100px;
+  height: 5px;
   background: var(--bg-inset);
-  border: 3px solid var(--border);
-  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.2);
   border-radius: var(--radius-sm);
   overflow: visible;
   position: relative;
@@ -1006,49 +1001,65 @@ body {
   width: 0%;
   transition: width 0.4s ease;
   position: relative;
+  animation: bar-glow 2s ease-in-out infinite;
+}
+
+@keyframes bar-glow {
+
+  0%,
+  100% {
+    box-shadow: none;
+  }
+
+  50% {
+    box-shadow: 0 0 6px rgba(104, 200, 74, 0.6);
+  }
 }
 
 .progress-percent {
   position: absolute;
   right: 0;
-  top: -17px;
+  top: -14px;
   font-family: var(--font-pixel);
-  font-size: 0.28rem;
+  font-size: 0.22rem;
   color: var(--retro-green);
 }
 
-/* Collect button — chunky 3-D retro press button */
+/* Collect button — compact retro press button */
 #collect-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #78c840;
-  border: 3px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 10px 20px;
-  font-family: var(--font-pixel);
-  font-size: 0.45rem;
-  letter-spacing: 0.5px;
-  color: var(--text-dark);
-  cursor: pointer;
-  box-shadow: var(--btn-shadow);
-  transition: all var(--t-fast);
-  position: relative;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  background: #78c840 !important;
+  border: 2px solid var(--border) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 8px 12px !important;
+  margin-top: 0px !important;
+  font-family: var(--font-pixel) !important;
+  font-size: 14px !important;
+  color: var(--text-dark) !important;
+  cursor: pointer !important;
+  box-shadow: 3px 3px 0 #3a2a10 !important;
+  transition: transform 0.1s, box-shadow 0.1s !important;
+  position: relative !important;
+  white-space: nowrap !important;
+  min-width: auto !important;
 }
 
 #collect-btn:hover {
-  background: #90e050;
-  transform: translate(-1px, -1px);
-  box-shadow: 5px 5px 0 #1a0e04;
+  background: #90e050 !important;
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 3px 3px 0 #3a2a10 !important;
 }
 
 #collect-btn:active {
-  transform: translate(3px, 3px);
-  box-shadow: 1px 1px 0 #1a0e04;
+  transform: translate(1px, 1px) !important;
+  box-shadow: 1px 1px 0 #3a2a10 !important;
 }
 
 .btn-icon {
-  font-size: 1rem;
+  font-size: 0.5rem;
 }
 
 /* ── NOTIFICATIONS LAYER ────────────────────────────────────────── */
@@ -1763,12 +1774,34 @@ body {
 
   #collect-section {
     background: var(--bg-panel);
-    border-top: 3px solid var(--border);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
     flex-direction: row;
     align-items: center;
-    padding: 10px 14px;
-    justify-content: space-between;
+    padding: 6px 8px;
+    gap: 8px;
+    width: auto;
+    right: 14px;
+    bottom: 14px;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
   }
+
+  .progress-bar-track {
+    width: 80px !important;
+    height: 4px !important;
+  }
+
+  .progress-label {
+    font-size: 0.18rem !important;
+  }
+
+  #collect-btn {
+    padding: 4px 8px !important;
+    font-size: 10px !important;
+    min-width: auto !important;
+  }
+
+  /* Removed override */
 
   #shop {
     border-left: none;
@@ -2169,13 +2202,15 @@ body {
 #collect-section {
   right: 22px;
   bottom: 22px;
-  padding: 14px;
-  align-items: stretch;
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid rgba(18, 23, 16, 0.9);
-  border-radius: 8px;
-  box-shadow: 0 10px 0 rgba(18, 23, 16, 0.9), 0 24px 36px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(8px);
+  padding: 0;
+  align-items: center;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  width: fit-content;
+  display: flex;
+  flex-direction: column;
 }
 
 .progress-wrap {
@@ -2188,13 +2223,13 @@ body {
 }
 
 .progress-bar-track {
-  width: 250px;
-  height: 18px;
+  width: 140px;
+  height: 12px;
   background: #111610;
   border: 2px solid #10130f;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: inset 0 3px 9px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.45);
 }
 
 .progress-bar-fill {
@@ -2231,37 +2266,7 @@ body {
   color: #12a86b;
 }
 
-#collect-btn,
-.buy-btn,
-.modal-close-btn,
-.ob-next-btn,
-#dev-mode-btn,
-#dev-skip-btn,
-#dev-t3-btn,
-#dev-t4-btn,
-#hard-reset-btn {
-  border-radius: 8px !important;
-  letter-spacing: 0;
-  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
-}
-
-#collect-btn {
-  justify-content: center;
-  min-height: 48px;
-  background:
-    linear-gradient(135deg, #12a86b, #ffd34f);
-  overflow: hidden;
-}
-
-#collect-btn::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.44), transparent);
-  transform: translateX(-120%);
-  animation: button-sheen 2.6s ease-in-out infinite;
-}
-
+/* Removed overrides */
 @keyframes button-sheen {
 
   0%,
@@ -2312,6 +2317,15 @@ body {
   color: #10130f;
   border-color: #10130f;
   box-shadow: 0 4px 0 #10130f;
+}
+
+#collect-btn {
+  justify-content: center !important;
+  min-height: 40px !important;
+  padding: 8px 20px !important;
+  font-size: 16px !important;
+  background:
+    linear-gradient(135deg, #12a86b, #ffd34f) !important;
 }
 
 .shop-content {

@@ -114,7 +114,7 @@ const UI = (() => {
     // Collect button label
     const pending = s.pendingRevenue;
     $('collect-label').textContent =
-      pending > 0.01 ? `COLLECT ${Fmt.money(pending)}` : 'COLLECT REVENUE';
+      pending > 0.01 ? Fmt.money(pending) : 'COLLECT';
 
     // Year countdown footer
     const rem = Math.max(0, s.yearDuration - s.yearProgress);

@@ -120,6 +120,23 @@ class BaseTycoonScene extends Phaser.Scene {
     }
   }
 
+  /** Cover-scale a background image to always fill the canvas. */
+  _fitBg(img, texKey) {
+    const W = this.scale.width, H = this.scale.height;
+    const src = this.textures.get(texKey).getSourceImage();
+    if (!src || !src.width) return;
+    const s = Math.max(W / src.width, H / src.height);
+    img.setPosition(W / 2, H / 2).setScale(s);
+  }
+
+  /** Wire a background image to auto cover-scale on resize. */
+  _autoCoverBg(img, texKey) {
+    this._fitBg(img, texKey);
+    this.scale.on('resize', () => {
+      if (img && img.active) this._fitBg(img, texKey);
+    });
+  }
+
   /**
    * Creates a premium, animated navigation button.
    */
@@ -234,14 +251,9 @@ class GameDevStoryScene extends BaseTycoonScene {
   create() {
     const W = this.scale.width, H = this.scale.height;
 
-    // Add background directly (Phaser handles missing textures with a fallback box)
-    const bgImage = this.add.image(W / 2, H / 2, 'bg');
-    const tex = this.textures.get('bg').getSourceImage();
-    if (tex && tex.width > 0) {
-      const s = Math.max(W / tex.width, H / tex.height);
-      bgImage.setScale(s);
-    }
-    bgImage.setDepth(0);
+    // BG — cover-scales on resize including itch.io fullscreen
+    const bgImage = this.add.image(0, 0, 'bg').setDepth(0);
+    if (this.textures.exists('bg')) this._autoCoverBg(bgImage, 'bg');
 
     this._buildZones(W, H);
 
@@ -491,10 +503,10 @@ class GPUClusterRoomScene extends BaseTycoonScene {
 
   create() {
     const W = this.scale.width, H = this.scale.height;
+    // GPU background — cover-scales on resize (itch.io fullscreen)
     if (this.textures.exists('gpu_bg')) {
-      const tex = this.textures.get('gpu_bg').getSourceImage();
-      const s = Math.max(W / tex.width, H / tex.height);
-      this.add.image(W / 2, H / 2, 'gpu_bg').setScale(s).setDepth(0);
+      this._gpuBgImg = this.add.image(0, 0, 'gpu_bg').setDepth(0);
+      this._autoCoverBg(this._gpuBgImg, 'gpu_bg');
     }
     this._createNavButton(W - 20, H / 2, 'OFFICE', 'GameDevStoryScene', true);
 
