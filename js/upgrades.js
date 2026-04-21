@@ -163,9 +163,9 @@ const AI_UPGRADES = [
 
 /** Rival companies in the Global AI Arena */
 const COMPETITORS = [
-  { name: 'AetherMind',   icon: '🔵', baseScore: 8,  growthRate: 1.45 },
-  { name: 'LuminaAI',     icon: '🟡', baseScore: 12, growthRate: 1.38 },
-  { name: 'QuantumForge', icon: '🟣', baseScore: 6,  growthRate: 1.52 },
+  { name: 'Anthropic', icon: '🧠', baseScore: 8,  growthRate: 1.45 },
+  { name: 'Google',    icon: '🔍', baseScore: 12, growthRate: 1.38 },
+  { name: 'Midjourney',icon: '🎨', baseScore: 6,  growthRate: 1.52 },
 ];
 
 /** Factory location label that updates each year */

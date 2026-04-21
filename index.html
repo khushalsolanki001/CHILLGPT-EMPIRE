@@ -351,12 +351,16 @@
 <!-- ================================================================
      AI AWARDS MODAL
 ================================================================ -->
-<div class="modal-overlay" id="awards-modal" role="dialog" aria-modal="true" style="z-index:1200;">
-  <div class="modal-box pixel-border" style="width:600px;">
-    <div class="modal-title">🏟️ YEAR-END AI AWARDS</div>
-    <div class="modal-subtitle" id="awards-year-label"></div>
-    <div id="awards-body" style="padding: 8px 0;"></div>
-    <button class="modal-close-btn" onclick="UI.closeAwards()">🚀 NEXT YEAR →</button>
+<div id="awards-modal" aria-live="assertive" aria-label="Year End Awards" class="modal-overlay" style="z-index: 1200; background: rgba(16, 19, 15, 0.95); backdrop-filter: blur(8px);">
+  <div class="year-splash-card" style="width: 700px; max-width: 90vw; padding: 40px;">
+    <div class="year-splash-kicker" style="color: #f5c842;">THE ARENA CONCLUDES</div>
+    <div class="year-splash" style="font-size: 1.5rem; margin-top: 10px;">🏆 YEAR-END AWARDS</div>
+    <div class="year-splash-sub" id="awards-year-label" style="font-size: 0.6rem; color: var(--text-mid); margin-bottom: 20px;"></div>
+    
+    <div id="awards-body" style="padding: 10px 0; display:flex; flex-direction:column; gap: 15px;"></div>
+    
+    <div class="year-splash-rail" aria-hidden="true" style="margin: 20px 0;"><span></span></div>
+    <button class="modal-close-btn" style="width: 100%; border: 3px solid #f5c842; background: #2a2010; color: #f5c842; font-size: 0.5rem; padding: 12px; margin-top: 10px;" onclick="UI.closeAwards()">🚀 OKAY, LET'S GO →</button>
   </div>
 </div>
 

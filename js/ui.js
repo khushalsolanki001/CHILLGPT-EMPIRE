@@ -783,27 +783,83 @@ const UI = (() => {
     else { toast(result.message, 't-red'); }
   }
 
+  function handleAcceptContract(id) {
+     const c = Market.getAvailableContracts().find(x => x.id === id);
+     if(c) {
+         const res = Game.acceptContract(c);
+         if(res.ok) { toast(res.message, 't-green'); renderShop(); }
+         else toast(res.message, 't-red');
+     }
+  }
+
+  function handleFulfillContract(contractId, modelId) {
+     const m = ModelBuilder.getAllModels().find(x => x.id === parseInt(modelId));
+     const res = Game.fulfillContract(contractId, m);
+     if(res.ok) {
+         toast(res.message, 't-green');
+         document.getElementById('fulfill-overlay')?.remove();
+         renderShop();
+     } else {
+         toast(res.message, 't-red');
+     }
+  }
+
+  function openFulfillModal(contractId) {
+      const existing = document.getElementById('fulfill-overlay');
+      if (existing) existing.remove();
+      
+      const models = ModelBuilder.getAllModels().filter(m => m.status === 'trained' || m.status === 'released');
+      
+      let choices = models.map(m =>
+        `<button class="buy-btn" style="margin:4px; padding:8px 12px; font-size:0.4rem;" onclick="UI.handleFulfillContract(${contractId}, ${m.id})">📂 ${m.name}<br><small>Score: ${m.perfScore}</small></button>`
+      ).join('');
+      
+      if(choices === '') choices = `<div style="color:#aaa;">No trained models available.</div>`;
+      
+      const overlay = document.createElement('div');
+      overlay.id = 'fulfill-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:1800;';
+      overlay.innerHTML = `<div class="modal-box pixel-border" style="width:500px;"><div class="modal-title">📦 FULFILL CONTRACT</div><div class="modal-subtitle">Submit a trained/released model</div><div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin:12px 0;">${choices}</div><button class="modal-close-btn" style="background:#333;" onclick="document.getElementById('fulfill-overlay')?.remove()">CANCEL</button></div>`;
+      document.body.appendChild(overlay);
+  }
+
   function showAwards(year) {
     const awards = ModelBuilder.calculateAwards();
+    // Reverse so the Best Overall plays last
+    awards.reverse();
     const body = $('awards-body');
     const lbl = $('awards-year-label');
     if (lbl) lbl.textContent = `YEAR ${year} RESULTS`;
     if (body) {
       body.innerHTML = '';
       let bonus = 0;
-      awards.forEach(award => {
-        const row = _el('div', '');
-        row.style.cssText = 'display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #333;font-family:var(--font-pixel);font-size:0.42rem;gap:10px;flex-wrap:wrap;';
-        const win = award.playerWins ? `<span style="color:#39d87e;">🏆 YOU WIN — ${award.modelName}</span>` : `<span style="color:#e74c3c;">❌ ${award.modelName}</span>`;
-        const rew = (award.playerWins && award.reward) ? `<span style="color:#f5c842;margin-left:auto;">+${Fmt.money(award.reward.cash)}</span>` : '';
-        row.innerHTML = `<b>${award.category}</b>${win}${rew}`;
+      awards.forEach((award, i) => {
+        const row = _el('div', 'award-row');
+        row.style.cssText = `display:flex;align-items:center;padding:12px 0;border-bottom:1px solid #333;font-family:var(--font-pixel);gap:10px;flex-wrap:wrap; animation-delay: ${i * 1.5}s; opacity: 0;`;
+        
+        const win = award.playerWins 
+            ? `<span style="color:#39d87e; font-size:0.5rem; display:block; margin-top: 4px;">🏆 YOU WIN — <span style="color:#fff;">${award.modelName}</span></span>` 
+            : `<span style="color:var(--text-mid); font-size:0.45rem; display:block; margin-top: 4px;">WON BY: <span style="color:#e74c3c;">${award.modelName}</span></span>`;
+            
+        const rew = (award.playerWins && award.reward) 
+            ? `<span style="color:#f5c842; font-size:0.4rem; margin-top:6px; display:inline-block;">+${Fmt.money(award.reward.cash)}</span>` 
+            : '';
+            
+        row.innerHTML = `<div style="width:100%; text-align: left;">
+          <div style="color:var(--text-mid); font-size:0.65rem; margin-bottom:6px;">${award.category}</div>
+          ${win}
+          ${rew}
+        </div>`;
         body.appendChild(row);
-        if (award.playerWins && award.reward) bonus += award.reward.cash;
+        if (award.playerWins && award.reward) {
+           bonus += award.reward.cash;
+           if(award.reward.buff) Game.applyBuff(award.reward.buff);
+        }
       });
       if (bonus > 0) {
         Game.state.money += bonus; Game.state.totalMoneyEarned += bonus;
-        const msg = _el('div', '');
-        msg.style.cssText = 'text-align:center;padding:12px;font-family:var(--font-pixel);font-size:0.5rem;color:#f5c842;';
+        const msg = _el('div', 'award-row');
+        msg.style.cssText = `text-align:center;padding:15px;font-family:var(--font-pixel);font-size:0.8rem;color:#f5c842; animation-delay: ${awards.length * 1.5}s; opacity: 0;`;
         msg.textContent = `🎊 AWARD PAYOUT: +${Fmt.money(bonus)}!`;
         body.appendChild(msg);
       }
@@ -863,6 +919,42 @@ const UI = (() => {
         </div>
       `;
       container.appendChild(card);
+    }
+
+    // B2B Contracts & VC
+    if (typeof Market !== 'undefined') {
+      _sectionTitle(container, '🏢 VIP CONTRACTS & B2B');
+      const available = Market.getAvailableContracts();
+      const accepted = Game.state.acceptedContracts || [];
+      
+      let allContracts = [...accepted.map(c => ({...c, accepted: true})), ...available];
+      if (allContracts.length === 0) {
+        const noC = _el('div', 'shop-card info-card');
+        noC.innerHTML = `<div class="card-body"><div class="card-desc" style="font-size:0.4rem;">No contracts currently available. Built a reputation and check back later!</div></div>`;
+        container.appendChild(noC);
+      }
+
+      for (const c of allContracts) {
+        const card = _el('div', 'shop-card');
+        card.innerHTML = `
+          <div class="card-icon">${c.type === 'vc' ? '💸' : '🤝'}</div>
+          <div class="card-body">
+            <div class="card-name">${c.title} ${c.accepted ? '<span class="badge badge-purple" style="font-size:8px;">IN PROGRESS</span>' : ''}</div>
+            <div class="card-desc" style="${c.accepted && Game.state.year >= c.deadlineYear ? 'color:#e74c3c;' : 'font-size:0.35rem;'}">${c.desc} ${c.accepted ? `(Expires: Year ${c.deadlineYear})` : ''}</div>
+            <div class="card-badges">
+              <span class="badge badge-green">Reward: ${Fmt.money(c.rewardOptions.cash)}</span>
+              ${c.penalty ? `<span class="badge badge-red">Penalty: Rep ${c.penalty.rep}</span>` : ''}
+            </div>
+          </div>
+          <div class="card-right" style="justify-content:center;">
+            ${c.accepted 
+              ? `<button class="buy-btn" style="min-width: 90px; padding: 6px;" onclick="UI.openFulfillModal(${c.id})">FULFILL</button>`
+              : `<button class="buy-btn" style="min-width: 90px; padding: 6px;" onclick="UI.handleAcceptContract(${c.id})">ACCEPT</button>`
+            }
+          </div>
+        `;
+        container.appendChild(card);
+      }
     }
   }
 
@@ -1189,6 +1281,12 @@ const UI = (() => {
   function closeArena() {
     $('arena-modal').classList.remove('show');
     if (Game.state.year >= 2026) _showEndgame();
+    
+    if (window._pendingAwardsYear) {
+      setTimeout(() => {
+        showAwards(window._pendingAwardsYear);
+      }, 500);
+    }
   }
 
   function _showEndgame() {
@@ -1217,7 +1315,6 @@ const UI = (() => {
       setTimeout(() => {
         showArena(prevYear, newYear);
         // Schedule awards to show after arena closes (we piggyback on arena close delay)
-        const origClose = window._arenaCloseCallback;
         window._pendingAwardsYear = prevYear;
       }, 400);
     }, 2200);
@@ -1675,6 +1772,9 @@ const UI = (() => {
     handleStartTraining,
     openReleaseModal,
     handleReleaseModel,
+    handleAcceptContract,
+    handleFulfillContract,
+    openFulfillModal,
     showAwards,
     closeAwards,
 

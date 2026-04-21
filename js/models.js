@@ -277,13 +277,13 @@ const ModelBuilder = (() => {
         category: '🏆 Best Overall Model',
         playerWins: true,
         modelName: best.name,
-        reward: { cash: 50000, prestige: 0.1 },
+        reward: { cash: 50000, prestige: 0.1, buff: { type: 'hype', value: 1.5, text: 'Massive Hype Boost' } },
       });
     } else {
       awards.push({
         category: '🏆 Best Overall Model',
         playerWins: false,
-        modelName: 'AetherMind GPT-5',
+        modelName: 'Claude 3.5',
         reward: null,
       });
     }
@@ -293,8 +293,8 @@ const ModelBuilder = (() => {
     awards.push({
       category: '⚡ Most Efficient Model',
       playerWins: efficient.length > 0,
-      modelName: efficient[0] ? efficient[0].name : 'LuminaAI Turbo',
-      reward: { cash: 15000, prestige: 0 },
+      modelName: efficient[0] ? efficient[0].name : 'Gemini Ultra',
+      reward: { cash: 15000, prestige: 0, buff: { type: 'elec', value: 0.9, text: '-10% Power Cost' } },
     });
 
     // Best Creative
@@ -302,8 +302,8 @@ const ModelBuilder = (() => {
     awards.push({
       category: '🎨 Best Creative AI',
       playerWins: creative.length > 0,
-      modelName: creative[0] ? creative[0].name : 'QuantumForge DiffuX',
-      reward: { cash: 30000, prestige: 0.05 },
+      modelName: creative[0] ? creative[0].name : 'Midjourney',
+      reward: { cash: 30000, prestige: 0.05, buff: { type: 'serverDiscount', value: 0.85, text: '-15% Server Cost' } },
     });
 
     return awards;
