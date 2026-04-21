@@ -136,6 +136,54 @@ const AI_UPGRADES = [
     badgeClass:  'badge-purple',
   },
   {
+    id:          'model_quantization',
+    name:        'Model Quantization',
+    icon:        '📉',
+    desc:        'Efficient weights. +15% Perf Score for all new designs.',
+    cost:        8000,
+    tfCost:      15000,
+    requireYear: 2017,
+    apply:       (G) => { G.mult.perfBonus = (G.mult.perfBonus || 1.0) + 0.15; },
+    badge:       '+15% Perf',
+    badgeClass:  'badge-blue',
+  },
+  {
+    id:          'rlhf_training',
+    name:        'RLHF Training',
+    icon:        '👍',
+    desc:        'Human feedback fine-tuning. +30% Perf Score for all new designs.',
+    cost:        45000,
+    tfCost:      120000,
+    requireYear: 2019,
+    apply:       (G) => { G.mult.perfBonus = (G.mult.perfBonus || 1.0) + 0.30; },
+    badge:       '+30% Perf',
+    badgeClass:  'badge-purple',
+  },
+  {
+    id:          'distributed_training',
+    name:        'Distributed Compute',
+    icon:        '🔗',
+    desc:        'Train across multiple clusters. +25% Perf Score & -20% training time.',
+    cost:        150000,
+    tfCost:      500000,
+    requireYear: 2021,
+    apply:       (G) => { G.mult.perfBonus = (G.mult.perfBonus || 1.0) + 0.25; },
+    badge:       '+25% Perf',
+    badgeClass:  'badge-yellow',
+  },
+  {
+    id:          'auto_scaling',
+    name:        'Auto-Scaling Architecture',
+    icon:        '📈',
+    desc:        'Dynamic parameter scaling. +50% Perf Score for all new designs.',
+    cost:        800000,
+    tfCost:      3000000,
+    requireYear: 2023,
+    apply:       (G) => { G.mult.perfBonus = (G.mult.perfBonus || 1.0) + 0.50; },
+    badge:       '+50% Perf',
+    badgeClass:  'badge-green',
+  },
+  {
     id:          'multimodal',
     name:        'Multimodal AI',
     icon:        '🌐',
@@ -163,9 +211,13 @@ const AI_UPGRADES = [
 
 /** Rival companies in the Global AI Arena */
 const COMPETITORS = [
-  { name: 'Anthropic', icon: '🧠', baseScore: 8,  growthRate: 1.45 },
-  { name: 'Google',    icon: '🔍', baseScore: 12, growthRate: 1.38 },
-  { name: 'Midjourney',icon: '🎨', baseScore: 6,  growthRate: 1.52 },
+  { name: 'OK AI',     icon: 'assets/images/AI/OK AI.jpg',   baseScore: 10, growthRate: 1.48 },
+  { name: 'brok',      icon: 'assets/images/AI/brok.png',      baseScore: 6,  growthRate: 1.35 },
+  { name: 'deepwhale', icon: 'assets/images/AI/deepwhale.png', baseScore: 5,  growthRate: 1.55 },
+  { name: 'glade',     icon: 'assets/images/AI/glade.png',     baseScore: 8,  growthRate: 1.45 },
+  { name: 'googlu',    icon: 'assets/images/AI/googlu.png',    baseScore: 12, growthRate: 1.38 },
+  { name: 'midroad',   icon: 'assets/images/AI/midroad.png',   baseScore: 7,  growthRate: 1.52 },
+  { name: 'qwack',     icon: 'assets/images/AI/qwack.png',     baseScore: 4,  growthRate: 1.40 }
 ];
 
 /** Factory location label that updates each year */

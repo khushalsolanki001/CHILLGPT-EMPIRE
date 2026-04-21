@@ -165,7 +165,8 @@ body {
   font-family: var(--font-pixel);
 }
 
-#settings-toggle {
+#settings-toggle,
+#arena-toggle {
   width: 42px;
   height: 42px;
   display: grid;
@@ -180,7 +181,8 @@ body {
   line-height: 1;
 }
 
-#settings-toggle:hover {
+#settings-toggle:hover,
+#arena-toggle:hover {
   transform: translateY(-1px);
   box-shadow: 0 5px 0 #10130f, 0 14px 22px rgba(0, 0, 0, 0.2);
 }
@@ -2186,8 +2188,13 @@ body {
 }
 
 @keyframes scrollText {
-  from { transform: translateX(100%); }
-  to { transform: translateX(-100%); }
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(-100%);
+  }
 }
 
 @keyframes award-reveal {
@@ -2195,6 +2202,7 @@ body {
     transform: translateY(20px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -2355,17 +2363,18 @@ body {
 }
 
 .shop-section-title {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  margin: 0 -2px;
-  padding: 9px 8px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid rgba(18, 23, 16, 0.18);
-  border-radius: 8px;
-  color: #263029;
-  letter-spacing: 0;
-  backdrop-filter: blur(8px);
+  position: relative;
+  margin: 5px 0 10px 0;
+  padding: 6px 10px;
+  background: var(--bg-panel);
+  border: 4px solid var(--border-mid);
+  border-radius: 4px;
+  color: var(--text-dark);
+  font-family: var(--font-pixel);
+  font-size: 0.35rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
 }
 
 .shop-card {
@@ -2918,50 +2927,52 @@ body {
 .arena-spotlight {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 16px;
+  gap: 10px;
   align-items: center;
-  margin-bottom: 18px;
-  padding: 16px;
-  border: 4px solid #10130f;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  border: 2px solid #10130f;
   border-radius: 8px;
   background: linear-gradient(135deg, #10130f, #193a32);
   color: #ffffff;
-  box-shadow: 0 7px 0 #10130f;
+  box-shadow: 0 3px 0 #10130f;
 }
 
 .arena-winner-medal {
-  width: 74px;
-  height: 74px;
+  width: 60px;
+  height: 60px;
   display: grid;
   place-items: center;
   border: 3px solid #10130f;
-  border-radius: 8px;
+  border-radius: 10px;
   background: linear-gradient(135deg, #ffd34f, #49db8d);
   color: #10130f;
   font-size: 2rem;
-  box-shadow: 0 5px 0 #000;
+  box-shadow: 0 4px 0 #000;
+  overflow: hidden;
 }
 
 .arena-winner-label {
   font-family: var(--font-pixel);
-  font-size: 0.42rem;
+  font-size: 0.45rem;
   line-height: 1.5;
   color: #ffd34f;
 }
 
 .arena-winner-name {
-  margin-top: 4px;
+  margin-top: 2px;
   font-family: var(--font-orb);
-  font-size: clamp(1.25rem, 3vw, 2rem);
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
   font-weight: 900;
   line-height: 1.05;
 }
 
 .arena-winner-note {
-  margin-top: 7px;
+  margin-top: 4px;
   font-family: var(--font-mono);
-  font-size: 0.86rem;
+  font-size: 0.65rem;
   color: #dff8e8;
+  opacity: 0.8;
 }
 
 .arena-player-rank {

@@ -446,6 +446,10 @@ const UI = (() => {
    * @param {'hardware'|'ai'} tab
    */
   function switchTab(tab) {
+    if (tab === 'models') {
+      openLabModal();
+      return;
+    }
     _currentTab = tab;
     const tabs = ['hardware', 'staff', 'ai', 'business', 'models'];
     tabs.forEach(t => {
@@ -465,6 +469,7 @@ const UI = (() => {
    */
   function renderShop() {
     const container = $('shop-content');
+    if (!container) return;
     container.innerHTML = '';
 
     if (_currentTab === 'hardware') {
@@ -473,8 +478,6 @@ const UI = (() => {
       _renderStaffTab(container);
     } else if (_currentTab === 'business') {
       _renderBusinessTab(container);
-    } else if (_currentTab === 'models') {
-      _renderAILabTab(container);
     } else {
       _renderAITab(container);
     }
@@ -586,82 +589,121 @@ const UI = (() => {
 
   // ── AI LAB TAB ────────────────────────────────────────────────────
 
-  function _renderAILabTab(container) {
-    _sectionTitle(container, '🤖 AI MODEL LAB');
+  /**
+   * OPEN THE BIG SCREEN AI LAB
+   */
+  function openLabModal() {
+    const modal = $('model-builder-modal');
+    if (modal) modal.classList.add('show');
+    
+    // Initialize the builder grids
+    _renderMbGrids();
+    _updateMbPreview();
+    
+    // Render the models on the right side
+    _renderAILabTab($('lab-models-list'));
 
+    // Update compute stat
+    const c = Game.state._computed || {};
+    if ($('lab-stats-compute')) $('lab-stats-compute').textContent = `NEURAL COMPUTE: ${Fmt.compute(c.compute || 0)} TF/s`;
+  }
+
+  function _renderAILabTab(container) {
+    if (!container) return;
+    container.innerHTML = '';
+    
     const training = ModelBuilder.getTrainingJob();
     if (training) {
-      const prog = container.appendChild(_el('div', 'shop-card info-card'));
+      const prog = container.appendChild(_el('div', 'stat-pill'));
+      prog.style.cssText = 'margin-bottom:12px; padding:15px; border-color:var(--retro-blue); flex-direction:column; align-items:stretch; background:#fff;';
       const pct = Math.round(Math.min(training.elapsed / training.totalSec, 1) * 100);
       prog.innerHTML = `
-        <div class="card-icon" style="font-size:20px;">⚙️</div>
-        <div class="card-body" style="width:100%;">
-          <div class="card-name" style="font-size:10px;">TRAINING: ${training.modelName}</div>
-          <div style="background:#111; border: 1px solid var(--accent); height:8px; margin:6px 0;">
-            <div style="background: linear-gradient(90deg, #39d87e, #2ba88f); height:100%; width:${pct}%; transition:width 0.5s;"></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <div class="pill-body">
+            <div class="pill-label" style="color:var(--retro-blue); font-size:0.35rem;">[ ACTIVE TRAINING ]</div>
+            <div class="pill-value" style="font-size:0.6rem;">${training.modelName}</div>
           </div>
-          <div style="font-family:var(--font-mono); font-size:0.4rem; color:var(--accent);">${pct}% — ${Math.round(Math.max(0, training.totalSec - training.elapsed))}s remaining</div>
-        </div>`;
+          <div class="pill-value" style="font-size:1rem; color:var(--retro-blue);">${pct}%</div>
+        </div>
+        <div style="background:var(--bg-inset); border: 3px solid var(--border); height:16px; position:relative; overflow:hidden; box-shadow:inset 2px 2px 0 rgba(0,0,0,0.1);">
+           <div style="background:var(--retro-blue); height:100%; width:${pct}%; transition:width 0.4s;"></div>
+        </div>
+        <div style="margin-top:8px; font-size:0.35rem; color:var(--text-mid); font-family:var(--font-mono); text-align:right;">
+          COMPLETION ETA: ${Math.round(Math.max(0, training.totalSec - training.elapsed))}s
+        </div>
+      `;
     }
-
-    const openBtn = _el('div', 'shop-card hw');
-    openBtn.innerHTML = `
-      <div class="card-icon" style="font-size:24px;">➕</div>
-      <div class="card-body"><div class="card-name">DESIGN NEW MODEL</div><div class="card-desc">Open the model builder to design a custom AI architecture from scratch.</div></div>
-      <div class="card-right"><button class="buy-btn" onclick="UI.openModelBuilder()" style="min-width:80px;">DESIGN</button></div>`;
-    container.appendChild(openBtn);
 
     const models = ModelBuilder.getAllModels();
-    if (models.length > 0) {
-      _sectionTitle(container, '📋 YOUR MODELS');
-      for (const m of [...models].reverse()) {
-        const arch = ModelBuilder.getArchitectures().find(a => a.id === m.archId);
-        const size = ModelBuilder.getModelSizes().find(s => s.id === m.sizeId);
-        const card = _el('div', 'shop-card ai');
-        let actionBtn = '';
-        if (m.status === 'designed') {
-          const canTrain = Game.state.tf >= m.tfNeeded && !training;
-          actionBtn = `<button class="buy-btn ${canTrain ? '' : 'cant-afford'}" ${training ? 'disabled' : ''} onclick="UI.handleStartTraining(${m.id})" style="min-width:80px;font-size:8px;">TRAIN<br><small>${Fmt.num(m.tfNeeded)} TF</small></button>`;
-        } else if (m.status === 'training') {
-          actionBtn = `<button class="buy-btn owned-btn" disabled style="min-width:80px;font-size:8px;">TRAINING...</button>`;
-        } else if (m.status === 'trained') {
-          actionBtn = `<button class="buy-btn" onclick="UI.openReleaseModal(${m.id})" style="min-width:80px;font-size:8px;">RELEASE 🚀</button>`;
-        } else if (m.status === 'released') {
-          const mkt = (typeof Market !== 'undefined') ? Market.getMarket(m.marketId) : null;
-          actionBtn = `<div class="card-count" style="text-align:center;">${mkt ? mkt.icon : '🌍'} LIVE<br><small style="color:#39d87e">${Fmt.money(ModelBuilder.getModelIncomePerSecond())}/s</small></div>`;
-        }
-        card.innerHTML = `
-          <div class="card-icon" style="font-size:20px;">${arch ? arch.icon : '🤖'}</div>
-          <div class="card-body">
-            <div class="card-name" style="font-size:10px;">${m.name}</div>
-            <div class="card-desc">${arch ? arch.name : ''} · ${size ? size.label : ''} · Score: ${m.perfScore}</div>
-            <div class="card-badges">
-              <span class="badge badge-blue">${m.status.toUpperCase()}</span>
-              ${(m.traitIds || []).map(tid => { const t = ModelBuilder.getTraits().find(t => t.id === tid); return t ? `<span class="badge badge-green">${t.icon}</span>` : ''; }).join('')}
-            </div>
-          </div>
-          <div class="card-right" style="justify-content:center;">${actionBtn}</div>`;
-        container.appendChild(card);
-      }
-    } else {
-      const empty = _el('div', 'shop-card info-card');
-      empty.innerHTML = `<div class="card-icon">💡</div><div class="card-body"><div class="card-name">NO MODELS YET</div><div class="card-desc">Design and train your first AI model to start earning AI deployment revenue!</div></div>`;
-      container.appendChild(empty);
+    if (models.length === 0 && !training) {
+      container.innerHTML += `
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; border:4px dashed var(--border); opacity:0.6;">
+          <span style="font-size:2rem; margin-bottom:15px;">📂</span>
+          <div style="font-size:0.5rem; text-align:center;">DATABASE EMPTY<br>DESIGN A NEW MODEL TO BEGIN</div>
+        </div>
+      `;
+      return;
     }
 
-    if (typeof Market !== 'undefined') {
-      _sectionTitle(container, '📈 MARKET DEMAND');
-      const markets = Market.getMarkets();
-      const mktCard = _el('div', 'shop-card info-card');
-      mktCard.innerHTML = `<div class="card-body" style="width:100%;">${markets.map(mk => `
-        <div style="display:flex; align-items:center; margin:4px 0;">
-          <span style="font-family:var(--font-pixel); font-size:0.4rem; min-width:100px;">${mk.icon} ${mk.name}</span>
-          <div style="flex:1; margin:0 8px; background:#111; height:6px; border:1px solid #333;">
-            <div style="background:${mk.demand > 0.7 ? '#39d87e' : mk.demand > 0.4 ? '#f5c842' : '#e74c3c'}; height:100%; width:${Math.round(mk.demand * 100)}%;"></div>
+  for (const m of [...models].reverse()) {
+      const card = _el('div', 'stat-pill');
+      card.style.cssText = 'margin-bottom:15px; padding:20px; flex-direction:column; align-items:stretch; background:#fff; border-width:4px; box-shadow:var(--btn-shadow-sm); transition: transform 0.2s;';
+      
+      const popularity = typeof ModelBuilder.getModelPopularity === 'function' ? ModelBuilder.getModelPopularity(m) : 1.0;
+      const pctPop = Math.round(popularity * 100);
+      const daysOld = (Date.now() - (m.releasedTime || 0)) / (1000 * 60 * 60 * 24);
+      const isHyped = m.status === 'released' && daysOld < 30;
+
+      let actions = '';
+      if (m.status === 'designed' || m.status === 'draft') {
+        const canTrain = Game.state.tf >= (m.tfNeeded || m.tfCost) && !training;
+        actions = `<button class="buy-btn" style="margin-top:15px; font-size:0.6rem; height:50px; border-width:4px;" onclick="UI.handleStartTraining(${m.id})" ${canTrain ? '' : 'disabled'}>INITIATE_TRAINING (${Fmt.num(m.tfNeeded || m.tfCost)} TF)</button>`;
+      } else if (m.status === 'trained') {
+        actions = `<button class="buy-btn" style="margin-top:15px; font-size:0.6rem; height:50px; background:var(--retro-blue); border-width:4px;" onclick="UI.openReleaseModal(${m.id})">RELEASE_TO_NET</button>`;
+      }
+
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+          <div class="pill-body">
+            <div class="pill-label" style="font-size:0.4rem; color: #444;">ID: ${m.id} // v${Game.state.year}.x</div>
+            <div class="pill-value" style="font-size:0.8rem; color:var(--retro-brown); text-transform:uppercase; letter-spacing:1px;">${m.name}</div>
+            <div style="font-size:0.35rem; color:#888; font-family:var(--font-mono); margin-top:4px;">${m.archId.toUpperCase()} ARCH // ${m.sizeId.toUpperCase()} SCALE</div>
           </div>
-          <span style="font-family:var(--font-mono); font-size:0.4rem;">${Math.round(mk.demand * 100)}%</span>
-        </div>`).join('')}</div>`;
-      container.appendChild(mktCard);
+          <div style="padding:6px 12px; background:var(--bg-panel); border:4px solid var(--border); font-size:0.45rem; font-weight:bold; height:fit-content; color: #000; box-shadow: 2px 2px 0 rgba(0,0,0,0.1);">
+            ${(m.status || 'DRAFT').toUpperCase()}
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+           <div class="stat-pill" style="padding:10px 15px; border-width:3px; background:#f9fcff;">
+             <div class="pill-body">
+               <div class="pill-label" style="font-size:0.3rem;">PERFORMANCE</div>
+               <div class="pill-value" style="font-size:0.6rem; color:var(--retro-green); font-weight:bold;">${m.perfScore} SCORE</div>
+             </div>
+           </div>
+           <div class="stat-pill" style="padding:10px 15px; border-width:3px; background:#fffaf0;">
+             <div class="pill-body">
+               <div class="pill-label" style="font-size:0.3rem;">PENETRATION</div>
+               <div class="pill-value" style="font-size:0.6rem; color:var(--retro-orange); font-weight:bold;">${m.status === 'released' ? pctPop + '%' : 'INACTIVE'}</div>
+             </div>
+           </div>
+        </div>
+
+        ${m.status === 'released' ? `
+          <div class="stat-pill income" style="margin-top:12px; padding:10px 15px; background: #eef9f1; border-width:3px; border-color:var(--retro-green);">
+             <div class="pill-body" style="flex-direction:row; justify-content:space-between; align-items:center; width:100%;">
+                <div>
+                   <div class="pill-label" style="font-size:0.3rem;">REVENUE TERMINAL</div>
+                   <div class="pill-value" style="font-size:0.65rem; color:var(--retro-green);">${Fmt.money(Game.getModelIncomePerSecond(m))}/s</div>
+                </div>
+                ${isHyped ? '<span style="color:var(--retro-red); font-size:0.5rem; animation:led-blink 0.4s infinite; font-weight:bold;">MARKET_HYPED 🔥</span>' : ''}
+             </div>
+          </div>
+        ` : ''}
+
+        ${actions}
+      `;
+      container.appendChild(card);
     }
   }
 
@@ -669,40 +711,57 @@ const UI = (() => {
     _mbSelectedArch = 'transformer';
     _mbSelectedSize = 'mini';
     _mbSelectedTraits = [];
-    _buildModelBuilderModal();
-    document.getElementById('model-builder-modal').classList.add('show');
+    openLabModal();
   }
 
   function _buildModelBuilderModal() {
+    _updateMbPreview();
+    
+    // Arch Grid
     const archGrid = $('mb-arch-grid');
     if (archGrid) {
       archGrid.innerHTML = '';
       ModelBuilder.getArchitectures().forEach(arch => {
+        const sel = _mbSelectedArch === arch.id;
         const btn = document.createElement('button');
-        btn.className = `buy-btn ${_mbSelectedArch === arch.id ? 'owned-btn' : ''}`;
-        btn.style.cssText = 'text-align:left; padding:8px; display:flex; flex-direction:column; gap:2px; font-size:0.38rem;';
-        btn.innerHTML = `<span style="font-size:1.5rem;">${arch.icon}</span><b>${arch.name}</b><small style="font-family:var(--font-mono);">${arch.desc}</small><small style="color:#f5c842;">TF ×${arch.tfMult}</small>`;
+        btn.className = `buy-btn ${sel ? 'owned-btn' : ''}`;
+        btn.style.cssText = `text-align:left; padding:15px; display:flex; flex-direction:column; gap:6px; font-size:0.45rem; border-width:4px; ${sel ? 'border-color:var(--retro-gold);' : ''}`;
+        btn.innerHTML = `
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1rem;">${arch.icon}</span>
+            <b style="letter-spacing:1px;">${arch.name.toUpperCase()}</b>
+          </div>
+          <small style="font-family:var(--font-mono); color:#444; line-height:1.2;">${arch.desc}</small>
+          <div style="margin-top:4px; color:var(--retro-blue); font-weight:bold; font-size:0.35rem;">[TF_LOAD: ${arch.tfMult}x]</div>
+        `;
         btn.onclick = () => { _mbSelectedArch = arch.id; _buildModelBuilderModal(); };
         archGrid.appendChild(btn);
       });
     }
 
+    // Size Grid
     const sizeGrid = $('mb-size-grid');
     if (sizeGrid) {
       sizeGrid.innerHTML = '';
       ModelBuilder.getModelSizes().forEach(sz => {
+        const sel = _mbSelectedSize === sz.id;
         const arch = ModelBuilder.getArchitectures().find(a => a.id === _mbSelectedArch);
         const tfNeeded = Math.floor(sz.tfBase * (arch ? arch.tfMult : 1));
         const haveTF = Game.state.tf >= tfNeeded;
         const btn = document.createElement('button');
-        btn.className = `buy-btn ${_mbSelectedSize === sz.id ? 'owned-btn' : ''} ${!haveTF ? 'cant-afford' : ''}`;
-        btn.style.cssText = 'text-align:left; padding:8px; font-size:0.38rem;';
-        btn.innerHTML = `${sz.icon} <b>${sz.label}</b> · ${Fmt.num(tfNeeded)} TF · ${sz.timeSec}s`;
+        btn.className = `buy-btn ${sel ? 'owned-btn' : ''} ${!haveTF ? 'cant-afford' : ''}`;
+        btn.style.cssText = `text-align:left; padding:15px; font-size:0.45rem; border-width:4px; ${sel ? 'border-color:var(--retro-gold);' : ''}`;
+        btn.innerHTML = `
+          <b style="letter-spacing:1px;">${sz.icon} ${sz.label.toUpperCase()}</b><br>
+          <small style="color:#555;">${Fmt.num(tfNeeded)} TF REQUIRED</small><br>
+          <small style="color:#555;">ETA: ${sz.timeSec}s</small>
+        `;
         btn.onclick = () => { _mbSelectedSize = sz.id; _buildModelBuilderModal(); };
         sizeGrid.appendChild(btn);
       });
     }
 
+    // Trait Grid
     const traitGrid = $('mb-trait-grid');
     if (traitGrid) {
       traitGrid.innerHTML = '';
@@ -710,8 +769,8 @@ const UI = (() => {
         const sel = _mbSelectedTraits.includes(t.id);
         const btn = document.createElement('button');
         btn.className = `buy-btn ${sel ? 'owned-btn' : ''}`;
-        btn.style.cssText = 'text-align:left; padding:6px; font-size:0.36rem;';
-        btn.innerHTML = `${t.icon} ${t.name}<br><small style="font-weight:normal;">${t.desc}</small>`;
+        btn.style.cssText = `text-align:left; padding:10px; font-size:0.35rem; border-width:3px; ${sel ? 'border-color:var(--retro-gold);' : ''}`;
+        btn.innerHTML = `<b style="font-size:0.45rem;">${t.icon} ${t.name}</b><br><small style="color:#666;">${t.desc}</small>`;
         btn.onclick = () => {
           if (sel) _mbSelectedTraits = _mbSelectedTraits.filter(id => id !== t.id);
           else if (_mbSelectedTraits.length < 2) _mbSelectedTraits.push(t.id);
@@ -720,37 +779,81 @@ const UI = (() => {
         traitGrid.appendChild(btn);
       });
     }
+  }
 
+  function _updateMbPreview() {
     const prev = $('mb-preview-content');
-    if (prev) {
-      const arch = ModelBuilder.getArchitectures().find(a => a.id === _mbSelectedArch);
-      const sz = ModelBuilder.getModelSizes().find(s => s.id === _mbSelectedSize);
-      if (arch && sz) {
-        const tfNeeded = Math.floor(sz.tfBase * arch.tfMult);
-        const perfScore = Math.floor((sz.perfBase + arch.perfBonus) * (1 + _mbSelectedTraits.length * 0.1));
-        const canAfford = Game.state.tf >= tfNeeded;
-        prev.innerHTML = `
-          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
-            <div><div style="color:#888;">Architecture</div><b>${arch.name}</b></div>
-            <div><div style="color:#888;">Size</div><b>${sz.label}</b></div>
-            <div><div style="color:#888;">Perf Score</div><b style="color:#39d87e;">${perfScore}</b></div>
-            <div><div style="color:#888;">TF Cost</div><b style="color:${canAfford ? '#39d87e' : '#e74c3c'};">${Fmt.num(tfNeeded)} TF</b></div>
-            <div><div style="color:#888;">Train Time</div><b>${sz.timeSec}s</b></div>
-            <div><div style="color:#888;">Traits</div><b>${_mbSelectedTraits.length}/2</b></div>
+    if (!prev) return;
+    
+    const arch = ModelBuilder.getArchitectures().find(a => a.id === _mbSelectedArch);
+    const sz = ModelBuilder.getModelSizes().find(s => s.id === _mbSelectedSize);
+    
+    if (arch && sz) {
+      const tfNeeded = Math.floor(sz.tfBase * arch.tfMult);
+      const globalPerfMult = Game.state.mult?.perfBonus || 1.0;
+      const perfScore = Math.floor((sz.perfBase + arch.perfBonus) * (1 + _mbSelectedTraits.length * 0.1) * globalPerfMult);
+      const canAfford = Game.state.tf >= tfNeeded;
+      
+      prev.innerHTML = `
+        <div class="stat-pill" style="padding:20px; background:#fff; flex-direction:column; align-items:flex-start; gap:12px; border-width:4px; box-shadow:var(--btn-shadow-sm);">
+           <div class="pill-body">
+             <div class="pill-label" style="font-size:0.4rem;">PRIMARY ARCHITECTURE NODE</div>
+             <div class="pill-value" style="font-size:1.1rem; color:var(--retro-brown);">${arch.icon} ${arch.name.toUpperCase()}</div>
+           </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+           <div class="stat-pill" style="padding:15px; background:#fff; border-width:4px; box-shadow:var(--btn-shadow-sm);">
+              <div class="pill-body">
+                <div class="pill-label" style="font-size:0.4rem;">PREDICTED PERFORMANCE</div>
+                <div class="pill-value" style="font-size:1.2rem; color:var(--retro-green); text-shadow:2px 2px 0 rgba(0,0,0,0.05);">${perfScore} Pts</div>
+              </div>
+           </div>
+           <div class="stat-pill" style="padding:15px; background:#fff; border-color:${canAfford ? 'var(--border)' : 'var(--retro-red)'}; border-width:4px; box-shadow:var(--btn-shadow-sm);">
+              <div class="pill-body">
+                <div class="pill-label" style="font-size:0.4rem;">NEURAL TF OVERHEAD</div>
+                <div class="pill-value" style="font-size:0.8rem; color:${canAfford ? 'var(--retro-blue)' : 'var(--retro-red)'};">${Fmt.num(tfNeeded)} TF</div>
+              </div>
+           </div>
+        </div>
+
+        <div class="stat-pill" style="padding:15px; background:#f9f9f9; border-width:4px; box-shadow:inset 3px 3px 0 rgba(0,0,0,0.05);">
+           <div class="pill-body">
+             <div class="pill-label" style="font-size:0.4rem;">PRODUCTION PIPELINE STATUS</div>
+             <div class="pill-value" style="font-size:0.7rem;">CALCULATED PRODUCTION TIME: ${sz.timeSec} SECONDS</div>
+             <div style="margin-top:12px; border-top:3px dashed #ddd; padding-top:12px; font-size:0.4rem; color:var(--text-mid); line-height:1.5; font-family:var(--font-mono);">
+               <b>SYSTEM LOG:</b> Multiplier v${(Game.state.year - 2015).toFixed(1)} detected. 
+               Neural research efficiency provides <b>+${Math.round((globalPerfMult-1)*100)}%</b> performance lift to this configuration.
+             </div>
+           </div>
+        </div>
+      `;
+    } else {
+      prev.innerHTML = `
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; border:5px dashed rgba(0,0,0,0.1); padding:40px;">
+          <span style="font-size:3rem; margin-bottom:20px; opacity:0.3;">📐</span>
+          <div style="font-size:0.6rem; text-align:center; color:var(--text-mid); font-family:var(--font-pixel); letter-spacing:1px;">
+            WAITING FOR ARCHITECTURAL DATA...<br>
+            <small style="opacity:0.6;">SELECT CORE PARAMS IN TERMINAL [01]</small>
           </div>
-          <div style="margin-top:8px; color:#999;">Best Markets: ${arch.markets.join(', ')}</div>
-          ${!canAfford ? `<div style="color:#e74c3c;margin-top:6px;">⚠️ Need ${Fmt.num(tfNeeded - Math.floor(Game.state.tf))} more TF</div>` : ''}`;
-      }
+        </div>
+      `;
     }
   }
 
   function handleDesignModel() {
     const nameEl = $('mb-model-name');
-    const result = ModelBuilder.designModel({ name: nameEl ? nameEl.value : '', archId: _mbSelectedArch, sizeId: _mbSelectedSize, traitIds: _mbSelectedTraits });
+    const result = ModelBuilder.designModel({ 
+      name: nameEl ? nameEl.value : '', 
+      archId: _mbSelectedArch, 
+      sizeId: _mbSelectedSize, 
+      traitIds: _mbSelectedTraits 
+    });
     if (result.ok) {
-      document.getElementById('model-builder-modal').classList.remove('show');
       toast(result.message, 't-green');
-      switchTab('models');
+      // Just refresh the list within the lab modal!
+      _renderAILabTab($('lab-models-list'));
+      if (nameEl) nameEl.value = '';
     } else {
       toast(result.message, 't-red');
     }
@@ -758,7 +861,11 @@ const UI = (() => {
 
   function handleStartTraining(modelId) {
     const result = ModelBuilder.startTraining(modelId);
-    if (result.ok) { toast(result.message, 't-blue'); renderShop(); }
+    if (result.ok) { 
+      toast(result.message, 't-blue'); 
+      _renderAILabTab($('lab-models-list'));
+      renderShop(); 
+    }
     else { toast(result.message, 't-red'); }
   }
 
@@ -779,7 +886,13 @@ const UI = (() => {
   function handleReleaseModel(modelId, marketId) {
     document.getElementById('release-overlay')?.remove();
     const result = ModelBuilder.releaseModel(modelId, marketId);
-    if (result.ok) { toast(result.message, 't-green'); if (typeof flashScreen === 'function') flashScreen(true); mascotHappy(true); renderShop(); }
+    if (result.ok) { 
+      toast(result.message, 't-green'); 
+      if (typeof flashScreen === 'function') flashScreen(true); 
+      mascotHappy(true); 
+      _renderAILabTab($('lab-models-list'));
+      renderShop(); 
+    }
     else { toast(result.message, 't-red'); }
   }
 
@@ -838,15 +951,15 @@ const UI = (() => {
         row.style.cssText = `display:flex;align-items:center;padding:12px 0;border-bottom:1px solid #333;font-family:var(--font-pixel);gap:10px;flex-wrap:wrap; animation-delay: ${i * 1.5}s; opacity: 0;`;
         
         const win = award.playerWins 
-            ? `<span style="color:#39d87e; font-size:0.5rem; display:block; margin-top: 4px;">🏆 YOU WIN — <span style="color:#fff;">${award.modelName}</span></span>` 
-            : `<span style="color:var(--text-mid); font-size:0.45rem; display:block; margin-top: 4px;">WON BY: <span style="color:#e74c3c;">${award.modelName}</span></span>`;
+            ? `<span style="color:#39d87e; font-size:0.8rem; display:block; margin-top: 4px;">🏆 YOU WIN — <span style="color:#fff;">${award.modelName}</span></span>` 
+            : `<span style="color:var(--text-mid); font-size:0.7rem; display:block; margin-top: 4px;">WON BY: <span style="color:#e74c3c;">${award.modelName}</span></span>`;
             
         const rew = (award.playerWins && award.reward) 
-            ? `<span style="color:#f5c842; font-size:0.4rem; margin-top:6px; display:inline-block;">+${Fmt.money(award.reward.cash)}</span>` 
+            ? `<span style="color:#f5c842; font-size:0.6rem; margin-top:6px; display:inline-block;">+${Fmt.money(award.reward.cash)}</span>` 
             : '';
             
         row.innerHTML = `<div style="width:100%; text-align: left;">
-          <div style="color:var(--text-mid); font-size:0.65rem; margin-bottom:6px;">${award.category}</div>
+          <div style="color:var(--text-mid); font-size:0.9rem; margin-bottom:10px;">${award.category}</div>
           ${win}
           ${rew}
         </div>`;
@@ -1191,6 +1304,8 @@ const UI = (() => {
       entries = _buildRankings(Game.state.year - 1);
     }
     const container = $('lb-entries');
+    if (!container) return; // Footer leaderboard was removed
+
     const rCls = ['r1', 'r2', 'r3', 'r4'];
     container.innerHTML = entries.map((e, i) => `
       <div class="lb-entry">
@@ -1208,7 +1323,7 @@ const UI = (() => {
    */
   function _buildRankings(year) {
     const entries = [
-      { name: Game.state.aiName, icon: '🤖', score: Game.getArenaScore(), isYou: true },
+      { name: Game.state.aiName, icon: 'assets/images/AI/chillgpt.png', score: Game.getArenaScore(), isYou: true },
       ...COMPETITORS.map(c => ({
         name: c.name,
         icon: c.icon,
@@ -1227,50 +1342,63 @@ const UI = (() => {
    * @param {number} completedYear
    * @param {number} nextYear
    */
-  function showArena(completedYear, nextYear) {
-    $('arena-year-label').textContent = `YEAR ${completedYear} RESULTS`;
-    $('next-year-label').textContent = nextYear;
+  function showArenaManual() {
+    showArena(Game.state.year, Game.state.year + 1, true);
+  }
+
+  function showArena(completedYear, nextYear, isManual = false) {
+    $('arena-year-label').textContent = `YEAR ${completedYear} RANKINGS`;
+    
+    const closeBtn = $('arena-close-btn');
+    if (isManual) {
+      closeBtn.innerHTML = 'CLOSE';
+      closeBtn.onclick = () => { $('arena-modal').classList.remove('show'); };
+    } else {
+      closeBtn.innerHTML = `CONTINUE TO <span id="next-year-label">${nextYear}</span> →`;
+      closeBtn.onclick = closeArena;
+    }
 
     const entries = _buildRankings(completedYear);
     const body = $('arena-body');
     const spotlight = $('arena-spotlight');
     const winner = entries[0];
+    
     if (spotlight) {
       spotlight.innerHTML = `
-        <div class="arena-winner-medal">${winner.icon}</div>
+        <div class="arena-winner-medal"><img src="${winner.icon}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; image-rendering: auto;"></div>
         <div class="arena-winner-copy">
           <div class="arena-winner-label">#1 THIS YEAR</div>
           <div class="arena-winner-name">${winner.name}</div>
-          <div class="arena-winner-note">Top AI company of this arena.</div>
+          <div class="arena-winner-note">Top AI company in the industry right now.</div>
         </div>
       `;
     }
-    const rEmoji = ['🥇', '🥈', '🥉', '4️⃣'];
-    const rCls = ['r1', 'r2', 'r3', 'r4'];
+    
+    const rEmoji = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣'];
+    const maxScore = winner.score || 1;
 
     body.innerHTML = entries.map((e, i) => {
-      const statusText = e.isYou
-        ? (i === 0 ? '⬆️ LEADING' : `⚠️ RANK #${i + 1}`)
-        : _trendText(i);
-      const statusClass = e.isYou ? 'status-you' : (i === 0 ? 'status-win' : 'status-normal');
+      const pct = Math.max(8, Math.floor((e.score / maxScore) * 100)); // Give it a min-width of 8% to fit the number
+      const color = e.isYou ? '#39d87e' : (i === 0 ? '#f5c842' : '#a0b860');
+      
       return `
-        <tr class="${e.isYou ? 'arena-you' : ''}" style="--row-delay:${i * 70}ms">
-          <td class="arena-rank-cell ${rCls[i]}">${rEmoji[i]}</td>
-          <td class="arena-company-cell">
-            <span class="arena-company-icon">${e.icon}</span>
-            <strong>${e.name}</strong>
-            ${e.isYou ? '<span class="arena-you-tag">YOU</span>' : ''}
-          </td>
-          <td class="arena-score-cell">${Fmt.num(e.score, 0)}</td>
-          <td><span class="arena-status ${statusClass}">${statusText}</span></td>
-        </tr>
+        <div class="arena-row-item" style="display:flex; align-items:center; gap: 10px; margin-bottom: 6px; animation: award-reveal 0.4s ease forwards; opacity:0; animation-delay:${i * 0.15}s;">
+           <div style="width: 180px; text-align: right; display:flex; justify-content:flex-end; align-items:center; gap:10px;">
+              <span style="color: ${e.isYou ? '#39d87e' : 'var(--text-mid)'}; font-family:var(--font-pixel); font-size:0.7rem;">${e.name}</span>
+              <div style="width:48px; height:48px; background:var(--bg-panel); border-radius:8px; display:grid; place-items:center; border: 2px solid var(--border-mid); box-shadow: 0 2px 4px rgba(0,0,0,0.3); flex-shrink: 0; overflow:hidden;"><img src="${e.icon}" style="width:100%; height:100%; object-fit:cover; image-rendering: auto;"></div>
+           </div>
+           <div style="border-left: 2px solid var(--border-mid); height: 48px; margin: 0 6px;"></div>
+           <div style="flex:1; display:flex; align-items:center;">
+              <div style="width: ${pct}%; background:${color}; height: 36px; display:flex; align-items:center; padding-left: 12px; font-family: var(--font-pixel); font-size:0.7rem; color:#10130f; white-space:nowrap; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.1);">
+                 ${Fmt.num(e.score, 0)}
+              </div>
+           </div>
+        </div>
       `;
     }).join('');
 
     $('arena-modal').classList.add('show');
-
-    // Also update the footer LB
-    updateLeaderboard(entries);
+    if (!isManual) updateLeaderboard(entries);
   }
 
   function _trendText(rank) {
@@ -1746,6 +1874,7 @@ const UI = (() => {
     switchTab,
 
     // Events from game.js
+    showArenaManual,
     onNewYear,
 
     // Modals

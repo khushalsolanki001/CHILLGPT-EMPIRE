@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ChillGPT Empire – Build the Chillest AI</title>
-  <meta name="description" content="An idle tycoon where you build ChillGPT — the world's chillest AI. Start in a garage in 2016, dominate by 2026." />
+  <meta name="description"
+    content="An idle tycoon where you build ChillGPT — the world's chillest AI. Start in a garage in 2016, dominate by 2026." />
 
   <!-- Pixel / retro fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link
     href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap"
-    rel="stylesheet"
-  />
+    rel="stylesheet" />
 
   <!-- All styles -->
   <link rel="stylesheet" href="css/style.css" />
@@ -19,377 +20,455 @@
   <!-- Phaser 3 — loaded before game scripts -->
   <script src="js/phaser.min.js"></script>
 </head>
+
 <body>
 
-<!-- ================================================================
+  <!-- ================================================================
      ROOT APP LAYOUT
 ================================================================ -->
-<div id="app">
+  <div id="app">
 
-  <!-- ── TOP BAR ──────────────────────────────────────────────── -->
-  <header id="topbar">
-    <div class="logo">
-      <span class="logo-icon">⚡</span>
-      <span class="logo-text"><span id="logo-ai-name">ChillGPT</span><br><span class="logo-sub">EMPIRE</span></span>
-    </div>
-
-    <div class="stat-pills">
-      <!-- Money -->
-      <div class="stat-pill money">
-        <span class="pill-icon">💰</span>
-        <div class="pill-body">
-          <div class="pill-label">CASH</div>
-          <div class="pill-value" id="stat-money">$0</div>
-        </div>
+    <!-- ── TOP BAR ──────────────────────────────────────────────── -->
+    <header id="topbar">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text"><span id="logo-ai-name">ChillGPT</span><br><span class="logo-sub">EMPIRE</span></span>
       </div>
 
-      <!-- Compute -->
-      <div class="stat-pill compute" hidden>
-        <span class="pill-icon">🖥️</span>
-        <div class="pill-body">
-          <div class="pill-label">COMPUTE (TF/s)</div>
-          <div class="pill-value" id="stat-compute">0</div>
-        </div>
-      </div>
-
-      <!-- TF Bank -->
-      <div class="stat-pill tf-bank" id="stat-tf-pill">
-        <span class="pill-icon">🧠</span>
-        <div class="pill-body">
-          <div class="pill-label">TF COLLECTED</div>
-          <div class="pill-value" id="stat-tf">0</div>
-        </div>
-      </div>
-
-      <!-- Electricity -->
-      <div class="stat-pill electricity" id="elec-pill">
-        <span class="pill-icon">⚡</span>
-        <div class="pill-body">
-          <div class="pill-label">POWER COST</div>
-          <div class="pill-value" id="stat-electricity">$0/s</div>
-        </div>
-      </div>
-
-      <!-- Users -->
-      <div class="stat-pill users">
-        <span class="pill-icon">👥</span>
-        <div class="pill-body">
-          <div class="pill-label">USERS</div>
-          <div class="pill-value" id="stat-users">0</div>
-        </div>
-      </div>
-
-      <!-- Workers -->
-      <div class="stat-pill workers">
-        <span class="pill-icon">👥</span>
-        <div class="pill-body">
-          <div class="pill-label">STAFF</div>
-          <div class="pill-value" id="stat-workers">1 staff</div>
-        </div>
-      </div>
-
-      <!-- Net income -->
-      <div class="stat-pill income">
-        <span class="pill-icon">📈</span>
-        <div class="pill-body">
-          <div class="pill-label">NET/SEC</div>
-          <div class="pill-value" id="stat-net">$0/s</div>
-        </div>
-      </div>
-      <button id="dev-mode-btn" style="background:#39d87e; color:#0c0d13; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:10px; font-weight:bold;" onclick="UI.activateDevMode()">DEV MODE (+$1M)</button>
-      <button id="dev-skip-btn" style="background:#f5c842; color:#0c0d13; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;" onclick="UI.devSkipYear()">SKIP YEAR ⏭</button>
-      <button id="dev-t3-btn" style="background:#4287f5; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;" onclick="UI.devSetTier(3)">TEST T3</button>
-      <button id="dev-t4-btn" style="background:#9342f5; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;" onclick="UI.devSetTier(4)">TEST T4</button>
-      <button id="hard-reset-btn" style="background:#a82020; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:10px;" onclick="if(confirm('Wipe ALL progress?')) Save.reset()">HARD RESET</button>
-    </div>
-
-    <div class="year-badge" id="year-badge" style="min-width: 140px;">
-      <span class="year-label" id="date-label">DAY 1 MONTH 1</span>
-      <span class="year-value" id="year-value">2016</span>
-    </div>
-  </header>
-
-  <div id="settings-panel">
-    <button id="settings-toggle" type="button" onclick="UI.toggleSettingsMenu()" aria-label="Open settings" aria-expanded="false">⚙</button>
-    <div id="settings-menu" role="dialog" aria-label="Sound settings" aria-hidden="true">
-      <div class="settings-title">SETTINGS</div>
-      <label class="audio-toggle">
-        <span>Music</span>
-        <input id="setting-music" type="checkbox" onchange="UI.setAudioSetting('music', this.checked)" checked />
-      </label>
-      <label class="audio-toggle">
-        <span>Sound effect</span>
-        <input id="setting-sfx" type="checkbox" onchange="UI.setAudioSetting('sfx', this.checked)" checked />
-      </label>
-    </div>
-  </div>
-
-  <!-- ── FACTORY AREA ──────────────────────────────────────────── -->
-  <main id="factory" aria-label="Factory Area">
-
-    <!-- CRT scanline overlay -->
-    <div class="scanlines" aria-hidden="true"></div>
-
-    <!-- Background glow orbs -->
-    <div class="glow-orb orb-blue"  aria-hidden="true"></div>
-    <div class="glow-orb orb-purple" aria-hidden="true"></div>
-    <div class="glow-orb orb-green" aria-hidden="true"></div>
-
-    <!-- Star field -->
-    <div id="stars-container" aria-hidden="true"></div>
-
-    <!-- Floor grid -->
-    <div class="floor-grid" aria-hidden="true"></div>
-
-
-
-    <!-- Machine display rows -->
-    <div id="machines-container" aria-label="Machines">
-      <div class="machine-row" id="machine-row-back"></div>
-      <div class="machine-row" id="machine-row-front"></div>
-    </div>
-
-    <!-- ChillGPT Mascot robot -->
-    <div id="mascot" role="button" tabindex="0" aria-label="ChillGPT Mascot – click for a message"
-         onclick="UI.mascotSpeak()" onkeydown="if(event.key==='Enter')UI.mascotSpeak()">
-      <div id="mascot-body">
-        <div class="mascot-antenna"><div class="antenna-tip"></div></div>
-        <div class="mascot-head">
-          <div class="mascot-visor"></div>
-          <div class="mascot-eyes">
-            <div class="mascot-eye left-eye"></div>
-            <div class="mascot-eye right-eye"></div>
+      <div class="stat-pills">
+        <!-- Money -->
+        <div class="stat-pill money">
+          <span class="pill-icon">💰</span>
+          <div class="pill-body">
+            <div class="pill-label">CASH</div>
+            <div class="pill-value" id="stat-money">$0</div>
           </div>
-          <div class="mascot-mouth" id="mascot-mouth"></div>
         </div>
-        <div class="mascot-torso">
-          <div class="torso-fan"></div>
-          <div class="torso-led led-1"></div>
-          <div class="torso-led led-2"></div>
-          <div class="torso-led led-3"></div>
+
+        <!-- Compute -->
+        <div class="stat-pill compute" hidden>
+          <span class="pill-icon">🖥️</span>
+          <div class="pill-body">
+            <div class="pill-label">COMPUTE (TF/s)</div>
+            <div class="pill-value" id="stat-compute">0</div>
+          </div>
         </div>
-        <div class="mascot-arms">
-          <div class="mascot-arm left"></div>
-          <div class="mascot-arm right"></div>
+
+        <!-- TF Bank -->
+        <div class="stat-pill tf-bank" id="stat-tf-pill">
+          <span class="pill-icon">🧠</span>
+          <div class="pill-body">
+            <div class="pill-label">TF COLLECTED</div>
+            <div class="pill-value" id="stat-tf">0</div>
+          </div>
         </div>
-        <div class="mascot-shadow"></div>
-        <div class="mascot-feet"></div>
+
+        <!-- Electricity -->
+        <div class="stat-pill electricity" id="elec-pill">
+          <span class="pill-icon">⚡</span>
+          <div class="pill-body">
+            <div class="pill-label">POWER COST</div>
+            <div class="pill-value" id="stat-electricity">$0/s</div>
+          </div>
+        </div>
+
+        <!-- Users -->
+        <div class="stat-pill users">
+          <span class="pill-icon">👥</span>
+          <div class="pill-body">
+            <div class="pill-label">USERS</div>
+            <div class="pill-value" id="stat-users">0</div>
+          </div>
+        </div>
+
+        <!-- Workers -->
+        <div class="stat-pill workers">
+          <span class="pill-icon">👥</span>
+          <div class="pill-body">
+            <div class="pill-label">STAFF</div>
+            <div class="pill-value" id="stat-workers">1 staff</div>
+          </div>
+        </div>
+
+        <!-- Net income -->
+        <div class="stat-pill income">
+          <span class="pill-icon">📈</span>
+          <div class="pill-body">
+            <div class="pill-label">NET/SEC</div>
+            <div class="pill-value" id="stat-net">$0/s</div>
+          </div>
+        </div>
+        <button id="dev-mode-btn"
+          style="background:#39d87e; color:#0c0d13; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:10px; font-weight:bold;"
+          onclick="UI.activateDevMode()">DEV MODE (+$1M)</button>
+        <button id="dev-skip-btn"
+          style="background:#f5c842; color:#0c0d13; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;"
+          onclick="UI.devSkipYear()">SKIP YEAR ⏭</button>
+        <button id="dev-t3-btn"
+          style="background:#4287f5; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;"
+          onclick="UI.devSetTier(3)">TEST T3</button>
+        <button id="dev-t4-btn"
+          style="background:#9342f5; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;"
+          onclick="UI.devSetTier(4)">TEST T4</button>
+        <button id="hard-reset-btn"
+          style="background:#a82020; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:10px;"
+          onclick="if(confirm('Wipe ALL progress?')) Save.reset()">HARD RESET</button>
       </div>
-      <!-- Speech bubble -->
-      <div id="mascot-speech" role="status" aria-live="polite"></div>
-    </div>
 
-    <!-- Train / Collect section -->
-    <div id="collect-section">
-      <div class="progress-wrap">
-        <div class="progress-label" id="progress-label">CHILLGPT v1.0 — TRAINING</div>
-        <div class="progress-bar-track">
-          <div class="progress-bar-fill" id="train-progress"></div>
-          <div class="progress-percent" id="progress-percent">0%</div>
+      <div class="year-badge" id="year-badge" style="min-width: 140px;">
+        <span class="year-label" id="date-label">DAY 1 MONTH 1</span>
+        <span class="year-value" id="year-value">2016</span>
+      </div>
+    </header>
+
+    <div id="settings-panel" style="display:flex; gap: 8px;">
+      <button id="arena-toggle" type="button" onclick="UI.showArenaManual()"
+        aria-label="Open Arena Leaderboard">📊</button>
+      <div style="position:relative;">
+        <button id="settings-toggle" type="button" onclick="UI.toggleSettingsMenu()" aria-label="Open settings"
+          aria-expanded="false">⚙</button>
+        <div id="settings-menu" role="dialog" aria-label="Sound settings" aria-hidden="true">
+          <div class="settings-title">SETTINGS</div>
+          <label class="audio-toggle">
+            <span>Music</span>
+            <input id="setting-music" type="checkbox" onchange="UI.setAudioSetting('music', this.checked)" checked />
+          </label>
+          <label class="audio-toggle">
+            <span>Sound effect</span>
+            <input id="setting-sfx" type="checkbox" onchange="UI.setAudioSetting('sfx', this.checked)" checked />
+          </label>
         </div>
       </div>
-      <button id="collect-btn" onclick="Game.collectMoney()" aria-label="Collect accumulated revenue">
-        <span class="btn-icon">💰</span>
-        <span id="collect-label">COLLECT REVENUE</span>
-      </button>
     </div>
 
-    <!-- Floating notifications layer -->
-    <div id="notif-layer" aria-hidden="true"></div>
+    <!-- ── FACTORY AREA ──────────────────────────────────────────── -->
+    <main id="factory" aria-label="Factory Area">
 
-    <!-- Screen flash overlay -->
-    <div id="upgrade-flash" aria-hidden="true"></div>
-  </main>
+      <!-- CRT scanline overlay -->
+      <div class="scanlines" aria-hidden="true"></div>
 
-  <!-- ── SHOP PANEL ────────────────────────────────────────────── -->
-  <aside id="shop" aria-label="Shop Panel">
-    <div class="shop-tabs" role="tablist">
-      <button class="shop-tab active" id="tab-hardware" role="tab" aria-selected="true"
-              onclick="UI.switchTab('hardware')"><span class="tab-icon">⚙️</span><span class="tab-label">HARDWARE</span></button>
-      <button class="shop-tab" id="tab-staff" role="tab" aria-selected="false"
-              onclick="UI.switchTab('staff')"><span class="tab-icon">👥</span><span class="tab-label">STAFF</span></button>
-      <button class="shop-tab" id="tab-ai" role="tab" aria-selected="false"
-              onclick="UI.switchTab('ai')"><span class="tab-icon">🧠</span><span class="tab-label">AI TECH</span></button>
-      <button class="shop-tab" id="tab-business" role="tab" aria-selected="false"
-              onclick="UI.switchTab('business')"><span class="tab-icon">💼</span><span class="tab-label">BUSINESS</span></button>
-      <button class="shop-tab" id="tab-models" role="tab" aria-selected="false"
-              onclick="UI.switchTab('models')"><span class="tab-icon">🤖</span><span class="tab-label">AI LAB</span></button>
-    </div>
-    <!-- Shop items injected here by ui.js -->
-    <div class="shop-content" id="shop-content"></div>
-  </aside>
+      <!-- Background glow orbs -->
+      <div class="glow-orb orb-blue" aria-hidden="true"></div>
+      <div class="glow-orb orb-purple" aria-hidden="true"></div>
+      <div class="glow-orb orb-green" aria-hidden="true"></div>
 
-  <!-- ── FOOTER LEADERBOARD & NEWS ─────────────────────────────── -->
-  <footer id="footer" style="flex-direction: column; align-items: stretch; padding: 4px 16px;">
-    <!-- Leaderboard Row -->
-    <div style="display: flex; align-items: center; width: 100%; gap: 16px;">
-      <div class="footer-label">🏆 GLOBAL AI ARENA</div>
-      <div class="lb-entries" id="lb-entries" style="flex: 1;"></div>
-      <div class="next-comp" id="next-comp">NEXT ARENA: --:--</div>
-    </div>
-    
-    <!-- X News Ticker Row -->
-    <div style="display: flex; align-items: center; width: 100%; border-top: 2px solid var(--border-mid); padding-top: 4px; margin-top: 2px;">
-      <div class="footer-label" style="color: #1da1f2; margin-right: 12px; font-weight: bold;">✖ NEWS</div>
-      <div style="flex: 1; overflow: hidden; white-space: nowrap; position: relative;">
-        <div id="x-news-ticker" style="font-family: var(--font-pixel); font-size: 0.32rem; color: var(--text-dark); position: absolute; left: 100%; animation: ticker 20s linear infinite;">No major incidents reported. All systems optimal.</div>
+      <!-- Star field -->
+      <div id="stars-container" aria-hidden="true"></div>
+
+      <!-- Floor grid -->
+      <div class="floor-grid" aria-hidden="true"></div>
+
+
+
+      <!-- Machine display rows -->
+      <div id="machines-container" aria-label="Machines">
+        <div class="machine-row" id="machine-row-back"></div>
+        <div class="machine-row" id="machine-row-front"></div>
       </div>
+
+      <!-- ChillGPT Mascot robot -->
+      <div id="mascot" role="button" tabindex="0" aria-label="ChillGPT Mascot – click for a message"
+        onclick="UI.mascotSpeak()" onkeydown="if(event.key==='Enter')UI.mascotSpeak()">
+        <div id="mascot-body">
+          <div class="mascot-antenna">
+            <div class="antenna-tip"></div>
+          </div>
+          <div class="mascot-head">
+            <div class="mascot-visor"></div>
+            <div class="mascot-eyes">
+              <div class="mascot-eye left-eye"></div>
+              <div class="mascot-eye right-eye"></div>
+            </div>
+            <div class="mascot-mouth" id="mascot-mouth"></div>
+          </div>
+          <div class="mascot-torso">
+            <div class="torso-fan"></div>
+            <div class="torso-led led-1"></div>
+            <div class="torso-led led-2"></div>
+            <div class="torso-led led-3"></div>
+          </div>
+          <div class="mascot-arms">
+            <div class="mascot-arm left"></div>
+            <div class="mascot-arm right"></div>
+          </div>
+          <div class="mascot-shadow"></div>
+          <div class="mascot-feet"></div>
+        </div>
+        <!-- Speech bubble -->
+        <div id="mascot-speech" role="status" aria-live="polite"></div>
+      </div>
+
+      <!-- Train / Collect section -->
+      <div id="collect-section">
+        <div class="progress-wrap">
+          <div class="progress-label" id="progress-label">CHILLGPT v1.0 — TRAINING</div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="train-progress"></div>
+            <div class="progress-percent" id="progress-percent">0%</div>
+          </div>
+        </div>
+        <button id="collect-btn" onclick="Game.collectMoney()" aria-label="Collect accumulated revenue">
+          <span class="btn-icon">💰</span>
+          <span id="collect-label">COLLECT REVENUE</span>
+        </button>
+      </div>
+
+      <!-- Floating notifications layer -->
+      <div id="notif-layer" aria-hidden="true"></div>
+
+      <!-- Screen flash overlay -->
+      <div id="upgrade-flash" aria-hidden="true"></div>
+    </main>
+
+    <!-- ── SHOP PANEL ────────────────────────────────────────────── -->
+    <aside id="shop" aria-label="Shop Panel">
+      <div class="shop-tabs" role="tablist">
+        <button class="shop-tab active" id="tab-hardware" role="tab" aria-selected="true"
+          onclick="UI.switchTab('hardware')"><span class="tab-icon">⚙️</span><span
+            class="tab-label">HARDWARE</span></button>
+        <button class="shop-tab" id="tab-staff" role="tab" aria-selected="false" onclick="UI.switchTab('staff')"><span
+            class="tab-icon">👥</span><span class="tab-label">STAFF</span></button>
+        <button class="shop-tab" id="tab-ai" role="tab" aria-selected="false" onclick="UI.switchTab('ai')"><span
+            class="tab-icon">🧠</span><span class="tab-label">AI TECH</span></button>
+        <button class="shop-tab" id="tab-business" role="tab" aria-selected="false"
+          onclick="UI.switchTab('business')"><span class="tab-icon">💼</span><span
+            class="tab-label">BUSINESS</span></button>
+        <button class="shop-tab" id="tab-models" role="tab" aria-selected="false" onclick="UI.switchTab('models')"><span
+            class="tab-icon">🤖</span><span class="tab-label">AI LAB</span></button>
+      </div>
+      <!-- Shop items injected here by ui.js -->
+      <div class="shop-content" id="shop-content"></div>
+    </aside>
+
+    <!-- ── FOOTER LEADERBOARD & NEWS ─────────────────────────────── -->
+    <footer id="footer" style="flex-direction: row; align-items: center; padding: 4px 16px;">
+      <div class="footer-label" style="color: #1da1f2; margin-right: 12px; font-weight: bold; flex-shrink: 0;">✖ AI NEWS
+      </div>
+      <div style="flex: 1; overflow: hidden; white-space: nowrap; position: relative; height: 20px;">
+        <div id="x-news-ticker"
+          style="font-family: var(--font-pixel); font-size: 0.32rem; color: var(--text-dark); position: absolute; left: 100%; top: 4px; animation: ticker 25s linear infinite;">
+          No major incidents reported. All systems optimal. Training is proceeding as scheduled. Industry is booming.
+        </div>
+      </div>
+      <div class="next-comp" id="next-comp" style="margin-left: 16px; flex-shrink: 0;">NEXT ARENA: --:--</div>
       <style>
-        @keyframes ticker { 
-          0% { left: 100%; } 
-          100% { left: -100%; } 
+        @keyframes ticker {
+          0% {
+            left: 100%;
+          }
+
+          100% {
+            left: -100%;
+          }
         }
       </style>
-    </div>
-  </footer>
+    </footer>
 
-  <!-- Onboarding Modal (Moved inside #app) -->
-  <div class="modal-overlay" id="onboarding-modal" role="dialog" aria-modal="true" style="z-index: 2000;">
-    <div class="modal-box pixel-border onboarding-box" style="width: 450px;">
-      <div class="modal-title onboarding-title">✨ WELCOME CEO!</div>
-      
-      <div id="ob-step-1" class="ob-step">
-        <div class="ob-mascot-row">
-          <div class="ob-bubble">"Hi! I'm your AI assistant. Let's get your empire started! What's your name?"</div>
-        </div>
-        <div class="ob-form">
-          <label>YOUR NAME</label>
-          <input type="text" id="ob-player-name" placeholder="Enter Name..." onkeydown="if(event.key==='Enter')UI.obNext(2)" />
-          <button class="ob-next-btn" onclick="UI.obNext(2)">NEXT →</button>
-        </div>
-      </div>
+    <!-- Onboarding Modal (Moved inside #app) -->
+    <div class="modal-overlay" id="onboarding-modal" role="dialog" aria-modal="true" style="z-index: 2000;">
+      <div class="modal-box pixel-border onboarding-box" style="width: 450px;">
+        <div class="modal-title onboarding-title">✨ WELCOME CEO!</div>
 
-      <div id="ob-step-2" class="ob-step" style="display:none">
-        <div class="ob-mascot-row">
-          <div class="ob-bubble">"Awesome! And what should we call our company?"</div>
+        <div id="ob-step-1" class="ob-step">
+          <div class="ob-mascot-row">
+            <div class="ob-bubble">"Hi! I'm your AI assistant. Let's get your empire started! What's your name?"</div>
+          </div>
+          <div class="ob-form">
+            <label>YOUR NAME</label>
+            <input type="text" id="ob-player-name" placeholder="Enter Name..."
+              onkeydown="if(event.key==='Enter')UI.obNext(2)" />
+            <button class="ob-next-btn" onclick="UI.obNext(2)">NEXT →</button>
+          </div>
         </div>
-        <div class="ob-form">
-          <label>COMPANY NAME</label>
-          <input type="text" id="ob-company-name" placeholder="Enter Company Name..." onkeydown="if(event.key==='Enter')UI.obNext(3)" />
-          <button class="ob-next-btn" onclick="UI.obNext(3)">NEXT →</button>
-        </div>
-      </div>
 
-      <div id="ob-step-3" class="ob-step" style="display:none">
-        <div class="ob-mascot-row">
-          <div class="ob-bubble">"Finally, what's the name of the AI we're building? It better be chill!"</div>
+        <div id="ob-step-2" class="ob-step" style="display:none">
+          <div class="ob-mascot-row">
+            <div class="ob-bubble">"Awesome! And what should we call our company?"</div>
+          </div>
+          <div class="ob-form">
+            <label>COMPANY NAME</label>
+            <input type="text" id="ob-company-name" placeholder="Enter Company Name..."
+              onkeydown="if(event.key==='Enter')UI.obNext(3)" />
+            <button class="ob-next-btn" onclick="UI.obNext(3)">NEXT →</button>
+          </div>
         </div>
-        <div class="ob-form">
-          <label>AI NAME</label>
-          <input type="text" id="ob-ai-name" placeholder="ChillGPT" value="ChillGPT" onkeydown="if(event.key==='Enter')UI.obFinish()" />
-          <button class="ob-next-btn" onclick="UI.obFinish()">START GAME 🚀</button>
+
+        <div id="ob-step-3" class="ob-step" style="display:none">
+          <div class="ob-mascot-row">
+            <div class="ob-bubble">"Finally, what's the name of the AI we're building? It better be chill!"</div>
+          </div>
+          <div class="ob-form">
+            <label>AI NAME</label>
+            <input type="text" id="ob-ai-name" placeholder="ChillGPT" value="ChillGPT"
+              onkeydown="if(event.key==='Enter')UI.obFinish()" />
+            <button class="ob-next-btn" onclick="UI.obFinish()">START GAME 🚀</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- ================================================================
+  <!-- ================================================================
      ARENA MODAL
 ================================================================ -->
-<div class="modal-overlay" id="arena-modal" role="dialog" aria-modal="true" aria-label="Global AI Arena Results">
-  <div class="modal-box pixel-border arena-box">
-    <div class="modal-title">⚔️ GLOBAL AI ARENA</div>
-    <div class="modal-subtitle" id="arena-year-label">YEAR 2016 RESULTS</div>
-    <div class="arena-spotlight" id="arena-spotlight"></div>
-    <table class="arena-table" aria-label="Competition Results">
-      <thead>
-        <tr>
-          <th>RANK</th>
-          <th>COMPANY</th>
-          <th>SCORE</th>
-          <th>STATUS</th>
-        </tr>
-      </thead>
-      <tbody id="arena-body"></tbody>
-    </table>
-    <button class="modal-close-btn" id="arena-close-btn" onclick="UI.closeArena()">
-      CONTINUE TO <span id="next-year-label">2017</span> →
-    </button>
-  </div>
-</div>
+  <div class="modal-overlay" id="arena-modal" role="dialog" aria-modal="true" aria-label="Global AI RANKINGS">
+    <div class="modal-box pixel-border arena-box"
+      style="width: 860px; max-width: 95vw; max-height: 96vh; overflow-y: auto; position: relative; padding-top: 30px;">
+      <button class="modal-x-btn"
+        style="background: #ff4d4d; border: 3px solid #10130f; color: white; width: 36px; height: 36px; font-size: 24px; line-height: 30px; position: absolute; top: 10px; right: 10px; box-shadow: 0 4px 0 #000;"
+        onclick="UI.closeArena()">×</button>
+      <div class="modal-title"
+        style="text-align:center; font-size: 1.2rem; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        🏆 GLOBAL AI RANKINGS</div>
+      <div class="modal-subtitle" id="arena-year-label"
+        style="text-align:center; font-size: 0.6rem; margin-top: 0; padding: 4px 12px; min-width: auto; display: inline-block; margin: 0 auto 15px auto;">
+        YEAR 2016 RANKINGS</div>
+      <div class="arena-spotlight" id="arena-spotlight"></div>
+      <div id="arena-body" style="display:flex; flex-direction:column; gap: 12px; padding: 15px 10px;"></div>
 
-<!-- ================================================================
-     MODEL BUILDER MODAL
-================================================================ -->
-<div class="modal-overlay" id="model-builder-modal" role="dialog" aria-modal="true" style="z-index:1500;">
-  <div class="modal-box pixel-border model-builder-box" style="width:min(1040px, 94vw); max-height:92vh; overflow-y:auto;">
-    <button class="modal-x-btn" aria-label="Close model builder" onclick="document.getElementById('model-builder-modal').classList.remove('show');">×</button>
-    <div class="modal-title">🤖 CUSTOM AI MODEL BUILDER</div>
-    <div class="modal-subtitle">Design your own AI from scratch</div>
-
-    <!-- Step 1: Name + Architecture -->
-    <div id="mb-step-arch">
-      <div style="margin: 12px 0; display:flex; gap: 12px; align-items:center;">
-        <label style="font-family:var(--font-pixel); font-size:0.55rem; color:var(--accent);">MODEL NAME</label>
-        <input type="text" id="mb-model-name" placeholder="e.g. ChillGPT-Ultra" style="flex:1; background:#1b2340; color:#e8f0ff; border:2px solid var(--accent); padding:6px; font-family:var(--font-pixel); font-size:0.5rem;" />
-      </div>
-
-      <div style="font-family:var(--font-pixel); font-size:0.55rem; color:var(--accent); margin: 8px 0;">CHOOSE ARCHITECTURE</div>
-      <div id="mb-arch-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:12px;"></div>
-
-      <div style="font-family:var(--font-pixel); font-size:0.55rem; color:var(--accent); margin: 8px 0;">CHOOSE SIZE</div>
-      <div id="mb-size-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:12px;"></div>
-
-      <div style="font-family:var(--font-pixel); font-size:0.55rem; color:var(--accent); margin: 8px 0;">CHOOSE TRAITS (max 2)</div>
-      <div id="mb-trait-grid" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px; margin-bottom:12px;"></div>
-
-      <!-- Preview panel -->
-      <div id="mb-preview" style="background:#1b2340; border:2px solid var(--accent); padding:12px; margin-bottom:12px; font-family:var(--font-pixel); font-size:0.45rem; color:var(--text-light);">
-        <div style="font-size:0.6rem; color:var(--accent); margin-bottom:6px;">📊 MODEL PREVIEW</div>
-        <div id="mb-preview-content">Select architecture + size to see preview...</div>
-      </div>
-
-      <div style="display:flex; gap:8px;">
-        <button class="modal-close-btn" style="flex:1; background:#333;" onclick="document.getElementById('model-builder-modal').classList.remove('show');">CANCEL</button>
-        <button class="modal-close-btn" style="flex:2;" id="mb-design-btn" onclick="UI.handleDesignModel()">BUILD THIS MODEL →</button>
-      </div>
+      <button class="modal-close-btn" id="arena-close-btn" onclick="UI.closeArena()">
+        CONTINUE TO <span id="next-year-label">2017</span> →
+      </button>
     </div>
   </div>
-</div>
 
-<!-- ================================================================
+  <!-- ================================================================
+     MODEL BUILDER MODAL
+================================================================ -->
+  <!-- ================================================================
+     AI LAB (FULLSCREEN LANDSCAPE MODAL)
+================================================================ -->
+  <div class="modal-overlay" id="model-builder-modal" role="dialog" aria-modal="true" style="z-index:2500; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px);">
+    <div class="modal-box pixel-border lab-big-screen landscape-layout" style="width:96vw; max-width:1600px; height:90vh; display:flex; flex-direction:column; padding:12px; overflow:hidden; background: #dbbe8d; box-shadow: 0 0 0 4px #000, 10px 10px 0 rgba(0,0,0,0.3);">
+      
+      <!-- Lab Header: Expansive Banner -->
+      <header class="lab-header" style="background: var(--retro-gold); border: 4px solid var(--border); padding: 20px 40px; margin-bottom: 12px; display:flex; justify-content:space-between; align-items:center; box-shadow: var(--btn-shadow-sm);">
+        <div style="display:flex; align-items:center; gap:30px;">
+          <div style="font-size: 3rem; filter: drop-shadow(4px 4px 0 rgba(0,0,0,0.1));">🔬</div>
+          <div>
+            <div class="modal-title" style="margin:0; text-align:left; font-size:2rem; color: #3a1a00; line-height:1; letter-spacing:1px;">NEURAL RESEARCH & DEVELOPMENT CENTER</div>
+            <div style="font-family:var(--font-pixel); color:#6b1a00; font-size:0.5rem; letter-spacing:2px; margin-top:8px;">ADVANCED MODEL ARCHITECTURE // DEPLOYMENT TERMINAL</div>
+          </div>
+        </div>
+        <button class="modal-x-btn" style="position:static; width:56px; height:56px; background:#e74c3c; border:4px solid #000; box-shadow: 4px 4px 0 #000; font-size:2rem; color:#fff; cursor:pointer;" onclick="document.getElementById('model-builder-modal').classList.remove('show');">×</button>
+      </header>
+
+      <!-- Lab Body: Wide 3-Column Landscape Split -->
+      <main style="flex:1; display:flex; gap:16px; overflow:hidden; padding:4px;">
+        
+        <!-- Column 1: Configuration Terminal -->
+        <section class="lab-panel" style="flex: 1.1; background: var(--bg-inset); border: 4px solid var(--border); border-radius: var(--radius-sm); box-shadow: inset 5px 5px 0 rgba(0,0,0,0.2); display:flex; flex-direction:column; overflow:hidden;">
+          <div style="padding: 15px; background: var(--retro-brown); color:#fff; font-size:0.6rem; border-bottom: 4px solid var(--border); letter-spacing:2px; text-align:center; font-weight:bold;">[ 01 ] DESIGN TERMINAL</div>
+          <div style="flex:1; overflow-y:auto; padding:20px;">
+            
+            <div style="margin-bottom: 25px;">
+               <label style="display:block; color:var(--retro-brown); font-size:0.45rem; margin-bottom:8px; font-weight:bold;">MODEL_IDENTIFIER_STRING</label>
+               <input type="text" id="mb-model-name" placeholder="Input Neural ID..." style="width:100%; background:#fff; border:4px solid var(--border); padding:14px; font-family:var(--font-pixel); font-size:0.6rem; color:#000; outline:none;" />
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+              <label style="display:block; color:var(--retro-brown); font-size:0.45rem; margin-bottom:8px; font-weight:bold;">CORE_ARCHITECTURE_SELECT</label>
+              <div id="mb-arch-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
+            </div>
+
+            <div style="margin-bottom: 25px;">
+              <label style="display:block; color:var(--retro-brown); font-size:0.45rem; margin-bottom:8px; font-weight:bold;">PARAMETER_SCALE_ENUM</label>
+              <div id="mb-size-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
+            </div>
+
+            <div>
+              <label style="display:block; color:var(--retro-brown); font-size:0.45rem; margin-bottom:8px; font-weight:bold;">AUGMENTATION_TRAITS_ATTACH</label>
+              <div id="mb-trait-grid" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Column 2: Live Specification Preview (Centerpiece) -->
+        <section class="lab-panel" style="flex: 1.3; background: #c1dae8; border: 4px solid var(--border); border-radius: var(--radius-sm); box-shadow: inset 5px 5px 0 rgba(0,0,0,0.15); display:flex; flex-direction:column; overflow:hidden;">
+          <div style="padding: 15px; background: var(--retro-blue); color:#fff; font-size:0.6rem; border-bottom: 4px solid var(--border); letter-spacing:2px; text-align:center; font-weight:bold;">[ 02 ] TECHNICAL SPECIFICATION</div>
+          <div id="mb-preview-content" style="flex:1; padding:25px; display:flex; flex-direction:column; gap:15px; justify-content:center;">
+             <!-- Blueprint content -->
+          </div>
+          <div style="padding:20px; border-top: 4px solid var(--border); background:rgba(255,255,255,0.3);">
+            <button class="buy-btn" id="mb-design-btn" onclick="UI.handleDesignModel()" style="width:100%; height:90px; font-size:0.8rem; background: var(--retro-green); border:4px solid #000; box-shadow: 6px 6px 0 #000; color:#fff; cursor:pointer; active:transform:translate(2px, 2px); active:box-shadow:4px 4px 0 #000;">
+              RUN FABRICATION SEQUENCE 🚀
+            </button>
+          </div>
+        </section>
+
+        <!-- Column 3: Global Repository -->
+        <section class="lab-panel" style="flex: 1.4; background: var(--bg-inset); border: 4px solid var(--border); border-radius: var(--radius-sm); box-shadow: inset 5px 5px 0 rgba(0,0,0,0.2); display:flex; flex-direction:column; overflow:hidden;">
+          <div style="padding: 15px; background: #7c3da8; color:#fff; font-size:0.6rem; border-bottom: 4px solid var(--border); letter-spacing:2px; text-align:center; font-weight:bold;">[ 03 ] MODEL ARCHIVES</div>
+          <div id="lab-models-list" style="flex:1; overflow-y:auto; padding:20px;">
+            <!-- Active/Released models -->
+          </div>
+        </section>
+
+      </main>
+
+      <!-- Full-Width Data Footer -->
+      <footer style="margin-top:12px; display:flex; justify-content:space-between; align-items:center; background: var(--bg-panel); border: 4px solid var(--border); padding: 15px 30px; box-shadow: var(--btn-shadow-sm);">
+        <div id="lab-stats-compute" style="color:var(--retro-blue); font-size:0.7rem; font-weight:bold;">NEURAL_COMPUTE: 0.00 TF/S</div>
+        <div style="display:flex; gap:40px;">
+           <div style="color:var(--text-mid); font-size:0.4rem; font-family:var(--font-mono);">KERNEL_STATUS: OPTIMAL</div>
+           <div style="color:var(--text-mid); font-size:0.4rem; font-family:var(--font-mono);">YEAR_INDEX: ${Game.state.year}.0</div>
+        </div>
+      </footer>
+
+    </div>
+  </div>
+
+  <!-- Awards / Transition Modals follow... -->
+
+  <!-- Old Award Modals etc follow... -->
+
+  <!-- ================================================================
      AI AWARDS MODAL
 ================================================================ -->
-<div id="awards-modal" aria-live="assertive" aria-label="Year End Awards" class="modal-overlay" style="z-index: 1200; background: rgba(16, 19, 15, 0.95); backdrop-filter: blur(8px);">
-  <div class="year-splash-card" style="width: 700px; max-width: 90vw; padding: 40px;">
-    <div class="year-splash-kicker" style="color: #f5c842;">THE ARENA CONCLUDES</div>
-    <div class="year-splash" style="font-size: 1.5rem; margin-top: 10px;">🏆 YEAR-END AWARDS</div>
-    <div class="year-splash-sub" id="awards-year-label" style="font-size: 0.6rem; color: var(--text-mid); margin-bottom: 20px;"></div>
-    
-    <div id="awards-body" style="padding: 10px 0; display:flex; flex-direction:column; gap: 15px;"></div>
-    
-    <div class="year-splash-rail" aria-hidden="true" style="margin: 20px 0;"><span></span></div>
-    <button class="modal-close-btn" style="width: 100%; border: 3px solid #f5c842; background: #2a2010; color: #f5c842; font-size: 0.5rem; padding: 12px; margin-top: 10px;" onclick="UI.closeAwards()">🚀 OKAY, LET'S GO →</button>
+  <div id="awards-modal" aria-live="assertive" aria-label="Year End Awards" class="modal-overlay"
+    style="z-index: 1200; background: rgba(16, 19, 15, 0.95); backdrop-filter: blur(8px);">
+    <div class="year-splash-card" style="width: 700px; max-width: 90vw; padding: 40px;">
+      <div class="year-splash-kicker" style="color: #f5c842;">THE ARENA CONCLUDES</div>
+      <div class="year-splash" style="font-size: 1.5rem; margin-top: 10px;">🏆 YEAR-END AWARDS</div>
+      <div class="year-splash-sub" id="awards-year-label"
+        style="font-size: 0.6rem; color: var(--text-mid); margin-bottom: 20px;"></div>
+
+      <div id="awards-body" style="padding: 10px 0; display:flex; flex-direction:column; gap: 15px;"></div>
+
+      <div class="year-splash-rail" aria-hidden="true" style="margin: 20px 0;"><span></span></div>
+      <button class="modal-close-btn"
+        style="width: 100%; border: 3px solid #f5c842; background: #2a2010; color: #f5c842; font-size: 0.5rem; padding: 12px; margin-top: 10px;"
+        onclick="UI.closeAwards()">🚀 OKAY, LET'S GO →</button>
+    </div>
   </div>
-</div>
 
-<!-- Year transition overlay -->
-<div id="year-transition" aria-live="assertive" aria-label="Year change announcement">
-  <div class="year-splash-card">
-    <div class="year-splash-kicker">NEW YEAR UNLOCKED</div>
-    <div class="year-splash" id="year-splash-num">2017</div>
-    <div class="year-splash-sub" id="year-splash-sub">A new year begins...</div>
-    <div class="year-splash-rail" aria-hidden="true"><span></span></div>
+  <!-- Year transition overlay -->
+  <div id="year-transition" aria-live="assertive" aria-label="Year change announcement">
+    <div class="year-splash-card">
+      <div class="year-splash-kicker">NEW YEAR UNLOCKED</div>
+      <div class="year-splash" id="year-splash-num">2017</div>
+      <div class="year-splash-sub" id="year-splash-sub">A new year begins...</div>
+      <div class="year-splash-rail" aria-hidden="true"><span></span></div>
+    </div>
   </div>
-</div>
 
 
 
-<!-- Toast notifications -->
-<div id="toast-container" aria-live="polite"></div>
+  <!-- Toast notifications -->
+  <div id="toast-container" aria-live="polite"></div>
 
-<!-- ================================================================
+  <!-- ================================================================
      SCRIPTS  (order matters — data first, then logic, then UI)
 ================================================================ -->
-<script src="js/upgrades.js"></script>
-<script src="js/market.js"></script>
-<script src="js/models.js"></script>
-<script src="js/save.js"></script>
-<script src="js/game.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/main.js"></script>
-<script src="js/phaser-scene.js"></script>
+  <script src="js/upgrades.js"></script>
+  <script src="js/market.js"></script>
+  <script src="js/models.js"></script>
+  <script src="js/save.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/phaser-scene.js"></script>
 </body>
+
 </html>

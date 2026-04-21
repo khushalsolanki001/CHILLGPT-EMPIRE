@@ -111,6 +111,21 @@ const Market = (() => {
   }
 
   /**
+   * Get a specific market by ID.
+   */
+  function getMarket(id) {
+    const s = _getState();
+    const mk = BASE_MARKETS.find(m => m.id === id);
+    if (!mk) return null;
+    return {
+      ...mk,
+      demand: s.demandOverrides[mk.id] !== undefined
+        ? s.demandOverrides[mk.id]
+        : mk.baseDemand,
+    };
+  }
+
+  /**
    * Contracts System
    */
   function generateContracts(year) {

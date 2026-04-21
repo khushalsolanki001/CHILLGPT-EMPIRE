@@ -107,7 +107,8 @@ const ModelBuilder = (() => {
     if (!size) return { ok: false, message: 'Invalid size.' };
 
     const tfNeeded  = Math.floor(size.tfBase * arch.tfMult);
-    const perfScore = Math.floor((size.perfBase + arch.perfBonus) * (1 + traits.length * 0.1));
+    const globalPerfMult = Game.state.mult?.perfBonus || 1.0;
+    const perfScore = Math.floor((size.perfBase + arch.perfBonus) * (1 + traits.length * 0.1) * globalPerfMult);
 
     const s    = _getState();
     const model = {
@@ -209,9 +210,32 @@ const ModelBuilder = (() => {
     m.status     = 'released';
     m.marketId   = marketId;
     m.releasedYear = Game.state.year;
+    // Track exact time of release for decay calculation
+    m.releasedTime = Game.state.year + (Game.state.yearProgress / Game.state.yearDuration);
 
     if (typeof Save !== 'undefined') Save.save();
     return { ok: true, message: `🌍 "${m.name}" launched in ${marketId} market!` };
+  }
+
+  /**
+   * Calculate current popularity multiplier for a model based on age.
+   * Decay: Halves every year. Initial 20% hype bonus for first 2 months.
+   */
+  function getModelPopularity(model) {
+    if (model.status !== 'released' || model.releasedTime === undefined) return 1.0;
+
+    const now = Game.state.year + (Game.state.yearProgress / Game.state.yearDuration);
+    const age = Math.max(0, now - model.releasedTime);
+
+    // Initial hype bonus (20% extra for first 0.15 years ~ approx 1.8 months)
+    let hype = 1.0;
+    if (age < 0.15) hype = 1.25;
+    else if (age < 0.3) hype = 1.1;
+
+    // Decay factor (power of 0.5 per year)
+    const decay = Math.pow(0.5, age);
+
+    return Math.max(0.05, decay * hype);
   }
 
   // ── SCORING ──────────────────────────────────────────────────────
@@ -240,10 +264,11 @@ const ModelBuilder = (() => {
   }
 
   /**
-   * Calculate total income per second from all released models.
+   * Calculate total income per second from model(s).
+   * @param {object} [specificModel] - If provided, returns income for just this model.
    */
-  function getModelIncomePerSecond() {
-    const relModels = getReleasedModels();
+  function getModelIncomePerSecond(specificModel = null) {
+    const relModels = specificModel ? [specificModel] : getReleasedModels();
     if (!relModels.length) return 0;
 
     const marketData = (typeof Market !== 'undefined') ? Market.getMarkets() : [];
@@ -256,7 +281,8 @@ const ModelBuilder = (() => {
     return relModels.reduce((sum, m) => {
       const score  = getModelMarketScore(m, m.marketId);
       const demand = mktMap[m.marketId] ? mktMap[m.marketId].demand : 0.5;
-      return sum + (score * demand * 0.02 * marketingMult);
+      const pop    = getModelPopularity(m);
+      return sum + (score * demand * 0.02 * marketingMult * pop);
     }, 0);
   }
 
@@ -331,6 +357,7 @@ const ModelBuilder = (() => {
     // Calculations
     getModelMarketScore,
     getModelIncomePerSecond,
+    getModelPopularity,
     calculateAwards,
   };
 
