@@ -100,6 +100,11 @@ const Game = (() => {
         marketingHype: 1.0,
       },
 
+      /** MetaMask one-time bonus — granted only once ever */
+      metamaskBoostClaimed: false,
+      /** Permanent TF rate multiplier from MetaMask (1.0 = none, 1.2 = +20%) */
+      metamaskTfMult: 1.0,
+
       lastSave: Date.now(),
     };
   }
@@ -565,9 +570,10 @@ const Game = (() => {
     const computeBonus = Math.min(computeBar * 0.008, 5);
     state.trainProgress = Math.min(100, state.trainProgress + (0.4 + computeBonus) * dt);
 
-    // TF Generation based on compute power
+    // TF Generation based on compute power (with permanent MetaMask boost)
     const computeGen = getTotalCompute();
-    state.tf += computeGen * dt;
+    const mmTfMult = state.metamaskTfMult || 1.0;
+    state.tf += computeGen * dt * mmTfMult;
 
     // Random Failure Logic
     _processRandomFailures(dt);

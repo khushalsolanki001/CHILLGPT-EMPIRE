@@ -19,9 +19,58 @@
 
   <!-- Phaser 3 — loaded before game scripts -->
   <script src="js/phaser.min.js"></script>
+  <!-- ethers.js — Ethereum wallet integration -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 </head>
 
 <body>
+
+  <!-- ================================================================
+     START SCREEN / TITLE SCREEN
+================================================================ -->
+  <div id="start-screen">
+    <div class="start-menu" id="start-menu-panel">
+      <!-- Logo / Title -->
+      <div class="start-logo">
+        <div class="start-logo-title">CHILLGPT<br>EMPIRE</div>
+        <div class="start-logo-sub">v1.0 EARLY ACCESS</div>
+      </div>
+
+      <button class="start-btn primary" onclick="UI.startGame()">START GAME</button>
+      <button class="start-btn" onclick="UI.openOptions()">OPTIONS</button>
+      <button class="start-btn" onclick="UI.openCredits()">CREDITS</button>
+
+      <div class="wallet-section">
+        <!-- Status LED -->
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+          <div id="wallet-indicator" style="width:8px; height:8px; border-radius:50%; background:#555; box-shadow:0 0 6px #555; transition:background 0.3s;"></div>
+          <div id="wallet-address-display" style="font-family:var(--font-mono); font-size:0.28rem; color:rgba(255,255,255,0.4); letter-spacing:1px;">NOT CONNECTED</div>
+        </div>
+        <img class="metamask-icon" src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" onclick="Blockchain.connect()">
+        <button id="signin-btn" onclick="Blockchain.connect()">🦊 CONNECT & START</button>
+        <!-- Bonus teaser badge -->
+        <div id="metamask-bonus-teaser" style="
+          display:flex; align-items:center; gap:6px;
+          background: linear-gradient(135deg, rgba(243,156,18,0.15), rgba(231,76,60,0.1));
+          border: 1px solid rgba(243,156,18,0.4);
+          padding: 5px 10px; margin-top: 6px;
+          font-family:var(--font-mono); font-size:0.24rem; color:#f39c12;
+          letter-spacing: 1px;
+          animation: boostPulse 2s ease-in-out infinite;
+        ">
+          <span>🎁</span>
+          <span>FIRST TIME: +$500K &amp; +20% TF BOOST FOREVER</span>
+        </div>
+        <style>
+          @keyframes boostPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+          }
+        </style>
+        <div style="font-size:0.25rem; color:rgba(255,255,255,0.35); font-family:var(--font-mono); letter-spacing:1px; margin-top:4px;">BLOCKCHAIN ENABLED v1.0</div>
+      </div>
+    </div>
+  </div>
 
   <!-- ================================================================
      ROOT APP LAYOUT
@@ -137,6 +186,13 @@
             <span>Sound effect</span>
             <input id="setting-sfx" type="checkbox" onchange="UI.setAudioSetting('sfx', this.checked)" checked />
           </label>
+
+          <!-- Blockchain save/load -->
+          <div style="border-top:2px solid rgba(16,19,15,0.15); margin-top:8px; padding-top:8px; display:flex; flex-direction:column; gap:6px;">
+            <div style="font-size:9px; font-family:inherit; color:#666; letter-spacing:1px; margin-bottom:2px;">CLOUD SAVE (SEPOLIA)</div>
+            <button onclick="Blockchain.saveOnChain()" style="background:#1a5010; color:#fff; border:2px solid #0a2808; font-family:inherit; font-size:9px; cursor:pointer; padding:5px 8px; box-shadow:2px 2px 0 #000;">⛓️ SAVE TO CHAIN</button>
+            <button onclick="Blockchain.loadFromChain()" style="background:#102840; color:#fff; border:2px solid #040e18; font-family:inherit; font-size:9px; cursor:pointer; padding:5px 8px; box-shadow:2px 2px 0 #000;">&#128214; LOAD FROM CHAIN</button>
+          </div>
         </div>
       </div>
     </div>
@@ -333,88 +389,206 @@
   </div>
 
   <!-- ================================================================
-     MODEL BUILDER MODAL
+     AI LAB — FULLSCREEN LANDSCAPE MODAL
+     Matches game's warm retro tycoon aesthetic exactly
 ================================================================ -->
-  <!-- ================================================================
-     AI LAB (FULLSCREEN LANDSCAPE MODAL)
-================================================================ -->
-  <div class="modal-overlay" id="model-builder-modal" role="dialog" aria-modal="true" style="z-index:2500; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px);">
-    <div class="modal-box pixel-border lab-big-screen landscape-layout" style="width:96vw; max-width:1600px; height:90vh; display:flex; flex-direction:column; padding:12px; overflow:hidden; background: #dbbe8d; box-shadow: 0 0 0 4px #000, 10px 10px 0 rgba(0,0,0,0.3);">
-      
-      <!-- Lab Header: Expansive Banner -->
-      <header class="lab-header" style="background: var(--retro-gold); border: 4px solid var(--border); padding: 20px 40px; margin-bottom: 12px; display:flex; justify-content:space-between; align-items:center; box-shadow: var(--btn-shadow-sm);">
-        <div style="display:flex; align-items:center; gap:30px;">
-          <div style="font-size: 3rem; filter: drop-shadow(4px 4px 0 rgba(0,0,0,0.1));">🔬</div>
+  <div class="modal-overlay" id="model-builder-modal" role="dialog" aria-modal="true">
+    <div id="lab-window" style="
+      width: 96vw; max-width: 1500px; height: 90vh;
+      background: var(--bg-outer);
+      border: 6px solid var(--border);
+      box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      font-family: var(--font-pixel);
+    ">
+
+      <!-- ── TITLE BAR (like the game's topbar) ── -->
+      <div style="
+        background: var(--bg-panel);
+        border-bottom: 4px solid var(--border);
+        box-shadow: 0 4px 0 var(--border-mid);
+        padding: 0 16px;
+        height: 68px;
+        display: flex; align-items: center; gap: 14px;
+        flex-shrink: 0;
+      ">
+        <!-- Logo block -->
+        <div style="
+          display: flex; align-items: center; gap: 8px;
+          background: var(--retro-gold);
+          border: 3px solid var(--border);
+          box-shadow: var(--btn-shadow-sm);
+          padding: 6px 14px;
+        ">
+          <span style="font-size:1.4rem;">🔬</span>
           <div>
-            <div class="modal-title" style="margin:0; text-align:left; font-size:2rem; color: #3a1a00; line-height:1; letter-spacing:1px;">NEURAL RESEARCH & DEVELOPMENT CENTER</div>
-            <div style="font-family:var(--font-pixel); color:#6b1a00; font-size:0.5rem; letter-spacing:2px; margin-top:8px;">ADVANCED MODEL ARCHITECTURE // DEPLOYMENT TERMINAL</div>
+            <div style="font-size:0.48rem; letter-spacing:1px; color:var(--text-dark); line-height:1.6;">AI RESEARCH LAB</div>
+            <div style="font-size:0.3rem; color:#6b1a00;">MODEL DESIGN CENTER</div>
           </div>
         </div>
-        <button class="modal-x-btn" style="position:static; width:56px; height:56px; background:#e74c3c; border:4px solid #000; box-shadow: 4px 4px 0 #000; font-size:2rem; color:#fff; cursor:pointer;" onclick="document.getElementById('model-builder-modal').classList.remove('show');">×</button>
-      </header>
 
-      <!-- Lab Body: Wide 3-Column Landscape Split -->
-      <main style="flex:1; display:flex; gap:16px; overflow:hidden; padding:4px;">
-        
-        <!-- Column 1: Configuration Terminal -->
-        <section class="lab-panel" style="flex: 1.1; background: var(--bg-inset); border: 4px solid var(--border); border-radius: var(--radius-sm); box-shadow: inset 5px 5px 0 rgba(0,0,0,0.2); display:flex; flex-direction:column; overflow:hidden;">
-          <div style="padding: 15px; background: var(--retro-brown); color:#fff; font-size:0.6rem; border-bottom: 4px solid var(--border); letter-spacing:2px; text-align:center; font-weight:bold;">[ 01 ] DESIGN TERMINAL</div>
-          <div style="flex:1; overflow-y:auto; padding:20px;">
-            
-            <div style="margin-bottom: 25px;">
-               <label style="display:block; color:var(--retro-brown); font-size:0.45rem; margin-bottom:8px; font-weight:bold;">MODEL_IDENTIFIER_STRING</label>
-               <input type="text" id="mb-model-name" placeholder="Input Neural ID..." style="width:100%; background:#fff; border:4px solid var(--border); padding:14px; font-family:var(--font-pixel); font-size:0.6rem; color:#000; outline:none;" />
-            </div>
-            
-            <div style="margin-bottom: 25px;">
-              <label style="display:block; color:var(--retro-brown); font-size:0.45rem; margin-bottom:8px; font-weight:bold;">CORE_ARCHITECTURE_SELECT</label>
-              <div id="mb-arch-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
-            </div>
+        <!-- Stat pills like the top bar -->
+        <div class="stat-pill compute" style="flex-shrink:0;">
+          <span class="pill-icon">⚡</span>
+          <div class="pill-body">
+            <span class="pill-label">COMPUTE</span>
+            <span class="pill-value" id="lab-compute-val">-- TF/s</span>
+          </div>
+        </div>
+        <div class="stat-pill tf-bank" style="flex-shrink:0;">
+          <span class="pill-icon">🧠</span>
+          <div class="pill-body">
+            <span class="pill-label">TF BANK</span>
+            <span class="pill-value" id="lab-tf-val">--</span>
+          </div>
+        </div>
 
-            <div style="margin-bottom: 25px;">
-              <label style="display:block; color:var(--retro-brown); font-size:0.45rem; margin-bottom:8px; font-weight:bold;">PARAMETER_SCALE_ENUM</label>
-              <div id="mb-size-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
-            </div>
+        <div style="flex:1;"></div>
 
+        <!-- Year badge -->
+        <div class="year-badge" style="margin-left:0;">
+          <span class="year-label">RESEARCH ERA</span>
+          <span class="year-value" id="lab-year-val">----</span>
+        </div>
+
+        <!-- Close X -->
+        <button onclick="document.getElementById('model-builder-modal').classList.remove('show')" style="
+          width:44px; height:44px;
+          background: var(--retro-red); color:#fff;
+          border: 3px solid var(--border);
+          box-shadow: var(--btn-shadow-sm);
+          font-family: var(--font-pixel); font-size: 1.2rem;
+          cursor: pointer;
+        ">✕</button>
+      </div>
+
+      <!-- ── BODY: 3 columns ── -->
+      <div style="flex:1; display:flex; gap:0; overflow:hidden;">
+
+        <!-- COL 1: DESIGN BOARD -->
+        <div style="
+          flex: 1.1;
+          background: var(--bg-panel);
+          border-right: 4px solid var(--border);
+          display: flex; flex-direction: column;
+          overflow: hidden;
+        ">
+          <!-- column header -->
+          <div style="
+            background: var(--retro-brown); color: #fff;
+            border-bottom: 4px solid var(--border);
+            padding: 10px 14px;
+            font-size: 0.38rem; letter-spacing: 1px;
+            display:flex; align-items:center; gap:8px;
+          ">🖊️ &nbsp;DESIGN BOARD</div>
+
+          <div style="flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:14px;">
+
+            <!-- Model name -->
             <div>
-              <label style="display:block; color:var(--retro-brown); font-size:0.45rem; margin-bottom:8px; font-weight:bold;">AUGMENTATION_TRAITS_ATTACH</label>
-              <div id="mb-trait-grid" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;"></div>
+              <div style="font-size:0.3rem; color:var(--text-mid); margin-bottom:5px; letter-spacing:1px;">MODEL NAME</div>
+              <input type="text" id="mb-model-name" placeholder="Name your AI..."
+                style="width:100%; background:var(--bg-card); border:3px solid var(--border); box-shadow:inset 2px 2px 0 rgba(0,0,0,0.15); padding:10px 12px; font-family:var(--font-pixel); font-size:0.45rem; color:var(--text-dark); outline:none;" />
             </div>
-          </div>
-        </section>
 
-        <!-- Column 2: Live Specification Preview (Centerpiece) -->
-        <section class="lab-panel" style="flex: 1.3; background: #c1dae8; border: 4px solid var(--border); border-radius: var(--radius-sm); box-shadow: inset 5px 5px 0 rgba(0,0,0,0.15); display:flex; flex-direction:column; overflow:hidden;">
-          <div style="padding: 15px; background: var(--retro-blue); color:#fff; font-size:0.6rem; border-bottom: 4px solid var(--border); letter-spacing:2px; text-align:center; font-weight:bold;">[ 02 ] TECHNICAL SPECIFICATION</div>
-          <div id="mb-preview-content" style="flex:1; padding:25px; display:flex; flex-direction:column; gap:15px; justify-content:center;">
-             <!-- Blueprint content -->
-          </div>
-          <div style="padding:20px; border-top: 4px solid var(--border); background:rgba(255,255,255,0.3);">
-            <button class="buy-btn" id="mb-design-btn" onclick="UI.handleDesignModel()" style="width:100%; height:90px; font-size:0.8rem; background: var(--retro-green); border:4px solid #000; box-shadow: 6px 6px 0 #000; color:#fff; cursor:pointer; active:transform:translate(2px, 2px); active:box-shadow:4px 4px 0 #000;">
-              RUN FABRICATION SEQUENCE 🚀
-            </button>
-          </div>
-        </section>
+            <!-- Architecture (Selection) -->
+            <div>
+              <div style="font-size:0.32rem; color:var(--text-mid); margin-bottom:6px; letter-spacing:1px; border-bottom:2px solid var(--border-mid); padding-bottom:4px; display:flex; justify-content:space-between;">
+                <span>NEURAL ARCHITECTURE</span>
+                <span style="color:var(--retro-brown); opacity:0.6;">[TYPE_01]</span>
+              </div>
+              <div id="mb-arch-grid" style="display:flex; flex-direction:column; gap:7px;"></div>
+            </div>
 
-        <!-- Column 3: Global Repository -->
-        <section class="lab-panel" style="flex: 1.4; background: var(--bg-inset); border: 4px solid var(--border); border-radius: var(--radius-sm); box-shadow: inset 5px 5px 0 rgba(0,0,0,0.2); display:flex; flex-direction:column; overflow:hidden;">
-          <div style="padding: 15px; background: #7c3da8; color:#fff; font-size:0.6rem; border-bottom: 4px solid var(--border); letter-spacing:2px; text-align:center; font-weight:bold;">[ 03 ] MODEL ARCHIVES</div>
-          <div id="lab-models-list" style="flex:1; overflow-y:auto; padding:20px;">
-            <!-- Active/Released models -->
+            <!-- Model scale -->
+            <div>
+              <div style="font-size:0.32rem; color:var(--text-mid); margin-bottom:6px; letter-spacing:1px; border-bottom:2px solid var(--border-mid); padding-bottom:4px; display:flex; justify-content:space-between;">
+                <span>PARAMETER SCALE</span>
+                <span style="color:var(--retro-brown); opacity:0.6;">[TYPE_02]</span>
+              </div>
+              <div id="mb-size-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:7px;"></div>
+            </div>
+
+            <!-- Enhancement Traits -->
+            <div>
+              <div style="font-size:0.32rem; color:var(--text-mid); margin-bottom:6px; letter-spacing:1px; border-bottom:2px solid var(--border-mid); padding-bottom:4px; display:flex; justify-content:space-between;">
+                <span>ENHANCEMENT TRAITS</span>
+                <span style="color:var(--retro-orange);">(MAX 2)</span>
+              </div>
+              <div id="mb-trait-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:6px;"></div>
+            </div>
+
+            <!-- Training Parameters (The "Settings") -->
+            <div>
+              <div style="font-size:0.32rem; color:var(--text-mid); margin-bottom:6px; letter-spacing:1px; border-bottom:2px solid var(--border-mid); padding-bottom:4px; display:flex; justify-content:space-between;">
+                <span>RESEARCH PARAMETERS</span>
+                <span style="color:var(--retro-blue); opacity:0.6;">[CONFIG]</span>
+              </div>
+              <div id="mb-settings-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                 <!-- Populated by JS -->
+              </div>
+            </div>
+
           </div>
-        </section>
-
-      </main>
-
-      <!-- Full-Width Data Footer -->
-      <footer style="margin-top:12px; display:flex; justify-content:space-between; align-items:center; background: var(--bg-panel); border: 4px solid var(--border); padding: 15px 30px; box-shadow: var(--btn-shadow-sm);">
-        <div id="lab-stats-compute" style="color:var(--retro-blue); font-size:0.7rem; font-weight:bold;">NEURAL_COMPUTE: 0.00 TF/S</div>
-        <div style="display:flex; gap:40px;">
-           <div style="color:var(--text-mid); font-size:0.4rem; font-family:var(--font-mono);">KERNEL_STATUS: OPTIMAL</div>
-           <div style="color:var(--text-mid); font-size:0.4rem; font-family:var(--font-mono);">YEAR_INDEX: ${Game.state.year}.0</div>
         </div>
-      </footer>
 
+        <!-- COL 2: MODEL SPEC PREVIEW -->
+        <div style="
+          flex: 1.1;
+          background: var(--bg-card);
+          border-right: 4px solid var(--border);
+          display: flex; flex-direction: column;
+          overflow: hidden;
+        ">
+          <div style="
+            background: var(--retro-blue); color: #fff;
+            border-bottom: 4px solid var(--border);
+            padding: 10px 14px;
+            font-size: 0.38rem; letter-spacing: 1px;
+            display:flex; align-items:center; gap:8px;
+          ">📋 &nbsp;MODEL BLUEPRINT</div>
+
+          <!-- Preview stats area -->
+          <div id="mb-preview-content" style="
+            flex:1; padding:16px;
+            display:flex; flex-direction:column; gap:10px;
+            overflow-y:auto;
+          "></div>
+
+          <!-- Build button -->
+          <div style="padding:14px; border-top:4px solid var(--border); background:var(--bg-inset);">
+            <button id="mb-design-btn" class="buy-btn" onclick="UI.handleDesignModel()" style="
+              width:100%; padding:18px 0;
+              background: var(--retro-green);
+              border: 3px solid var(--border);
+              box-shadow: 0 5px 0 var(--border);
+              color: #fff; font-size: 0.5rem;
+              letter-spacing: 1px;
+            ">🚀 &nbsp;BUILD MODEL</button>
+          </div>
+        </div>
+
+        <!-- COL 3: MODEL ARCHIVES -->
+        <div style="
+          flex: 1.4;
+          background: var(--bg-panel);
+          display: flex; flex-direction: column;
+          overflow: hidden;
+        ">
+          <div style="
+            background: #5a2080; color: #fff;
+            border-bottom: 4px solid var(--border);
+            padding: 10px 14px;
+            font-size: 0.38rem; letter-spacing: 1px;
+            display:flex; align-items:center; gap:8px;
+          ">🗄️ &nbsp;YOUR AI MODELS</div>
+
+          <div id="lab-models-list" style="flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px;">
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
 
@@ -458,6 +632,200 @@
   <div id="toast-container" aria-live="polite"></div>
 
   <!-- ================================================================
+     CREDITS MODAL
+================================================================ -->
+  <div id="credits-modal" class="modal-overlay" style="z-index: 10000;">
+    <div class="modal-box pixel-border" style="width: 440px; text-align: center; background: var(--bg-panel);">
+      <div class="modal-title">📜 GAME CREDITS</div>
+      <div class="modal-subtitle">CHILLGPT EMPIRE — v1.0</div>
+
+      <div style="display:flex; flex-direction:column; gap:14px; margin: 16px 0;">
+
+        <div style="background:var(--bg-inset); border:3px solid var(--border); padding:12px;">
+          <div style="font-size:0.28rem; color:var(--text-mid); letter-spacing:1px; margin-bottom:6px;">GAME DEVELOPER</div>
+          <div style="font-size:0.65rem; color:var(--retro-brown); font-family:var(--font-pixel); letter-spacing:2px;">KHUSHAL SOLANKI</div>
+        </div>
+
+        <div style="background:var(--bg-inset); border:3px solid var(--border); padding:12px;">
+          <div style="font-size:0.28rem; color:var(--text-mid); letter-spacing:1px; margin-bottom:6px;">AI PAIR PROGRAMMER</div>
+          <div style="font-size:0.55rem; color:var(--retro-blue); font-family:var(--font-pixel); letter-spacing:1px;">ANTIGRAVITY</div>
+          <div style="font-size:0.55rem; color:var(--text-mid); margin-top:2px;">(Google DeepMind)</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div style="background:var(--bg-inset); border:3px solid var(--border); padding:10px;">
+            <div style="font-size:0.26rem; color:var(--text-mid); letter-spacing:1px; margin-bottom:4px;">🎵 MUSIC</div>
+            <div style="font-size:0.4rem; color:var(--retro-blue);">www.zapsplat.com</div>
+          </div>
+          <div style="background:var(--bg-inset); border:3px solid var(--border); padding:10px;">
+            <div style="font-size:0.26rem; color:var(--text-mid); letter-spacing:1px; margin-bottom:4px;">🔊 SFX</div>
+            <div style="font-size:0.4rem; color:var(--retro-blue);">www.mixkit.co</div>
+          </div>
+        </div>
+
+        <div style="font-size:0.32rem; color:var(--text-mid); font-family:var(--font-mono);">Built with ❤️ &amp; caffeine ☕</div>
+      </div>
+
+      <button class="buy-btn" onclick="UI.closeCredits()" style="width:100%; padding:12px; background:var(--retro-brown); color:#fff; font-size:0.5rem;">✖ CLOSE</button>
+    </div>
+  </div>
+
+  <!-- ================================================================
+     OPTIONS MODAL (full slide panel)
+================================================================ -->
+  <div id="options-modal">
+    <div class="options-panel">
+
+      <!-- Header -->
+      <div class="options-header">
+        <span style="font-size:1.2rem;">⚙️</span>
+        <div class="options-header-title">OPTIONS</div>
+      </div>
+
+      <!-- Body -->
+      <div class="options-body">
+
+        <div>
+          <div class="opt-section-label">AUDIO SETTINGS</div>
+
+          <!-- Music Row -->
+          <div class="opt-row" style="margin-bottom:20px;">
+            <div class="opt-row-header">
+              <div class="opt-row-label">
+                <span class="opt-row-icon">🎵</span> MUSIC
+              </div>
+              <label class="opt-toggle">
+                <input id="opt-music-toggle" type="checkbox" checked
+                  onchange="UI.setAudioSetting('music', this.checked)">
+                <span class="opt-toggle-track"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- SFX Row -->
+          <div class="opt-row">
+            <div class="opt-row-header">
+              <div class="opt-row-label">
+                <span class="opt-row-icon">🔊</span> SOUND EFFECTS
+              </div>
+              <label class="opt-toggle">
+                <input id="opt-sfx-toggle" type="checkbox" checked
+                  onchange="UI.setAudioSetting('sfx', this.checked)">
+                <span class="opt-toggle-track"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer / Back button -->
+      <div class="options-footer">
+        <button class="opt-back-btn" onclick="UI.closeOptions()">
+          ◀ &nbsp; BACK TO MENU
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================================================================
+     LOW ETH MODAL — shown if wallet balance < 0.01 Sepolia ETH
+================================================================ -->
+  <div id="low-eth-modal" style="
+    display: none;
+    position: fixed; inset: 0; z-index: 99999;
+    background: rgba(10,8,18,0.92);
+    backdrop-filter: blur(12px);
+    align-items: center; justify-content: center;
+    font-family: var(--font-pixel, 'Press Start 2P', monospace);
+  ">
+    <div style="
+      background: linear-gradient(135deg, #1a0a2e 0%, #0d1a3a 100%);
+      border: 4px solid #e74c3c;
+      box-shadow: 0 0 40px rgba(231,76,60,0.5), 0 0 80px rgba(231,76,60,0.15), 8px 8px 0 #000;
+      max-width: 520px; width: 90vw;
+      padding: 36px 32px;
+      text-align: center;
+      position: relative;
+      animation: lowEthPulse 2s ease-in-out infinite;
+    ">
+      <!-- Dismiss X -->
+      <button onclick="document.getElementById('low-eth-modal').style.display='none';"
+        style="position:absolute;top:12px;right:12px;background:#e74c3c;border:3px solid #000;color:#fff;width:32px;height:32px;font-size:18px;line-height:26px;cursor:pointer;font-family:inherit;">×</button>
+
+      <!-- Warning Icon -->
+      <div style="font-size:3rem;margin-bottom:14px;animation:ledBlink 1s infinite;">⚠️</div>
+
+      <!-- Title -->
+      <div style="
+        font-size: 0.85rem; color: #e74c3c; letter-spacing: 2px;
+        text-shadow: 0 0 12px rgba(231,76,60,0.8);
+        margin-bottom: 8px; line-height: 1.6;
+      ">LOW BALANCE<br>DETECTED</div>
+
+      <!-- Subtitle -->
+      <div style="
+        font-size: 0.38rem; color: rgba(255,255,255,0.55);
+        letter-spacing: 1px; margin-bottom: 24px; line-height: 2;
+        font-family: var(--font-mono, 'Share Tech Mono', monospace);
+      ">WALLET: <span id="low-eth-addr" style="color:#f39c12;"></span></div>
+
+      <!-- Balance display -->
+      <div style="
+        background: rgba(231,76,60,0.1); border: 3px solid rgba(231,76,60,0.4);
+        padding: 16px; margin-bottom: 24px;
+        box-shadow: inset 2px 2px 0 rgba(0,0,0,0.3);
+      ">
+        <div style="font-size:0.3rem; color:rgba(255,255,255,0.5); margin-bottom:6px; letter-spacing:1px;">SEPOLIA ETH BALANCE</div>
+        <div id="low-eth-balance" style="font-size:1.1rem; color:#e74c3c; text-shadow:0 0 16px #e74c3c;">0.000 ETH</div>
+        <div style="font-size:0.28rem; color:rgba(255,255,255,0.35); margin-top:4px;">MINIMUM REQUIRED: 0.010 ETH</div>
+      </div>
+
+      <!-- Message -->
+      <div style="
+        font-size: 0.32rem; color: rgba(255,255,255,0.7);
+        line-height: 2; margin-bottom: 24px;
+        font-family: var(--font-mono, 'Share Tech Mono', monospace);
+      ">
+        You need Sepolia ETH to save your progress to the blockchain. Get free test tokens from the faucet below!
+      </div>
+
+      <!-- CTA Button -->
+      <a href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" target="_blank" rel="noopener"
+        style="
+          display: block; padding: 16px 24px;
+          background: linear-gradient(135deg, #f39c12, #e67e22);
+          border: 3px solid #000; box-shadow: 0 5px 0 #000, 0 0 20px rgba(243,156,18,0.4);
+          color: #000; font-family: inherit; font-size: 0.42rem;
+          text-decoration: none; letter-spacing: 1px;
+          transition: transform 0.1s, box-shadow 0.1s;
+          margin-bottom: 12px;
+        "
+        onmousedown="this.style.transform='translateY(3px)';this.style.boxShadow='0 2px 0 #000,0 0 20px rgba(243,156,18,0.4)';"
+        onmouseup="this.style.transform='';this.style.boxShadow='0 5px 0 #000,0 0 20px rgba(243,156,18,0.4)';"
+      >🚰 &nbsp;GET FREE SEPOLIA ETH →</a>
+
+      <!-- Skip / continue -->
+      <button onclick="document.getElementById('low-eth-modal').style.display='none'; Blockchain._continueAfterLowEth();"
+        style="
+          width: 100%; padding: 10px; background: transparent;
+          border: 2px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.4);
+          font-family: inherit; font-size: 0.3rem; cursor: pointer; letter-spacing: 1px;
+        ">
+        CONTINUE ANYWAY (saves may fail)
+      </button>
+    </div>
+  </div>
+
+  <style>
+    @keyframes lowEthPulse {
+      0%, 100% { box-shadow: 0 0 40px rgba(231,76,60,0.5), 0 0 80px rgba(231,76,60,0.15), 8px 8px 0 #000; }
+      50% { box-shadow: 0 0 60px rgba(231,76,60,0.8), 0 0 120px rgba(231,76,60,0.3), 8px 8px 0 #000; }
+    }
+  </style>
+
+  <!-- ================================================================
      SCRIPTS  (order matters — data first, then logic, then UI)
 ================================================================ -->
   <script src="js/upgrades.js"></script>
@@ -466,6 +834,7 @@
   <script src="js/save.js"></script>
   <script src="js/game.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/blockchain.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
   <script src="js/phaser-scene.js"></script>

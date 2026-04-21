@@ -26,6 +26,7 @@
   UI.updateLeaderboard();
   UI.updateStats();
   UI.initAudioSettings();
+  UI.initStartScreen(); // Hide bonus teaser if already claimed
 
   // ── GAME LOOPS ─────────────────────────────────────────────────
 

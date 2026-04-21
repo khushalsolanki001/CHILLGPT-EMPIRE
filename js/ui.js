@@ -603,9 +603,13 @@ const UI = (() => {
     // Render the models on the right side
     _renderAILabTab($('lab-models-list'));
 
-    // Update compute stat
+    // Update the header stat pills
     const c = Game.state._computed || {};
-    if ($('lab-stats-compute')) $('lab-stats-compute').textContent = `NEURAL COMPUTE: ${Fmt.compute(c.compute || 0)} TF/s`;
+    if ($('lab-compute-val')) $('lab-compute-val').textContent = `${Fmt.compute(c.compute || 0)} TF/s`;
+    if ($('lab-tf-val')) $('lab-tf-val').textContent = Fmt.num(Game.state.tf || 0);
+    if ($('lab-year-val')) $('lab-year-val').textContent = Game.state.year || '----';
+    // legacy compat
+    if ($('lab-stats-compute')) $('lab-stats-compute').textContent = `${Fmt.compute(c.compute || 0)} TF/s`;
   }
 
   function _renderAILabTab(container) {
@@ -614,95 +618,74 @@ const UI = (() => {
     
     const training = ModelBuilder.getTrainingJob();
     if (training) {
-      const prog = container.appendChild(_el('div', 'stat-pill'));
-      prog.style.cssText = 'margin-bottom:12px; padding:15px; border-color:var(--retro-blue); flex-direction:column; align-items:stretch; background:#fff;';
+      // Training progress — use native shop-card style
+      const prog = _el('div', 'shop-card ai');
+      prog.style.cssText = 'flex-direction:column; align-items:stretch;';
       const pct = Math.round(Math.min(training.elapsed / training.totalSec, 1) * 100);
       prog.innerHTML = `
-        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-          <div class="pill-body">
-            <div class="pill-label" style="color:var(--retro-blue); font-size:0.35rem;">[ ACTIVE TRAINING ]</div>
-            <div class="pill-value" style="font-size:0.6rem;">${training.modelName}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div class="card-body">
+            <div class="card-name">⚙️ TRAINING IN PROGRESS</div>
+            <div class="card-desc">${training.modelName}</div>
           </div>
-          <div class="pill-value" style="font-size:1rem; color:var(--retro-blue);">${pct}%</div>
+          <span class="badge badge-blue">${pct}%</span>
         </div>
-        <div style="background:var(--bg-inset); border: 3px solid var(--border); height:16px; position:relative; overflow:hidden; box-shadow:inset 2px 2px 0 rgba(0,0,0,0.1);">
-           <div style="background:var(--retro-blue); height:100%; width:${pct}%; transition:width 0.4s;"></div>
+        <div style="background:var(--bg-inset); border:2px solid var(--border); height:10px; box-shadow:inset 2px 2px 0 rgba(0,0,0,0.15);">
+          <div style="background:var(--retro-blue); height:100%; width:${pct}%; transition:width 0.4s;"></div>
         </div>
-        <div style="margin-top:8px; font-size:0.35rem; color:var(--text-mid); font-family:var(--font-mono); text-align:right;">
-          COMPLETION ETA: ${Math.round(Math.max(0, training.totalSec - training.elapsed))}s
+        <div style="margin-top:6px; font-family:var(--font-mono); font-size:0.6rem; color:var(--text-mid); text-align:right;">
+          ${Math.round(Math.max(0, training.totalSec - training.elapsed))}s remaining
         </div>
       `;
+      container.appendChild(prog);
     }
 
     const models = ModelBuilder.getAllModels();
     if (models.length === 0 && !training) {
-      container.innerHTML += `
-        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; border:4px dashed var(--border); opacity:0.6;">
-          <span style="font-size:2rem; margin-bottom:15px;">📂</span>
-          <div style="font-size:0.5rem; text-align:center;">DATABASE EMPTY<br>DESIGN A NEW MODEL TO BEGIN</div>
-        </div>
-      `;
+      const empty = _el('div', 'shop-card info-card');
+      empty.innerHTML = `<div class="card-icon">📂</div><div class="card-body"><div class="card-name">NO MODELS YET</div><div class="card-desc">Design your first AI model in the Design Board to get started!</div></div>`;
+      container.appendChild(empty);
       return;
     }
 
-  for (const m of [...models].reverse()) {
-      const card = _el('div', 'stat-pill');
-      card.style.cssText = 'margin-bottom:15px; padding:20px; flex-direction:column; align-items:stretch; background:#fff; border-width:4px; box-shadow:var(--btn-shadow-sm); transition: transform 0.2s;';
-      
+    for (const m of [...models].reverse()) {
+      const arch = ModelBuilder.getArchitectures().find(a => a.id === m.archId);
+      const sz = ModelBuilder.getModelSizes().find(s => s.id === m.sizeId);
+      const card = _el('div', `shop-card ai`);
+
       const popularity = typeof ModelBuilder.getModelPopularity === 'function' ? ModelBuilder.getModelPopularity(m) : 1.0;
       const pctPop = Math.round(popularity * 100);
       const daysOld = (Date.now() - (m.releasedTime || 0)) / (1000 * 60 * 60 * 24);
       const isHyped = m.status === 'released' && daysOld < 30;
 
-      let actions = '';
+      let actionBtn = '';
       if (m.status === 'designed' || m.status === 'draft') {
         const canTrain = Game.state.tf >= (m.tfNeeded || m.tfCost) && !training;
-        actions = `<button class="buy-btn" style="margin-top:15px; font-size:0.6rem; height:50px; border-width:4px;" onclick="UI.handleStartTraining(${m.id})" ${canTrain ? '' : 'disabled'}>INITIATE_TRAINING (${Fmt.num(m.tfNeeded || m.tfCost)} TF)</button>`;
+        actionBtn = `<button class="buy-btn ai-btn ${canTrain ? '' : 'cant-afford'}" onclick="UI.handleStartTraining(${m.id})" ${canTrain ? '' : 'disabled'} style="font-size:0.32rem;">TRAIN<br><small>${Fmt.num(m.tfNeeded || m.tfCost)} TF</small></button>`;
       } else if (m.status === 'trained') {
-        actions = `<button class="buy-btn" style="margin-top:15px; font-size:0.6rem; height:50px; background:var(--retro-blue); border-width:4px;" onclick="UI.openReleaseModal(${m.id})">RELEASE_TO_NET</button>`;
+        actionBtn = `<button class="buy-btn" onclick="UI.openReleaseModal(${m.id})" style="background:var(--retro-green); color:#fff; font-size:0.32rem; min-width:72px;">RELEASE 🚀</button>`;
+      } else if (m.status === 'released') {
+        const income = Game.getModelIncomePerSecond(m);
+        actionBtn = `<div class="card-count" style="text-align:center;">
+          ${isHyped ? '<div style="color:var(--retro-red); font-size:0.3rem; animation:led-blink 0.5s infinite;">🔥 HYPED</div>' : ''}
+          <div style="font-size:0.35rem; color:var(--text-mid);">POP</div>
+          <div style="font-size:0.5rem; font-weight:bold; color:${pctPop > 50 ? 'var(--retro-green)' : 'var(--retro-red)'};">${pctPop}%</div>
+          <div style="font-size:0.3rem; color:var(--retro-green);">${Fmt.money(income)}/s</div>
+        </div>`;
       }
 
       card.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
-          <div class="pill-body">
-            <div class="pill-label" style="font-size:0.4rem; color: #444;">ID: ${m.id} // v${Game.state.year}.x</div>
-            <div class="pill-value" style="font-size:0.8rem; color:var(--retro-brown); text-transform:uppercase; letter-spacing:1px;">${m.name}</div>
-            <div style="font-size:0.35rem; color:#888; font-family:var(--font-mono); margin-top:4px;">${m.archId.toUpperCase()} ARCH // ${m.sizeId.toUpperCase()} SCALE</div>
-          </div>
-          <div style="padding:6px 12px; background:var(--bg-panel); border:4px solid var(--border); font-size:0.45rem; font-weight:bold; height:fit-content; color: #000; box-shadow: 2px 2px 0 rgba(0,0,0,0.1);">
-            ${(m.status || 'DRAFT').toUpperCase()}
+        <div class="card-icon" style="font-size:1.4rem;">${arch ? arch.icon : '🤖'}</div>
+        <div class="card-body">
+          <div class="card-name">${m.name}</div>
+          <div class="card-desc" style="font-size:0.6rem;">${arch ? arch.name : m.archId} · ${sz ? sz.label : m.sizeId}</div>
+          <div class="card-badges">
+            <span class="badge ${m.status === 'released' ? 'badge-green' : m.status === 'trained' ? 'badge-yellow' : 'badge-blue'}">${(m.status || 'draft').toUpperCase()}</span>
+            <span class="badge badge-purple">⚡ ${m.perfScore} pts</span>
+            ${(m.traitIds || []).map(tid => { const t = ModelBuilder.getTraits().find(t => t.id === tid); return t ? `<span class="badge badge-green">${t.icon}</span>` : ''; }).join('')}
           </div>
         </div>
-
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-           <div class="stat-pill" style="padding:10px 15px; border-width:3px; background:#f9fcff;">
-             <div class="pill-body">
-               <div class="pill-label" style="font-size:0.3rem;">PERFORMANCE</div>
-               <div class="pill-value" style="font-size:0.6rem; color:var(--retro-green); font-weight:bold;">${m.perfScore} SCORE</div>
-             </div>
-           </div>
-           <div class="stat-pill" style="padding:10px 15px; border-width:3px; background:#fffaf0;">
-             <div class="pill-body">
-               <div class="pill-label" style="font-size:0.3rem;">PENETRATION</div>
-               <div class="pill-value" style="font-size:0.6rem; color:var(--retro-orange); font-weight:bold;">${m.status === 'released' ? pctPop + '%' : 'INACTIVE'}</div>
-             </div>
-           </div>
-        </div>
-
-        ${m.status === 'released' ? `
-          <div class="stat-pill income" style="margin-top:12px; padding:10px 15px; background: #eef9f1; border-width:3px; border-color:var(--retro-green);">
-             <div class="pill-body" style="flex-direction:row; justify-content:space-between; align-items:center; width:100%;">
-                <div>
-                   <div class="pill-label" style="font-size:0.3rem;">REVENUE TERMINAL</div>
-                   <div class="pill-value" style="font-size:0.65rem; color:var(--retro-green);">${Fmt.money(Game.getModelIncomePerSecond(m))}/s</div>
-                </div>
-                ${isHyped ? '<span style="color:var(--retro-red); font-size:0.5rem; animation:led-blink 0.4s infinite; font-weight:bold;">MARKET_HYPED 🔥</span>' : ''}
-             </div>
-          </div>
-        ` : ''}
-
-        ${actions}
-      `;
+        <div class="card-right">${actionBtn}</div>`;
       container.appendChild(card);
     }
   }
@@ -714,32 +697,34 @@ const UI = (() => {
     openLabModal();
   }
 
-  function _buildModelBuilderModal() {
+  function _renderMbGrids() {
     _updateMbPreview();
     
-    // Arch Grid
+    // Arch Grid — full-width shop-card style rows
     const archGrid = $('mb-arch-grid');
     if (archGrid) {
       archGrid.innerHTML = '';
       ModelBuilder.getArchitectures().forEach(arch => {
         const sel = _mbSelectedArch === arch.id;
-        const btn = document.createElement('button');
-        btn.className = `buy-btn ${sel ? 'owned-btn' : ''}`;
-        btn.style.cssText = `text-align:left; padding:15px; display:flex; flex-direction:column; gap:6px; font-size:0.45rem; border-width:4px; ${sel ? 'border-color:var(--retro-gold);' : ''}`;
-        btn.innerHTML = `
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:1rem;">${arch.icon}</span>
-            <b style="letter-spacing:1px;">${arch.name.toUpperCase()}</b>
+        const card = document.createElement('div');
+        card.className = `shop-card ai ${sel ? 'owned' : ''}`;
+        card.style.cssText = 'cursor:pointer; align-items:center; min-height:60px;';
+        if (sel) card.style.boxShadow = 'inset 0 3px 0 var(--retro-gold), var(--btn-shadow-sm)';
+        card.innerHTML = `
+          <div class="card-icon" style="font-size:1.2rem;">${arch.icon}</div>
+          <div class="card-body">
+            <div class="card-name" style="font-size:0.35rem;">${arch.name}</div>
+            <div class="card-desc" style="font-size:0.55rem;">${arch.desc}</div>
           </div>
-          <small style="font-family:var(--font-mono); color:#444; line-height:1.2;">${arch.desc}</small>
-          <div style="margin-top:4px; color:var(--retro-blue); font-weight:bold; font-size:0.35rem;">[TF_LOAD: ${arch.tfMult}x]</div>
-        `;
-        btn.onclick = () => { _mbSelectedArch = arch.id; _buildModelBuilderModal(); };
-        archGrid.appendChild(btn);
+          <div class="card-right">
+            <span class="badge badge-blue" style="font-size:0.22rem;">${arch.tfMult}x TF</span>
+          </div>`;
+        card.onclick = () => { _mbSelectedArch = arch.id; _renderMbGrids(); };
+        archGrid.appendChild(card);
       });
     }
 
-    // Size Grid
+    // Size Grid — 2-col shop-card style
     const sizeGrid = $('mb-size-grid');
     if (sizeGrid) {
       sizeGrid.innerHTML = '';
@@ -748,35 +733,63 @@ const UI = (() => {
         const arch = ModelBuilder.getArchitectures().find(a => a.id === _mbSelectedArch);
         const tfNeeded = Math.floor(sz.tfBase * (arch ? arch.tfMult : 1));
         const haveTF = Game.state.tf >= tfNeeded;
-        const btn = document.createElement('button');
-        btn.className = `buy-btn ${sel ? 'owned-btn' : ''} ${!haveTF ? 'cant-afford' : ''}`;
-        btn.style.cssText = `text-align:left; padding:15px; font-size:0.45rem; border-width:4px; ${sel ? 'border-color:var(--retro-gold);' : ''}`;
-        btn.innerHTML = `
-          <b style="letter-spacing:1px;">${sz.icon} ${sz.label.toUpperCase()}</b><br>
-          <small style="color:#555;">${Fmt.num(tfNeeded)} TF REQUIRED</small><br>
-          <small style="color:#555;">ETA: ${sz.timeSec}s</small>
-        `;
-        btn.onclick = () => { _mbSelectedSize = sz.id; _buildModelBuilderModal(); };
-        sizeGrid.appendChild(btn);
+        const card = document.createElement('div');
+        card.className = `shop-card hw ${sel ? 'owned' : ''} ${!haveTF ? 'locked' : ''}`;
+        card.style.cssText = 'cursor:pointer; flex-direction:column; align-items:flex-start; padding:8px;';
+        if (sel) card.style.boxShadow = 'inset 0 3px 0 var(--retro-gold), var(--btn-shadow-sm)';
+        card.innerHTML = `
+          <div class="card-name" style="font-size:0.32rem;">${sz.icon} ${sz.label}</div>
+          <div class="card-badges" style="margin-top:2px;">
+            <span class="badge ${haveTF ? 'badge-green' : 'badge-red'}" style="font-size:0.22rem;">${Fmt.num(tfNeeded)} TF</span>
+          </div>`;
+        card.onclick = () => { if (haveTF) { _mbSelectedSize = sz.id; _renderMbGrids(); } };
+        sizeGrid.appendChild(card);
       });
     }
 
-    // Trait Grid
+    // Trait Grid — 2-col shop-card style
     const traitGrid = $('mb-trait-grid');
     if (traitGrid) {
       traitGrid.innerHTML = '';
       ModelBuilder.getTraits().forEach(t => {
         const sel = _mbSelectedTraits.includes(t.id);
-        const btn = document.createElement('button');
-        btn.className = `buy-btn ${sel ? 'owned-btn' : ''}`;
-        btn.style.cssText = `text-align:left; padding:10px; font-size:0.35rem; border-width:3px; ${sel ? 'border-color:var(--retro-gold);' : ''}`;
-        btn.innerHTML = `<b style="font-size:0.45rem;">${t.icon} ${t.name}</b><br><small style="color:#666;">${t.desc}</small>`;
-        btn.onclick = () => {
+        const card = document.createElement('div');
+        card.className = `shop-card ${sel ? 'owned' : ''}`;
+        card.style.cssText = 'cursor:pointer; flex-direction:column; align-items:flex-start; padding:8px; min-height:50px;';
+        if (sel) card.style.boxShadow = 'inset 0 3px 0 var(--retro-gold), var(--btn-shadow-sm)';
+        card.innerHTML = `
+          <div class="card-name" style="font-size:0.32rem;">${t.icon} ${t.name}</div>
+          <div class="card-desc" style="font-size:0.55rem; margin-top:2px; line-height:1.2;">${t.desc}</div>`;
+        card.onclick = () => {
           if (sel) _mbSelectedTraits = _mbSelectedTraits.filter(id => id !== t.id);
           else if (_mbSelectedTraits.length < 2) _mbSelectedTraits.push(t.id);
-          _buildModelBuilderModal();
+          _renderMbGrids();
         };
-        traitGrid.appendChild(btn);
+        traitGrid.appendChild(card);
+      });
+    }
+
+    // Settings Grid (The "Model Making Settings")
+    const settingsGrid = $('mb-settings-grid');
+    if (settingsGrid) {
+      settingsGrid.innerHTML = '';
+      const dummySettings = [
+        { id: 'hyp', name: 'Hyperparams', icon: '🧪', desc: 'Opti-Weights' },
+        { id: 'data', name: 'Data Quality', icon: '🧼', desc: 'Dataset Clean' },
+        { id: 'epoch', name: 'Iter Steps', icon: '🔁', desc: 'Epoch Count' },
+        { id: 'aug', name: 'Augments', icon: '🧬', desc: 'Noise Redux' }
+      ];
+      dummySettings.forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'shop-card';
+        card.style.cssText = 'cursor:pointer; flex-direction:column; padding:6px; background:#fafafa;';
+        card.innerHTML = `
+          <div class="card-name" style="font-size:0.28rem; opacity:0.8;">${s.icon} ${s.name}</div>
+          <div class="card-badges" style="margin-top:2px;">
+             <span class="badge badge-yellow" style="font-size:0.2rem; filter:grayscale(1);">ENABLED</span>
+          </div>
+        `;
+        settingsGrid.appendChild(card);
       });
     }
   }
@@ -795,46 +808,63 @@ const UI = (() => {
       const canAfford = Game.state.tf >= tfNeeded;
       
       prev.innerHTML = `
-        <div class="stat-pill" style="padding:20px; background:#fff; flex-direction:column; align-items:flex-start; gap:12px; border-width:4px; box-shadow:var(--btn-shadow-sm);">
-           <div class="pill-body">
-             <div class="pill-label" style="font-size:0.4rem;">PRIMARY ARCHITECTURE NODE</div>
-             <div class="pill-value" style="font-size:1.1rem; color:var(--retro-brown);">${arch.icon} ${arch.name.toUpperCase()}</div>
-           </div>
+        <!-- Architecture summary — native shop-card style -->
+        <div class="shop-card ai" style="align-items:center;">
+          <div class="card-icon" style="font-size:1.8rem;">${arch.icon}</div>
+          <div class="card-body">
+            <div class="card-name">${arch.name}</div>
+            <div class="card-desc">${arch.desc}</div>
+            <div class="card-badges">
+              <span class="badge badge-blue">${sz.label}</span>
+              ${_mbSelectedTraits.map(tid => { const t = ModelBuilder.getTraits().find(t => t.id === tid); return t ? `<span class="badge badge-green">${t.icon} ${t.name}</span>` : ''; }).join('')}
+            </div>
+          </div>
         </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
-           <div class="stat-pill" style="padding:15px; background:#fff; border-width:4px; box-shadow:var(--btn-shadow-sm);">
-              <div class="pill-body">
-                <div class="pill-label" style="font-size:0.4rem;">PREDICTED PERFORMANCE</div>
-                <div class="pill-value" style="font-size:1.2rem; color:var(--retro-green); text-shadow:2px 2px 0 rgba(0,0,0,0.05);">${perfScore} Pts</div>
-              </div>
-           </div>
-           <div class="stat-pill" style="padding:15px; background:#fff; border-color:${canAfford ? 'var(--border)' : 'var(--retro-red)'}; border-width:4px; box-shadow:var(--btn-shadow-sm);">
-              <div class="pill-body">
-                <div class="pill-label" style="font-size:0.4rem;">NEURAL TF OVERHEAD</div>
-                <div class="pill-value" style="font-size:0.8rem; color:${canAfford ? 'var(--retro-blue)' : 'var(--retro-red)'};">${Fmt.num(tfNeeded)} TF</div>
-              </div>
-           </div>
+        <!-- Stat pills — 2×2 grid, game's own inset pill style -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div class="stat-pill" style="padding:10px 12px;">
+            <span class="pill-icon">🎯</span>
+            <div class="pill-body">
+              <span class="pill-label">PERF SCORE</span>
+              <span class="pill-value" style="color:var(--retro-green);">${perfScore}</span>
+            </div>
+          </div>
+          <div class="stat-pill ${canAfford ? '' : 'electricity danger'}" style="padding:10px 12px;">
+            <span class="pill-icon">⚡</span>
+            <div class="pill-body">
+              <span class="pill-label">TF COST</span>
+              <span class="pill-value" style="color:${canAfford ? 'var(--retro-blue)' : 'var(--retro-red)'};">${Fmt.num(tfNeeded)}</span>
+            </div>
+          </div>
+          <div class="stat-pill" style="padding:10px 12px;">
+            <span class="pill-icon">⏱️</span>
+            <div class="pill-body">
+              <span class="pill-label">TRAIN TIME</span>
+              <span class="pill-value">${sz.timeSec}s</span>
+            </div>
+          </div>
+          <div class="stat-pill" style="padding:10px 12px;">
+            <span class="pill-icon">📈</span>
+            <div class="pill-body">
+              <span class="pill-label">ERA BONUS</span>
+              <span class="pill-value" style="color:var(--retro-gold);">+${Math.round((globalPerfMult-1)*100)}%</span>
+            </div>
+          </div>
         </div>
 
-        <div class="stat-pill" style="padding:15px; background:#f9f9f9; border-width:4px; box-shadow:inset 3px 3px 0 rgba(0,0,0,0.05);">
-           <div class="pill-body">
-             <div class="pill-label" style="font-size:0.4rem;">PRODUCTION PIPELINE STATUS</div>
-             <div class="pill-value" style="font-size:0.7rem;">CALCULATED PRODUCTION TIME: ${sz.timeSec} SECONDS</div>
-             <div style="margin-top:12px; border-top:3px dashed #ddd; padding-top:12px; font-size:0.4rem; color:var(--text-mid); line-height:1.5; font-family:var(--font-mono);">
-               <b>SYSTEM LOG:</b> Multiplier v${(Game.state.year - 2015).toFixed(1)} detected. 
-               Neural research efficiency provides <b>+${Math.round((globalPerfMult-1)*100)}%</b> performance lift to this configuration.
-             </div>
-           </div>
+        <!-- Notes inset box -->
+        <div style="background:var(--bg-inset); border:3px solid var(--border-mid); padding:10px 12px; box-shadow:inset 2px 2px 0 rgba(0,0,0,0.12);">
+          <div class="pill-label" style="margin-bottom:5px;">ANALYST NOTE</div>
+          <div style="font-family:var(--font-mono); font-size:0.65rem; color:var(--text-dark); line-height:1.5;">${arch.desc}</div>
         </div>
       `;
     } else {
       prev.innerHTML = `
-        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; border:5px dashed rgba(0,0,0,0.1); padding:40px;">
-          <span style="font-size:3rem; margin-bottom:20px; opacity:0.3;">📐</span>
-          <div style="font-size:0.6rem; text-align:center; color:var(--text-mid); font-family:var(--font-pixel); letter-spacing:1px;">
-            WAITING FOR ARCHITECTURAL DATA...<br>
-            <small style="opacity:0.6;">SELECT CORE PARAMS IN TERMINAL [01]</small>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; background:var(--bg-inset); border:3px solid var(--border-mid); box-shadow:inset 2px 2px 0 rgba(0,0,0,0.1);">
+          <span style="font-size:2.5rem; margin-bottom:16px; opacity:0.4;">📐</span>
+          <div style="font-size:0.35rem; text-align:center; color:var(--text-mid); line-height:2.2;">
+            SELECT ARCHITECTURE &amp; SIZE<br>TO PREVIEW STATS
           </div>
         </div>
       `;
@@ -1564,6 +1594,28 @@ const UI = (() => {
     }, 700);
   }
 
+  /**
+   * Show a custom (non-random) message in the mascot speech bubble.
+   * @param {string} msg  - message to display
+   * @param {number} [ms=6000] - how long to show it (milliseconds)
+   */
+  function mascotAnnounce(msg, ms = 6000) {
+    const speech = $('mascot-speech');
+    if (!speech) return;
+    clearTimeout(_mascotTimer);
+    speech.textContent = msg;
+    speech.classList.add('show');
+    _mascotTimer = setTimeout(() => speech.classList.remove('show'), ms);
+    // Also do a happy jump
+    const mascot = $('mascot');
+    if (mascot) {
+      mascot.classList.remove('happy');
+      void mascot.offsetWidth;
+      mascot.classList.add('happy');
+      setTimeout(() => mascot.classList.remove('happy'), 600);
+    }
+  }
+
 
   // ── TOASTS ───────────────────────────────────────────────────────
 
@@ -1801,7 +1853,91 @@ const UI = (() => {
   }
 
 
-  // ── STAR FIELD INIT ──────────────────────────────────────────────
+  // ── START SCREEN LOGIC ──────────────────────────────────────────
+
+  function startGame() {
+    const screen = $('start-screen');
+    if (screen) {
+      screen.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+      screen.style.opacity    = '0';
+      screen.style.transform  = 'scale(1.1)';
+      setTimeout(() => {
+        screen.style.display = 'none';
+        toast('Welcome to the Empire. Build something chill.', 't-green');
+      }, 800);
+    }
+  }
+
+  /**
+   * Called on page load to update start screen based on existing save state.
+   * Hides the "first-time bonus" teaser if boost already claimed.
+   */
+  function _initStartScreen() {
+    const teaser = $('metamask-bonus-teaser');
+    if (teaser && Game.state.metamaskBoostClaimed) {
+      teaser.style.display = 'none';
+      // Change button text to just connect
+      const btn = $('signin-btn');
+      if (btn && btn.textContent.includes('CONNECT & START')) {
+        btn.textContent = '🦊 CONNECT WALLET';
+      }
+    }
+  }
+
+  function openOptions() {
+    const modal = $('options-modal');
+    if (modal) {
+      // Sync toggles from current state
+      const settings = window.GameAudio?.getSettings?.() || { music: true, sfx: true };
+      const mt = $('opt-music-toggle'), st = $('opt-sfx-toggle');
+      if (mt) mt.checked = !!settings.music;
+      if (st) st.checked = !!settings.sfx;
+      modal.classList.add('show');
+    }
+  }
+
+  function closeOptions() {
+    const modal = $('options-modal');
+    if (modal) modal.classList.remove('show');
+  }
+
+  function openCredits() {
+    const modal = $('credits-modal');
+    if (modal) modal.classList.add('show');
+  }
+
+  function closeCredits() {
+    const modal = $('credits-modal');
+    if (modal) modal.classList.remove('show');
+  }
+
+  function connectWallet() {
+    if (typeof Blockchain !== 'undefined') {
+      Blockchain.connect();
+    } else {
+      toast('Blockchain module not loaded.', 't-red');
+    }
+  }
+
+  function showBlockchainLoadPrompt() {
+    // Show a toast with action to load from chain
+    const t = document.createElement('div');
+    t.className = 'toast t-blue';
+    t.style.cssText = 'display:flex; flex-direction:column; gap:8px;';
+    t.innerHTML = `
+      <div>☁️ <b>Cloud save found!</b> Load your on-chain progress?</div>
+      <div style="display:flex; gap:8px;">
+        <button onclick="Blockchain.loadFromChain(); this.closest('.toast').remove();"
+          style="background:#27ae60; color:#fff; border:none; padding:5px 10px; font-family:inherit; font-size:9px; cursor:pointer; flex:1;">LOAD</button>
+        <button onclick="this.closest('.toast').remove();"
+          style="background:#555; color:#fff; border:none; padding:5px 10px; font-family:inherit; font-size:9px; cursor:pointer; flex:1;">SKIP</button>
+      </div>`;
+    const container = document.getElementById('toast-container');
+    if (container) {
+      container.appendChild(t);
+      setTimeout(() => t.remove(), 15000);
+    }
+  }
 
   function initStars() {
     const container = $('stars-container');
@@ -1915,6 +2051,7 @@ const UI = (() => {
     // Mascot
     mascotSpeak,
     mascotHappy,
+    mascotAnnounce,
 
     // Notifications
     toast,
@@ -1922,6 +2059,16 @@ const UI = (() => {
     // Settings
     toggleSettingsMenu,
     setAudioSetting,
+
+    // Start Screen
+    startGame,
+    openOptions,
+    closeOptions,
+    openCredits,
+    closeCredits,
+    connectWallet,
+    showBlockchainLoadPrompt,
+    initStartScreen: _initStartScreen,
   };
 
 })();
