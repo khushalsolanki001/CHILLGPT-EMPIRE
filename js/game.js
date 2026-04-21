@@ -53,6 +53,12 @@ const Game = (() => {
         megaDC:    0,
         quantumDC: 0,
       },
+      hardwareFailures: {
+        cluster:   0,
+        rack:      0,
+        megaDC:    0,
+        quantumDC: 0,
+      },
 
       /* Staff / physical room inventory */
       inventory: {
@@ -97,7 +103,8 @@ const Game = (() => {
    */
   function getTotalCompute() {
     return HARDWARE.reduce((sum, hw) => {
-      return sum + (state.hardware[hw.id] || 0) * hw.computePS;
+      const activeUnits = Math.max(0, (state.hardware[hw.id] || 0) - (state.hardwareFailures[hw.id] || 0));
+      return sum + activeUnits * hw.computePS;
     }, 0);
   }
 
@@ -107,7 +114,11 @@ const Game = (() => {
    */
   function getRawElectricity() {
     return HARDWARE.reduce((sum, hw) => {
-      return sum + (state.hardware[hw.id] || 0) * hw.elecPS;
+      // Failed units still consume 20% power (maintenance/cooling/standby)
+      const owned = state.hardware[hw.id] || 0;
+      const failed = state.hardwareFailures[hw.id] || 0;
+      const active = owned - failed;
+      return sum + (active * hw.elecPS) + (failed * hw.elecPS * 0.2);
     }, 0);
   }
 
@@ -247,8 +258,10 @@ const Game = (() => {
       return { ok: false, message: `💸 Need ${Fmt.money(cost)} to buy ${hw.name}!` };
     }
 
-    state.money         -= cost;
+    state.money -= cost;
     state.hardware[hwId] = (state.hardware[hwId] || 0) + 1;
+    if (!state.hardwareFailures) state.hardwareFailures = { cluster: 0, rack: 0, megaDC: 0, quantumDC: 0 };
+    if (state.hardwareFailures[hwId] === undefined) state.hardwareFailures[hwId] = 0;
 
     // Fire event for Phaser canvas
     window.dispatchEvent(new CustomEvent('SPAWN_MACHINE', {
@@ -413,6 +426,18 @@ const Game = (() => {
     return { ok: true, amount };
   }
 
+  function repairHardware(hwId) {
+    if (!state.hardwareFailures || !state.hardwareFailures[hwId]) return { ok: false, message: 'Already functional.' };
+    const hw = HARDWARE.find(h => h.id === hwId);
+    // Repair cost is 10% of base cost
+    const repairCost = Math.floor(hw.baseCost * 0.1); 
+    if (state.money < repairCost) return { ok: false, message: `Need ${Fmt.money(repairCost)}!` };
+    state.money -= repairCost;
+    state.hardwareFailures[hwId]--;
+    if (typeof Save !== 'undefined') Save.save();
+    return { ok: true, message: `${hw.name} repaired!` };
+  }
+
 
   // ── TICK (called every 100ms) ─────────────────────────────────────
 
@@ -439,12 +464,16 @@ const Game = (() => {
     }
 
     // Training bar charges based on compute power
-    const computeBonus = Math.min(getTotalCompute() * 0.008, 5);
+    const computeBar = getTotalCompute();
+    const computeBonus = Math.min(computeBar * 0.008, 5);
     state.trainProgress = Math.min(100, state.trainProgress + (0.4 + computeBonus) * dt);
 
     // TF Generation based on compute power
-    const compute = getTotalCompute();
-    state.tf += compute * dt;
+    const computeGen = getTotalCompute();
+    state.tf += computeGen * dt;
+
+    // Random Failure Logic
+    _processRandomFailures(dt);
 
     // Year, Month, Day progression
     state.yearProgress += dt;
@@ -485,6 +514,22 @@ const Game = (() => {
       mps:       mps,
       workers,
     };
+  }
+
+  function _processRandomFailures(dt) {
+    if (state.year < 2017) return; 
+    HARDWARE.forEach(hw => {
+      const owned = (state.hardware[hw.id] || 0);
+      const failed = (state.hardwareFailures[hw.id] || 0);
+      const active = owned - failed;
+      if (active <= 0) return;
+      // 0.015% per second per unit
+      if (Math.random() < 0.00015 * dt * active) {
+        state.hardwareFailures[hw.id]++;
+        window.dispatchEvent(new CustomEvent('HARDWARE_FAILURE', { detail: { hwId: hw.id, name: hw.name } }));
+        if (typeof Save !== 'undefined') Save.save();
+      }
+    });
   }
 
   // Alias (UI reads elec via _computed.elec)
@@ -534,6 +579,7 @@ const Game = (() => {
     buyAIUpgrade,
     hireWorker,
     collectMoney,
+    repairHardware,
     changeModel,
     buyMarketing,
 

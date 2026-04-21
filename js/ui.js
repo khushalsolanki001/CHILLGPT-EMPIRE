@@ -505,10 +505,19 @@ const UI = (() => {
             ${maxed ? `<span class="badge badge-red">MAX REACHED</span>` : ''}
           </div>
         </div>
-        <div class="card-right">
-          <div class="card-count">OWNED: <span>${owned}</span></div>
+        <div class="card-right" style="gap: 4px;">
+          <div class="card-count" style="margin-bottom: 2px;">OWNED: <span>${owned}</span></div>
+          ${(Game.state.hardwareFailures && Game.state.hardwareFailures[hw.id] > 0) ? `
+            <button
+              class="buy-btn repair-btn"
+              style="background: #e74c3c !important; box-shadow: 2px 2px 0 #a93226 !important; font-size: 8px; padding: 4px 6px;"
+              onclick="UI.handleRepairHardware('${hw.id}')"
+              aria-label="Repair ${hw.name} for ${Fmt.money(hw.baseCost * 0.1)}"
+            >🛠️ REPAIR (${Fmt.money(hw.baseCost * 0.1)})</button>
+          ` : ''}
           <button
             class="buy-btn${canBuy ? '' : ' cant-afford'}${maxed ? ' owned-btn' : ''}"
+            style="margin-top: 2px;"
             data-hw="${hw.id}"
             onclick="UI.handleBuyHardware('${hw.id}')"
             ${locked || maxed ? 'disabled' : ''}
@@ -1446,6 +1455,18 @@ const UI = (() => {
     }
   }
 
+  function handleRepairHardware(hwId) {
+    const result = Game.repairHardware(hwId);
+    if (result.ok) {
+      renderShop();
+      renderMachines();
+      toast(result.message, 't-green');
+      mascotHappy(true);
+    } else {
+      toast(result.message, 't-red');
+    }
+  }
+
   function handleChangeModel(model) {
     const result = Game.changeModel(model);
     if (result.ok) {
@@ -1639,11 +1660,12 @@ const UI = (() => {
     spawnParticles,
     flashScreen,
 
-    // Buy handlers (called from onclick in HTML)
+    // Actions
     handleBuyHardware,
     handleBuyAI,
     handleHireWorker,
     handleCollect,
+    handleRepairHardware,
     handleChangeModel,
     handleBuyMarketing,
 
@@ -1689,4 +1711,12 @@ window.addEventListener('MODEL_TRAINED', (e) => {
     UI.mascotHappy(true);
     UI.switchTab('models');
   }
+});
+
+// ── Listen for hardware failure
+window.addEventListener('HARDWARE_FAILURE', (e) => {
+  const { name, hwId } = e.detail;
+  UI.toast(`⚠️ ALERT: ${name} hardware failure! Repair required to restore compute.`, 't-red');
+  UI.mascotSpeak(true);
+  UI.renderShop(); // Refresh to show repair button
 });
