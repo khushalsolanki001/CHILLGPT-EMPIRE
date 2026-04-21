@@ -49,10 +49,12 @@
   }, 5000);
 
   /**
-   * Auto-save every 30 seconds.
+   * Auto-save every 30 seconds (local) + chain auto-save (throttled to 5min).
    */
   setInterval(() => {
     Save.save();
+    // Also push to blockchain if wallet is connected (throttled internally)
+    if (typeof Blockchain !== 'undefined') Blockchain.autoSaveIfConnected();
   }, 30_000);
 
   // ── PAGE VISIBILITY (pause tick while tab hidden) ───────────────

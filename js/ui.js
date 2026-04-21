@@ -1674,7 +1674,41 @@ const UI = (() => {
     }
   }
 
-  function handleBuyAI(upgradeId) {
+  async function handleBuyAI(upgradeId) {
+    // ── MetaMask path: burn on-chain $TF, then apply upgrade ──────────
+    const useChain = typeof Blockchain !== 'undefined'
+                     && Blockchain.isConnected()
+                     && Blockchain.hasTfContract();
+
+    if (useChain) {
+      const upg = AI_UPGRADES.find(u => u.id === upgradeId);
+      const tfCost = (upg && upg.tfCost) || 0;
+
+      if (tfCost > 0) {
+        // Check local cash first (fast, no gas)
+        if (Game.state.money < (upg.cost || 0)) {
+          toast(`💸 Need ${Fmt.money(upg.cost)} cash for ${upg.name}!`, 't-red');
+          return;
+        }
+        // Burn $TF on-chain (triggers MetaMask popup)
+        const burned = await Blockchain.burnTFForUpgrade(tfCost);
+        if (!burned) return; // rejected or failed — abort
+
+        // TF burned ✓ — apply upgrade locally (no TF deduction)
+        const result = Game.buyAIUpgradeChain(upgradeId);
+        if (result.ok) {
+          renderShop();
+          if (typeof flashScreen === 'function') flashScreen(true);
+          mascotHappy(true);
+          toast(result.message, 't-purple');
+        } else {
+          toast(result.message, 't-red');
+        }
+        return;
+      }
+    }
+
+    // ── Normal path: local TF deduction (non-MetaMask players) ───────
     const result = Game.buyAIUpgrade(upgradeId);
     if (result.ok) {
       renderShop();
@@ -2030,6 +2064,9 @@ const UI = (() => {
     handleRepairHardware,
     handleChangeModel,
     handleBuyMarketing,
+    // $TF Exchange
+    handleBuyTF,
+    handleSellTF,
 
     // AI Lab
     openModelBuilder,
@@ -2070,6 +2107,22 @@ const UI = (() => {
     showBlockchainLoadPrompt,
     initStartScreen: _initStartScreen,
   };
+
+  // ── TF EXCHANGE HANDLERS ───────────────────────────────────────────
+  // Defined outside IIFE so they can reference Blockchain.* (loaded after ui.js)
+  // They are hoisted onto the UI object via handleBuyTF/handleSellTF references above.
+
+  function handleBuyTF() {
+    const amount = parseInt(document.getElementById('tf-buy-amount')?.value || '0', 10);
+    if (!amount || amount <= 0) { UI.toast('Enter a valid $TF amount.', 't-red'); return; }
+    Blockchain.buyTFWithCash(amount);
+  }
+
+  function handleSellTF() {
+    const amount = parseInt(document.getElementById('tf-sell-amount')?.value || '0', 10);
+    if (!amount || amount <= 0) { UI.toast('Enter a valid $TF amount.', 't-red'); return; }
+    Blockchain.sellTFForCash(amount);
+  }
 
 })();
 

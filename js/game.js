@@ -424,6 +424,43 @@ const Game = (() => {
     };
   }
 
+  /**
+   * Buy an AI upgrade for MetaMask users — skips local TF check/deduction
+   * because the $TF was already burned on-chain via burnTFForUpgrade().
+   * Cash is still deducted locally.
+   */
+  function buyAIUpgradeChain(upgradeId) {
+    const upg = AI_UPGRADES.find(u => u.id === upgradeId);
+    if (!upg) return { ok: false, message: 'Unknown upgrade.' };
+
+    if (state.unlockedUpgrades.includes(upgradeId)) {
+      return { ok: false, message: `Already own: ${upg.name}` };
+    }
+    if (state.year < upg.requireYear) {
+      return { ok: false, message: `🔒 ${upg.name} unlocks in ${upg.requireYear}!` };
+    }
+    if (state.money < upg.cost) {
+      return { ok: false, message: `💸 Need ${Fmt.money(upg.cost)} for ${upg.name}!` };
+    }
+
+    // Deduct ONLY cash — TF was already burned on-chain
+    state.money -= upg.cost;
+    state.unlockedUpgrades.push(upgradeId);
+    upg.apply(state);
+
+    window.dispatchEvent(new CustomEvent('SPAWN_FEEDBACK', {
+      detail: { text: `🧠 ${upg.badge}` },
+    }));
+
+    if (typeof Save !== 'undefined') Save.save();
+
+    return {
+      ok: true,
+      bigUpgrade: true,
+      message: `⛓️ ${upg.name} unlocked via on-chain $TF! ${upg.badge}`,
+    };
+  }
+
   // ── STAFF ACTIONS ─────────────────────────────────────────────────
 
   /**
@@ -681,6 +718,7 @@ const Game = (() => {
     // Actions
     buyHardware,
     buyAIUpgrade,
+    buyAIUpgradeChain,  // MetaMask users: TF already burned on-chain
     hireWorker,
     collectMoney,
     repairHardware,
