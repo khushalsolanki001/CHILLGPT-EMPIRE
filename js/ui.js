@@ -270,6 +270,10 @@ const UI = (() => {
         title: 'AI Tech Lab',
         body: 'Quick tour: this menu is where research upgrades live. No rush to buy right now. Just remember it when you want stronger growth.',
       },
+      collect_revenue: {
+        title: 'Collect Revenue',
+        body: 'Great hire! Staff generate revenue over time. See that green button? Click it to collect your earnings so you can afford new gear.',
+      },
     }[step];
 
     _setMascotGuide(copy.title, copy.body);
@@ -292,6 +296,7 @@ const UI = (() => {
     if (step === 'gpu_buy') return document.querySelector('.buy-btn[data-hw="cluster"]') || $('tab-hardware');
     if (step === 'server_rack') return document.querySelector('.buy-btn[data-hw="rack"]') || $('tab-hardware');
     if (step === 'ai_tech_intro') return null;
+    if (step === 'collect_revenue') return $('collect-btn');
     return null;
   }
 
@@ -357,6 +362,19 @@ const UI = (() => {
   function _advanceTutorialAfterStaff() {
     const t = _tutorialState();
     if (_tutorialActiveStep !== 'staff_buy' || t.introDismissed) return;
+    t.step = 'collect_revenue';
+    Save.save();
+    _clearTutorialGuide();
+    _tutorialTimer = setTimeout(() => {
+      const latest = _tutorialState();
+      if (latest.introDone || latest.introDismissed || _tutorialActiveStep) return;
+      _showTutorialStep('collect_revenue');
+    }, 400);
+  }
+
+  function _advanceTutorialAfterCollect() {
+    const t = _tutorialState();
+    if (_tutorialActiveStep !== 'collect_revenue' || t.introDismissed) return;
     t.step = 'gpu_buy_wait';
     Save.save();
     _clearTutorialGuide();
@@ -367,7 +385,7 @@ const UI = (() => {
       Save.save();
       switchTab('hardware');
       setTimeout(() => _showTutorialStep('gpu_buy'), 220);
-    }, 10000);
+    }, 2000);
   }
 
   function _advanceTutorialAfterHardware(hwId) {
@@ -1422,6 +1440,7 @@ const UI = (() => {
       flashScreen(false);
       mascotHappy(false);
       mascotSpeak();
+      _advanceTutorialAfterCollect();
     } else {
       toast('No revenue yet! Buy hardware first.', '');
     }
