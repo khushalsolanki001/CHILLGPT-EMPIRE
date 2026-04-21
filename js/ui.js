@@ -1014,6 +1014,55 @@ const UI = (() => {
     const modal = $('awards-modal'); if (modal) modal.classList.remove('show');
   }
 
+  function showSalaryModal() {
+    const modal = document.getElementById('salary-modal');
+    if (modal) modal.classList.add('show');
+  }
+
+  async function handleSalaryYes() {
+    const btn = document.getElementById('salary-yes-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ SAVING TO BLOCKCHAIN...'; }
+
+    try {
+      // Prompt MetaMask to save the game
+      const saved = await Blockchain.saveOnChain();
+      
+      if (saved) {
+        if (btn) { btn.textContent = '✅ SAVED!'; }
+        setTimeout(() => _closeSalaryModal(), 1500);
+        mascotSpeak(true); // Mascot says something good
+        toast('The empire is secured! Workers are happy!', 't-green');
+      } else {
+        if (btn) { btn.disabled = false; btn.textContent = '✅ PAY SALARY & SAVE GAME'; }
+      }
+
+    } catch (e) {
+      if (btn) { btn.disabled = false; btn.textContent = '✅ PAY SALARY & SAVE GAME'; }
+      toast('Save cancelled or failed.', 't-red');
+    }
+  }
+
+  function handleSalaryNo() {
+    _closeSalaryModal();
+    mascotSpeak(false);
+    toast('Karma hit you! Staff morale dropped.', 't-red');
+  }
+
+  function _closeSalaryModal() {
+    const modal = document.getElementById('salary-modal');
+    if (modal) modal.classList.remove('show');
+    // Reset button
+    const btn = document.getElementById('salary-yes-btn');
+    if (btn) { btn.disabled = false; btn.textContent = '✅ PAY SALARY & SAVE GAME'; }
+  }
+
+  function exitToHome() {
+    // Save before leaving
+    if (typeof Save !== 'undefined') Save.save();
+    // Reload page — start screen appears on fresh load
+    window.location.reload();
+  }
+
   // ── BUSINESS TAB ──────────────────────────────────────────────────
 
   function _renderBusinessTab(container) {
@@ -2079,6 +2128,14 @@ const UI = (() => {
     openFulfillModal,
     showAwards,
     closeAwards,
+
+    // Salary Modal (MetaMask only)
+    showSalaryModal,
+    handleSalaryYes,
+    handleSalaryNo,
+
+    // Navigation
+    exitToHome,
 
     // Dev Mode
     activateDevMode,

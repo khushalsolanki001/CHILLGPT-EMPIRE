@@ -187,28 +187,12 @@
       <button id="arena-toggle" type="button" onclick="UI.showArenaManual()"
         aria-label="Open Arena Leaderboard">📊</button>
       <div style="position:relative;">
-        <button id="settings-toggle" type="button" onclick="UI.toggleSettingsMenu()" aria-label="Open settings"
-          aria-expanded="false">⚙</button>
-        <div id="settings-menu" role="dialog" aria-label="Sound settings" aria-hidden="true">
-          <div class="settings-title">SETTINGS</div>
-          <label class="audio-toggle">
-            <span>Music</span>
-            <input id="setting-music" type="checkbox" onchange="UI.setAudioSetting('music', this.checked)" checked />
-          </label>
-          <label class="audio-toggle">
-            <span>Sound effect</span>
-            <input id="setting-sfx" type="checkbox" onchange="UI.setAudioSetting('sfx', this.checked)" checked />
-          </label>
-
-          <!-- Blockchain save/load -->
-          <div style="border-top:2px solid rgba(16,19,15,0.15); margin-top:8px; padding-top:8px; display:flex; flex-direction:column; gap:6px;">
-            <div style="font-size:9px; font-family:inherit; color:#666; letter-spacing:1px; margin-bottom:2px;">CLOUD SAVE (SEPOLIA)</div>
-            <button onclick="Blockchain.saveOnChain()" style="background:#1a5010; color:#fff; border:2px solid #0a2808; font-family:inherit; font-size:9px; cursor:pointer; padding:5px 8px; box-shadow:2px 2px 0 #000;">⛓️ SAVE TO CHAIN</button>
-            <button onclick="Blockchain.loadFromChain()" style="background:#102840; color:#fff; border:2px solid #040e18; font-family:inherit; font-size:9px; cursor:pointer; padding:5px 8px; box-shadow:2px 2px 0 #000;">&#128214; LOAD FROM CHAIN</button>
-          </div>
-
+        <button id="store-toggle" type="button" onclick="UI.toggleStoreMenu()" aria-label="Open Store">🛒</button>
+        <div id="store-menu" role="dialog" aria-label="Store" aria-hidden="true">
+          <div class="settings-title">STORE</div>
+          
           <!-- $TF Exchange — MetaMask users only -->
-          <div id="tf-exchange-section" style="display:none; border-top:2px solid rgba(108,63,255,0.3); margin-top:8px; padding-top:8px; flex-direction:column; gap:6px;">
+          <div id="tf-exchange-section" style="display:none; padding-top:8px; flex-direction:column; gap:6px;">
             <div style="font-size:9px; font-family:inherit; color:#9b7cff; letter-spacing:1px; margin-bottom:2px;">$TF EXCHANGE</div>
             <!-- Wallet balance -->
             <div id="onchain-tf-pill" style="display:none; background:rgba(108,63,255,0.15); border:1px solid rgba(108,63,255,0.5); padding:4px 8px; font-size:8px; color:#b39dff;">
@@ -230,6 +214,37 @@
                 🧠→💵 SELL $TF ($800/each)
               </button>
             </div>
+          </div>
+          
+        </div>
+      </div>
+      <div style="position:relative;">
+        <button id="settings-toggle" type="button" onclick="UI.toggleSettingsMenu()" aria-label="Open settings"
+          aria-expanded="false">⚙</button>
+        <div id="settings-menu" role="dialog" aria-label="Sound settings" aria-hidden="true">
+          <div class="settings-title">SETTINGS</div>
+          <label class="audio-toggle">
+            <span>Music</span>
+            <input id="setting-music" type="checkbox" onchange="UI.setAudioSetting('music', this.checked)" checked />
+          </label>
+          <label class="audio-toggle">
+            <span>Sound effect</span>
+            <input id="setting-sfx" type="checkbox" onchange="UI.setAudioSetting('sfx', this.checked)" checked />
+          </label>
+
+          <!-- Blockchain save/load — MetaMask users only -->
+          <div id="cloud-save-section" style="display:none; border-top:2px solid rgba(16,19,15,0.15); margin-top:8px; padding-top:8px; flex-direction:column; gap:6px;">
+            <div style="font-size:9px; font-family:inherit; color:#666; letter-spacing:1px; margin-bottom:2px;">CLOUD SAVE (SEPOLIA)</div>
+            <button onclick="Blockchain.saveOnChain()" style="background:#1a5010; color:#fff; border:2px solid #0a2808; font-family:inherit; font-size:9px; cursor:pointer; padding:5px 8px; box-shadow:2px 2px 0 #000;">⛓️ SAVE TO CHAIN</button>
+            <button onclick="Blockchain.loadFromChain()" style="background:#102840; color:#fff; border:2px solid #040e18; font-family:inherit; font-size:9px; cursor:pointer; padding:5px 8px; box-shadow:2px 2px 0 #000;">&#128214; LOAD FROM CHAIN</button>
+          </div>
+
+
+          <!-- Exit to home screen -->
+          <div style="border-top:2px solid rgba(16,19,15,0.15); margin-top:8px; padding-top:8px;">
+            <button onclick="UI.exitToHome()" style="width:100%; background:#1a1a1a; color:#e74c3c; border:2px solid #5a0000; font-family:inherit; font-size:9px; cursor:pointer; padding:5px 8px; box-shadow:2px 2px 0 #000; letter-spacing:1px;">
+              🚪 EXIT TO HOME
+            </button>
           </div>
         </div>
       </div>
@@ -671,6 +686,60 @@
       <button class="modal-close-btn"
         style="width: 100%; border: 3px solid #f5c842; background: #2a2010; color: #f5c842; font-size: 0.5rem; padding: 12px; margin-top: 10px;"
         onclick="UI.closeAwards()">🚀 OKAY, LET'S GO →</button>
+    </div>
+  </div>
+
+  <!-- ================================================================
+     SALARY / SAVE MODAL (MetaMask users only)
+  ================================================================ -->
+  <div id="salary-modal" class="modal-overlay"
+    style="z-index: 1300; background: rgba(10,5,30,0.97); backdrop-filter: blur(12px);">
+    <div class="year-splash-card" style="width: 560px; max-width: 92vw; padding: 40px; border: 2px solid rgba(108,63,255,0.6); box-shadow: 0 0 60px rgba(108,63,255,0.3);">
+
+      <!-- Header -->
+      <div style="color:#e74c3c; font-family:var(--font-pixel); font-size:0.5rem; letter-spacing:2px; text-shadow:1px 1px 0 #000;">💸 EXPENSES DUE</div>
+      <div style="font-size:1.4rem; font-family:var(--font-pixel); margin-top:8px; color:#ff5555; text-shadow:2px 2px 0 #330000;">
+        PAY WORKER SALARY
+      </div>
+      <div style="font-size:0.5rem; color:#ffb3b3; margin:10px 0 24px; font-family:var(--font-mono); text-shadow:1px 1px 0 #000;">
+        It's time to pay your staff. Doing this will also securely save your empire's progress to the blockchain!
+      </div>
+
+      <!-- Info line -->
+      <div style="font-size:0.32rem; color:#666; text-align:center; margin-bottom:20px; line-height:1.6;">
+        ✅ 1 MetaMask popup &nbsp;|&nbsp; Saves your game &nbsp;|&nbsp; Keeps workers happy!
+      </div>
+
+      <div class="year-splash-rail" aria-hidden="true" style="margin:16px 0;"><span></span></div>
+
+      <!-- Yes button -->
+      <button id="salary-yes-btn"
+        onclick="UI.handleSalaryYes()"
+        style="
+          width:100%; padding:16px; margin-bottom:10px;
+          background: linear-gradient(135deg,#27ae60,#1e8449);
+          border:3px solid #1a5010; box-shadow:0 4px 0 #000, 0 0 24px rgba(39,174,96,0.5);
+          color:#fff; font-family:inherit; font-size:0.5rem;
+          cursor:pointer; letter-spacing:2px;
+          transition: transform 0.1s;
+        "
+        onmousedown="this.style.transform='translateY(3px)'"
+        onmouseup="this.style.transform=''"
+      >
+        ✅ PAY SALARY & SAVE GAME
+      </button>
+
+      <!-- Skip button -->
+      <button onclick="UI.handleSalaryNo()"
+        style="
+          width:100%; padding:10px;
+          background:transparent; border:2px solid #e74c3c;
+          color:#e74c3c; font-family:inherit; font-size:0.35rem;
+          cursor:pointer; letter-spacing:1px;
+        "
+      >
+        ❌ CANCEL (Skip Save)
+      </button>
     </div>
   </div>
 

@@ -70,8 +70,6 @@ const Blockchain = (() => {
   // Minimum Sepolia ETH to use blockchain saves
   const MIN_ETH = 0.01;
 
-  // Auto-save to chain at most every 5 minutes
-  const CHAIN_SAVE_INTERVAL_MS = 5 * 60 * 1000;
 
   // ── STATE ────────────────────────────────────────────────────────
 
@@ -81,7 +79,6 @@ const Blockchain = (() => {
   let _tfContract = null;    // ChillGPTTF ($TF token)
   let _address = null;
   let _connected = false;
-  let _lastChainSave = 0;
 
   // ── HELPERS ──────────────────────────────────────────────────────
 
@@ -353,39 +350,7 @@ const Blockchain = (() => {
     badge.innerHTML = `<span>${c.icon}</span> <span style="color:${c.color}">${c.text}</span>`;
   }
 
-  // ── AUTO-SAVE TO CHAIN ────────────────────────────────────────────
 
-  /**
-   * Called by the public `autoSaveIfConnected()` method, which is
-   * hooked into main.js's 30-second periodic save timer.
-   * Throttled to at most once every CHAIN_SAVE_INTERVAL_MS (5 min).
-   */
-  async function autoSaveIfConnected() {
-    if (!_connected || !_contract) return;
-    if (CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') return;
-
-    const now = Date.now();
-    if (now - _lastChainSave < CHAIN_SAVE_INTERVAL_MS) return;
-
-    console.log('[Blockchain] Auto-saving to chain...');
-    _updateChainSaveBadge('saving');
-
-    try {
-      const stateJson = JSON.stringify(Game.state);
-      const tx = await _contract.saveProgress(stateJson);
-      await tx.wait();
-      _lastChainSave = Date.now();
-      _updateChainSaveBadge('saved');
-      console.log('[Blockchain] Auto-save tx confirmed:', tx.hash);
-      _showNotice(`⛓️ Progress auto-saved to blockchain!`, 'success');
-      // Reset badge after 10s
-      setTimeout(() => _updateChainSaveBadge('idle'), 10000);
-    } catch (err) {
-      _updateChainSaveBadge('error');
-      console.warn('[Blockchain] Auto-save failed:', err.message);
-      setTimeout(() => _updateChainSaveBadge('idle'), 8000);
-    }
-  }
 
   // ── CONNECT FLOW ─────────────────────────────────────────────────
 
@@ -407,6 +372,8 @@ const Blockchain = (() => {
     if (onchainPill) onchainPill.style.display = '';
     const exchangeSection = document.getElementById('tf-exchange-section');
     if (exchangeSection) exchangeSection.style.display = 'flex';
+    const cloudSaveSection = document.getElementById('cloud-save-section');
+    if (cloudSaveSection) cloudSaveSection.style.display = 'flex';
 
     // Auto-start the game
     if (typeof UI !== 'undefined' && UI.startGame) {
@@ -521,7 +488,6 @@ const Blockchain = (() => {
       _showNotice(`⏳ Transaction sent! Waiting for confirmation...`, 'info');
       await tx.wait();
 
-      _lastChainSave = Date.now();
       _updateChainSaveBadge('saved');
       setTimeout(() => _updateChainSaveBadge('idle'), 10000);
 
@@ -799,7 +765,6 @@ const Blockchain = (() => {
     disconnect,
     saveOnChain,
     loadFromChain,
-    autoSaveIfConnected,
     isConnected,
     getAddress,
     // $TF token

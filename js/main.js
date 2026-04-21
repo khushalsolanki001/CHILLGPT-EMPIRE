@@ -49,13 +49,23 @@
   }, 5000);
 
   /**
-   * Auto-save every 30 seconds (local) + chain auto-save (throttled to 5min).
+   * Auto-save every 30 seconds (local).
    */
   setInterval(() => {
     Save.save();
-    // Also push to blockchain if wallet is connected (throttled internally)
-    if (typeof Blockchain !== 'undefined') Blockchain.autoSaveIfConnected();
   }, 30_000);
+
+  /**
+   * MetaMask users get a "Pay Salary" popup every 6 minutes (360,000ms)
+   * This handles the on-chain save in a single, non-annoying popup.
+   */
+  setInterval(() => {
+    if (typeof Blockchain !== 'undefined' && Blockchain.isConnected()) {
+      if (typeof UI !== 'undefined' && typeof UI.showSalaryModal === 'function') {
+        UI.showSalaryModal();
+      }
+    }
+  }, 360_000);
 
   // ── PAGE VISIBILITY (pause tick while tab hidden) ───────────────
   // We don't actually pause — offline earnings handle the gap —
