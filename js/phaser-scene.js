@@ -146,20 +146,20 @@ class BaseTycoonScene extends Phaser.Scene {
   _fitObjects() {
     const W = this.scale.width, H = this.scale.height;
     this._spawnedObjects.forEach(item => {
-        if (!item.obj || !item.obj.active) return;
-        item.obj.x = item.nx * W;
-        item.obj.y = item.ny * H;
-        // Also scale height proportionally to maintain alignment on background features
-        // Since background is cover-scaled, we should scale relative to the background's current scale factor
-        const src = this.textures.get(item.texKey).getSourceImage();
-        const bgKey = this.scene.key === 'GameDevStoryScene' ? 'bg' : 'gpu_bg';
-        const bgSrc = this.textures.get(bgKey).getSourceImage();
-        if (bgSrc) {
-            const bgs = Math.max(W / bgSrc.width, H / bgSrc.height);
-            // Re-apply target scaling based on screen size
-            const targetH = item.baseTargetH * (bgs / item.initialBgScale);
-            this._scaleToTargetH(item.obj, UPGRADE_FRAME_H, targetH);
-        }
+      if (!item.obj || !item.obj.active) return;
+      item.obj.x = item.nx * W;
+      item.obj.y = item.ny * H;
+      // Also scale height proportionally to maintain alignment on background features
+      // Since background is cover-scaled, we should scale relative to the background's current scale factor
+      const src = this.textures.get(item.texKey).getSourceImage();
+      const bgKey = this.scene.key === 'GameDevStoryScene' ? 'bg' : 'gpu_bg';
+      const bgSrc = this.textures.get(bgKey).getSourceImage();
+      if (bgSrc) {
+        const bgs = Math.max(W / bgSrc.width, H / bgSrc.height);
+        // Re-apply target scaling based on screen size
+        const targetH = item.baseTargetH * (bgs / item.initialBgScale);
+        this._scaleToTargetH(item.obj, UPGRADE_FRAME_H, targetH);
+      }
     });
   }
 
@@ -346,7 +346,7 @@ class GameDevStoryScene extends BaseTycoonScene {
     const nx = 0.25 + (this._workerCount * 0.125);
     const ny = 1.02;
     const wH = 275;
-    
+
     if (this._workerCount >= 5) return;
     this._workerCount++;
 
@@ -370,7 +370,7 @@ class GameDevStoryScene extends BaseTycoonScene {
 
   _syncWithGameState() {
     this._workerCount = 0;
-    this._spawnedObjects = this._spawnedObjects.filter(o => { if(o.obj.active) o.obj.destroy(); return false; });
+    this._spawnedObjects = this._spawnedObjects.filter(o => { if (o.obj.active) o.obj.destroy(); return false; });
     if (typeof Game === 'undefined') return;
     const count = Math.min(Game.state.inventory?.workers ?? 0, 5);
     for (let i = 0; i < count; i++) this._onSpawnWorker({});
@@ -385,7 +385,7 @@ class ServerRoomScene extends BaseTycoonScene {
 
   preload() {
     for (let i = 1; i <= 4; i++) {
-        this.load.image(`server_tier${i}`, `assets/images/upgrades/server_room/server_room_${i}.png`);
+      this.load.image(`server_tier${i}`, `assets/images/upgrades/server_room/server_room_${i}.png`);
     }
   }
 
@@ -451,7 +451,7 @@ class ServerRoomScene extends BaseTycoonScene {
     if (this._currentTier !== tier) {
       this._currentTier = tier;
       this._updateBackgroundTexture();
-      const flash = this.add.rectangle(this.scale.width/2, this.scale.height/2, this.scale.width, this.scale.height, 0xffffff).setAlpha(0).setDepth(1000);
+      const flash = this.add.rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0xffffff).setAlpha(0).setDepth(1000);
       this.tweens.add({ targets: flash, alpha: { from: 0.5, to: 0 }, duration: 500, onComplete: () => flash.destroy() });
     }
   }
@@ -482,10 +482,10 @@ class GPUClusterRoomScene extends BaseTycoonScene {
     this._createNavButton(W - 20, H / 2, 'OFFICE', 'GameDevStoryScene', true);
 
     for (let i = 0; i < 4; i++) {
-        const key = `cluster_${i}`;
-        if (this.textures.exists(key) && !this.anims.exists(`${key}_anim`)) {
-            this.anims.create({ key: `${key}_anim`, frames: this.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: 3 + i, repeat: -1, yoyo: true });
-        }
+      const key = `cluster_${i}`;
+      if (this.textures.exists(key) && !this.anims.exists(`${key}_anim`)) {
+        this.anims.create({ key: `${key}_anim`, frames: this.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: 3 + i, repeat: -1, yoyo: true });
+      }
     }
 
     const unlockAudio = () => {
@@ -569,7 +569,7 @@ class GPUClusterRoomScene extends BaseTycoonScene {
 
   _syncWithGameState() {
     this._clusterCount = 0;
-    this._spawnedObjects = this._spawnedObjects.filter(o => { if(o.obj.active) o.obj.destroy(); return false; });
+    this._spawnedObjects = this._spawnedObjects.filter(o => { if (o.obj.active) o.obj.destroy(); return false; });
     if (typeof Game === 'undefined') return;
     const count = Math.min(Game.state.hardware?.cluster ?? 0, 4);
     for (let i = 0; i < count; i++) this._onSpawnMachine({ hwId: 'cluster' });
@@ -587,11 +587,13 @@ function initPhaserGame() {
     scene: [GameDevStoryScene, ServerRoomScene, GPUClusterRoomScene],
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
     render: { antialias: true, pixelArt: false, roundPixels: true },
-    loader: { baseURL: (function() {
-      // Use absolute base URL so assets load correctly inside iframes (e.g. Wavedash)
-      var base = document.baseURI || window.location.href;
-      return base.substring(0, base.lastIndexOf('/') + 1);
-    })() },
+    loader: {
+      baseURL: (function () {
+        // Use absolute base URL so assets load correctly inside iframes (e.g. Wavedash)
+        var base = document.baseURI || window.location.href;
+        return base.substring(0, base.lastIndexOf('/') + 1);
+      })()
+    },
   });
 }
 
