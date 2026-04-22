@@ -39,28 +39,59 @@ const UI = (() => {
   // News Tracker
   let _lastNewsDay = -1;
   const NEWS_HEADLINES = [
-    "AI generated art wins state fair competition. Artists furious.",
-    "Major incident: Self-driving AI hallucinated a stop sign. No injuries.",
-    "New AI model passes the bar exam in the 90th percentile.",
-    "Tech CEOs testify before congress about superhuman AI.",
-    "Viral X trend: 'Is my boyfriend actually an AI?'",
-    "Open Source community releases model challenging enterprise leaders.",
-    "Hackathon weekend: Thousands of devs build apps on new AI API.",
-    "AI generated video goes viral, plunging stock markets temporarily.",
-    "AI agents spotted trading cryptos automatically. Markets volatile.",
-    "New study claims AI may soon automate 40% of standard IT tasks.",
-    "Incident: AI assistant ordered 100 pizzas to a user's home."
+    { text: "AI generated art wins state fair competition. Artists furious.", type: "none" },
+    { text: "Major incident: Self-driving AI hallucinated a stop sign. No injuries.", type: "none" },
+    { text: "New AI model passes the bar exam in the 90th percentile.", type: "none" },
+    { text: "Tech CEOs testify before congress about superhuman AI.", type: "none" },
+    { text: "Viral X trend: 'Is my boyfriend actually an AI?'", type: "none" },
+    { text: "Open Source community releases model challenging enterprise leaders.", type: "none" },
+    { text: "Hackathon weekend: Thousands of devs build apps on new AI API.", type: "none" },
+    { text: "AI generated video goes viral, plunging stock markets temporarily.", type: "none" },
+    { text: "AI agents spotted trading cryptos automatically. Markets volatile.", type: "none" },
+    { text: "New study claims AI may soon automate 40% of standard IT tasks.", type: "none" },
+    { text: "Incident: AI assistant ordered 100 pizzas to a user's home.", type: "none" },
+    { text: "Tech Giant Partnership! Income +20% for 60 seconds!", type: "income", val: 1.2 },
+    { text: "Global Chip Shortage! Hardware costs +20% for 60 seconds!", type: "cost", val: 1.2 },
+    { text: "AI Hype Peak! Marketing brings 2x users for 60 seconds!", type: "hype", val: 2.0 },
+    { text: "Crypto Crash! Hardware costs drop by 15% for 60 seconds!", type: "cost", val: 0.85 },
+    { text: "Energy Crisis! Power costs doubled for 60 seconds!", type: "elec", val: 2.0 }
   ];
 
   function _updateNewsTicker(day) {
     if (day !== _lastNewsDay) {
       _lastNewsDay = day;
       if (Math.random() < 0.15) { // 15% chance per day to change news
-        const news = NEWS_HEADLINES[Math.floor(Math.random() * NEWS_HEADLINES.length)];
+        const event = NEWS_HEADLINES[Math.floor(Math.random() * NEWS_HEADLINES.length)];
         const el = $('x-news-ticker');
         // Randomly insert the company/AI name
-        const personalizedNews = news.replace(/AI/g, Game.state.aiName);
+        const personalizedNews = event.text.replace(/AI/g, Game.state.aiName);
         if (el) el.textContent = `[BREAKING] Day ${day}: ${personalizedNews}`;
+
+        if (!Game.state.buffs) Game.state.buffs = { serverDiscount: 1.0, marketingHype: 1.0 };
+
+        if (event.type === 'income') {
+            Game.state.mult.workerIncome *= event.val; 
+            Game.state.mult.moneyPerUser *= event.val;
+            setTimeout(() => {
+              Game.state.mult.workerIncome /= event.val;
+              Game.state.mult.moneyPerUser /= event.val;
+            }, 60000);
+        } else if (event.type === 'cost') {
+            Game.state.buffs.serverDiscount = event.val;
+            setTimeout(() => {
+              Game.state.buffs.serverDiscount = 1.0;
+            }, 60000);
+        } else if (event.type === 'hype') {
+            Game.state.buffs.marketingHype = event.val;
+            setTimeout(() => {
+              Game.state.buffs.marketingHype = 1.0;
+            }, 60000);
+        } else if (event.type === 'elec') {
+            Game.state.mult.elecReduction *= event.val;
+            setTimeout(() => {
+              Game.state.mult.elecReduction /= event.val;
+            }, 60000);
+        }
       }
     }
   }
@@ -179,6 +210,19 @@ const UI = (() => {
     icon.style.setProperty('--tf-mid-y', (dy * 0.62 - 28) + 'px');
     document.body.appendChild(icon);
     setTimeout(() => icon.remove(), 1250);
+  }
+
+  // ── DEV MODE UNLOCK ──────────────────────────────────────────────
+
+  let _devClickCount = 0;
+  function handleYearBadgeClick() {
+    _devClickCount++;
+    if (_devClickCount >= 20) {
+      const devContainer = document.getElementById('dev-buttons-container');
+      if (devContainer) devContainer.style.display = 'flex';
+      if (typeof toast !== 'undefined') toast('Developer mode unlocked!', 't-green');
+      else if (typeof UI.toast !== 'undefined') UI.toast('Developer mode unlocked!', 't-green');
+    }
   }
 
   // ── MASCOT GUIDE ─────────────────────────────────────────────────
@@ -1961,7 +2005,22 @@ const UI = (() => {
 
   // ── START SCREEN LOGIC ──────────────────────────────────────────
 
+  let _homeMusic = null;
+  let _homeMusicFading = false;
+
+  function stopHomeMusic() {
+    if (_homeMusic) {
+      try { _homeMusic.pause(); } catch(e) {}
+      try { _homeMusic.src = ''; } catch(e) {}
+      _homeMusic = null;
+    }
+    _homeMusicFading = false;
+  }
+
   function startGame() {
+    window.__gameStarted = true;
+    window.dispatchEvent(new CustomEvent('GAME_STARTED'));
+    stopHomeMusic();
     const screen = $('start-screen');
     if (screen) {
       screen.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
@@ -1979,6 +2038,34 @@ const UI = (() => {
    * Hides the "first-time bonus" teaser if boost already claimed.
    */
   function _initStartScreen() {
+    if (window.__gameStarted) return;
+
+    // 1. Setup home screen music
+    if (!_homeMusic) {
+      _homeMusic = new Audio('assets/sound/home_screen_music_lemonmusicstudio-life-energy-21178.mp3');
+      _homeMusic.loop = true;
+      _homeMusic.volume = 0.5;
+    }
+    
+    // Check if music is globally enabled
+    if (window.GameAudio && !window.GameAudio.isMusicEnabled()) {
+      _homeMusic.pause();
+    } else {
+      _homeMusic.play().catch(() => {
+        // Browsers often block autoplay without interaction
+        const playOnInteraction = () => {
+          const screen = $('start-screen');
+          if (_homeMusic && !_homeMusicFading && screen && screen.style.display !== 'none' && !window.__gameStarted) {
+            if (!window.GameAudio || window.GameAudio.isMusicEnabled()) {
+              _homeMusic.play().catch(()=>{});
+            }
+          }
+          document.removeEventListener('click', playOnInteraction);
+        };
+        document.addEventListener('click', playOnInteraction);
+      });
+    }
+
     const teaser = $('metamask-bonus-teaser');
     if (teaser && Game.state.metamaskBoostClaimed) {
       teaser.style.display = 'none';
@@ -1989,6 +2076,15 @@ const UI = (() => {
       }
     }
   }
+
+  // Also catch AUDIO_SETTINGS_CHANGED to ensure it doesn't resurrect dead music
+  window.addEventListener('AUDIO_SETTINGS_CHANGED', (e) => {
+    const s = e.detail;
+    if (_homeMusic && !_homeMusicFading && !window.__gameStarted) {
+      if (s.music) _homeMusic.play().catch(()=>{});
+      else _homeMusic.pause();
+    }
+  });
 
   function openOptions() {
     const modal = $('options-modal');
@@ -2164,6 +2260,7 @@ const UI = (() => {
     activateDevMode,
     devSkipYear,
     devSetTier,
+    handleYearBadgeClick,
 
     // Mascot
     mascotSpeak,
@@ -2187,6 +2284,7 @@ const UI = (() => {
     connectWallet,
     showBlockchainLoadPrompt,
     initStartScreen: _initStartScreen,
+    stopHomeMusic: stopHomeMusic,
   };
 
   // ── TF EXCHANGE HANDLERS ───────────────────────────────────────────
@@ -2207,11 +2305,32 @@ const UI = (() => {
 
 })();
 
-// ── Wire up collect button
+// ── Wire up collect button and global button sounds
 window.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('collect-btn');
   if (btn) btn.onclick = () => UI.handleCollect();
+
+  // Add hover & click sounds for all DOM buttons
+  document.addEventListener('mouseover', (e) => {
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+      const target = e.target.tagName === 'BUTTON' ? e.target : e.target.closest('button');
+      if (target._hovered) return;
+      target._hovered = true;
+      target.addEventListener('mouseout', () => { target._hovered = false; }, {once: true});
+      if (window.GameAudio && window.GameAudio.playHover) window.GameAudio.playHover();
+    }
+  });
+
+  document.addEventListener('mousedown', (e) => {
+    const btn = e.target.tagName === 'BUTTON' ? e.target : e.target.closest('button');
+    if (btn) {
+      // Exclude claim/collect buttons as they have their own specific sounds
+      if (btn.id === 'collect-btn' || btn.id === 'claim-tf-btn') return;
+      if (window.GameAudio && window.GameAudio.playClick) window.GameAudio.playClick();
+    }
+  });
 });
+
 
 // ── Listen for training completion event
 window.addEventListener('MODEL_TRAINED', (e) => {

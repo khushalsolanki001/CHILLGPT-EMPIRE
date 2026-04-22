@@ -366,6 +366,8 @@ const Blockchain = (() => {
     if (badge) badge.style.display = 'flex';
 
     // Show MetaMask-only UI elements
+    const storeContainer = document.getElementById('store-container');
+    if (storeContainer) storeContainer.style.display = '';
     const claimBtn = document.getElementById('claim-tf-btn');
     if (claimBtn) claimBtn.style.display = 'flex';
     const onchainPill = document.getElementById('onchain-tf-pill');
@@ -392,6 +394,10 @@ const Blockchain = (() => {
   }
 
   async function connect() {
+    if (typeof UI !== 'undefined' && UI.stopHomeMusic) {
+      UI.stopHomeMusic();
+    }
+    
     if (!_isMetaMaskInstalled()) {
       _showNotice('MetaMask not found! Install it at metamask.io', 'error');
       window.open('https://metamask.io/download/', '_blank');

@@ -33,7 +33,7 @@
       <!-- Logo / Title -->
       <div class="start-logo">
         <div class="start-logo-title">CHILLGPT<br>EMPIRE</div>
-        <div class="start-logo-sub">v1.0 EARLY ACCESS</div>
+
       </div>
 
       <button class="start-btn primary" onclick="UI.startGame()">START GAME</button>
@@ -43,10 +43,15 @@
       <div class="wallet-section">
         <!-- Status LED -->
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-          <div id="wallet-indicator" style="width:8px; height:8px; border-radius:50%; background:#555; box-shadow:0 0 6px #555; transition:background 0.3s;"></div>
-          <div id="wallet-address-display" style="font-family:var(--font-mono); font-size:0.28rem; color:rgba(255,255,255,0.4); letter-spacing:1px;">NOT CONNECTED</div>
+          <div id="wallet-indicator"
+            style="width:8px; height:8px; border-radius:50%; background:#555; box-shadow:0 0 6px #555; transition:background 0.3s;">
+          </div>
+          <div id="wallet-address-display"
+            style="font-family:var(--font-mono); font-size:0.28rem; color:rgba(255,255,255,0.4); letter-spacing:1px;">
+            NOT CONNECTED</div>
         </div>
-        <img class="metamask-icon" src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" onclick="Blockchain.connect()">
+        <img class="metamask-icon" src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
+          alt="MetaMask" onclick="Blockchain.connect()">
         <button id="signin-btn" onclick="Blockchain.connect()">🦊 CONNECT & START</button>
         <!-- Bonus teaser badge -->
         <div id="metamask-bonus-teaser" style="
@@ -63,11 +68,21 @@
         </div>
         <style>
           @keyframes boostPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
+
+            0%,
+            100% {
+              opacity: 1;
+            }
+
+            50% {
+              opacity: 0.6;
+            }
           }
         </style>
-        <div style="font-size:0.25rem; color:rgba(255,255,255,0.35); font-family:var(--font-mono); letter-spacing:1px; margin-top:4px;">BLOCKCHAIN ENABLED v1.0</div>
+        <div
+          style="font-size:0.25rem; color:rgba(255,255,255,0.35); font-family:var(--font-mono); letter-spacing:1px; margin-top:4px;">
+          BLOCKCHAIN ENABLED v1.0</div>
+        <div class="start-logo-sub">v1.0 EARLY ACCESS</div>
       </div>
     </div>
   </div>
@@ -110,7 +125,8 @@
             <div class="pill-label">TF COLLECTED</div>
             <div class="pill-value">
               <span id="stat-tf">0</span>
-              <span id="stat-wallet-tf" style="display:none; color:#b39dff; font-size:0.8em; margin-left:5px;">(💼 0 $TF)</span>
+              <span id="stat-wallet-tf" style="display:none; color:#b39dff; font-size:0.8em; margin-left:5px;">(💼 0
+                $TF)</span>
             </div>
           </div>
         </div>
@@ -150,21 +166,20 @@
             <div class="pill-value" id="stat-net">$0/s</div>
           </div>
         </div>
-        <button id="dev-mode-btn"
-          style="background:#39d87e; color:#0c0d13; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:10px; font-weight:bold;"
-          onclick="UI.activateDevMode()">DEV MODE (+$1M)</button>
-        <button id="dev-skip-btn"
-          style="background:#f5c842; color:#0c0d13; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;"
-          onclick="UI.devSkipYear()">SKIP YEAR ⏭</button>
-        <button id="dev-t3-btn"
-          style="background:#4287f5; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;"
-          onclick="UI.devSetTier(3)">TEST T3</button>
-        <button id="dev-t4-btn"
-          style="background:#9342f5; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;"
-          onclick="UI.devSetTier(4)">TEST T4</button>
-        <button id="hard-reset-btn"
-          style="background:#a82020; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:10px;"
-          onclick="if(confirm('Wipe ALL progress?')) Save.reset()">HARD RESET</button>
+        <div id="dev-buttons-container" style="display:none; align-items:center;">
+          <button id="dev-mode-btn"
+            style="background:#39d87e; color:#0c0d13; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:10px; font-weight:bold;"
+            onclick="UI.activateDevMode()">DEV MODE (+$1M)</button>
+          <button id="dev-skip-btn"
+            style="background:#f5c842; color:#0c0d13; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;"
+            onclick="UI.devSkipYear()">SKIP YEAR ⏭</button>
+          <button id="dev-t3-btn"
+            style="background:#4287f5; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;"
+            onclick="UI.devSetTier(3)">TEST T3</button>
+          <button id="dev-t4-btn"
+            style="background:#9342f5; color:#fff; border:2px solid #000; font-family:inherit; font-size:9px; cursor:pointer; padding:4px 8px; box-shadow:2px 2px 0 #000; margin-left:5px; font-weight:bold;"
+            onclick="UI.devSetTier(4)">TEST T4</button>
+        </div>
 
         <!-- Blockchain save status badge — shown when wallet connected -->
         <div id="chain-save-badge" style="
@@ -180,7 +195,8 @@
         </div>
       </div>
 
-      <div class="year-badge" id="year-badge" style="min-width: 140px;">
+      <div class="year-badge" id="year-badge" style="min-width: 140px; cursor:pointer;"
+        onclick="UI.handleYearBadgeClick()">
         <span class="year-label" id="date-label">DAY 1 MONTH 1</span>
         <span class="year-value" id="year-value">2016</span>
       </div>
@@ -189,23 +205,26 @@
     <div id="settings-panel" style="display:flex; gap: 8px;">
       <button id="arena-toggle" type="button" onclick="UI.showArenaManual()"
         aria-label="Open Arena Leaderboard">📊</button>
-      <div style="position:relative;">
+      <div style="position:relative; display:none;" id="store-container">
         <button id="store-toggle" type="button" onclick="UI.toggleStoreMenu()" aria-label="Open Store">🛒</button>
         <div id="store-menu" role="dialog" aria-label="Store" aria-hidden="true">
           <div class="settings-title">STORE</div>
-          
+
           <!-- $TF Exchange — MetaMask users only -->
           <div id="tf-exchange-section" style="display:none; padding-top:8px; flex-direction:column; gap:6px;">
-            <div style="font-size:9px; font-family:inherit; color:#9b7cff; letter-spacing:1px; margin-bottom:2px;">$TF EXCHANGE</div>
+            <div style="font-size:9px; font-family:inherit; color:#9b7cff; letter-spacing:1px; margin-bottom:2px;">$TF
+              EXCHANGE</div>
             <!-- Wallet balance -->
-            <div id="onchain-tf-pill" style="display:none; background:rgba(108,63,255,0.15); border:1px solid rgba(108,63,255,0.5); padding:4px 8px; font-size:8px; color:#b39dff;">
+            <div id="onchain-tf-pill"
+              style="display:none; background:rgba(108,63,255,0.15); border:1px solid rgba(108,63,255,0.5); padding:4px 8px; font-size:8px; color:#b39dff;">
               💼 WALLET: <span id="stat-onchain-tf">0 $TF</span>
             </div>
             <!-- Buy TF -->
             <div style="display:flex; gap:4px; align-items:center;">
               <input id="tf-buy-amount" type="number" min="1" value="100"
                 style="width:60px; background:#111; border:2px solid #333; color:#fff; font-family:inherit; font-size:8px; padding:3px 5px;" />
-              <button onclick="UI.handleBuyTF()" style="flex:1; background:#27ae60; color:#fff; border:2px solid #0a4020; font-family:inherit; font-size:8px; cursor:pointer; padding:4px 6px; box-shadow:2px 2px 0 #000;">
+              <button onclick="UI.handleBuyTF()"
+                style="flex:1; background:#27ae60; color:#fff; border:2px solid #0a4020; font-family:inherit; font-size:8px; cursor:pointer; padding:4px 6px; box-shadow:2px 2px 0 #000;">
                 💵→🧠 BUY $TF ($1K/each)
               </button>
             </div>
@@ -213,12 +232,13 @@
             <div style="display:flex; gap:4px; align-items:center;">
               <input id="tf-sell-amount" type="number" min="1" value="100"
                 style="width:60px; background:#111; border:2px solid #333; color:#fff; font-family:inherit; font-size:8px; padding:3px 5px;" />
-              <button onclick="UI.handleSellTF()" style="flex:1; background:#c0392b; color:#fff; border:2px solid #6b0000; font-family:inherit; font-size:8px; cursor:pointer; padding:4px 6px; box-shadow:2px 2px 0 #000;">
+              <button onclick="UI.handleSellTF()"
+                style="flex:1; background:#c0392b; color:#fff; border:2px solid #6b0000; font-family:inherit; font-size:8px; cursor:pointer; padding:4px 6px; box-shadow:2px 2px 0 #000;">
                 🧠→💵 SELL $TF ($800/each)
               </button>
             </div>
           </div>
-          
+
         </div>
       </div>
       <div style="position:relative;">
@@ -236,16 +256,31 @@
           </label>
 
           <!-- Blockchain save/load — MetaMask users only -->
-          <div id="cloud-save-section" style="display:none; border-top:2px solid rgba(16,19,15,0.15); margin-top:8px; padding-top:8px; flex-direction:column; gap:6px;">
-            <div style="font-size:9px; font-family:inherit; color:#666; letter-spacing:1px; margin-bottom:2px;">CLOUD SAVE (SEPOLIA)</div>
-            <button onclick="Blockchain.saveOnChain()" style="background:#1a5010; color:#fff; border:2px solid #0a2808; font-family:inherit; font-size:9px; cursor:pointer; padding:5px 8px; box-shadow:2px 2px 0 #000;">⛓️ SAVE TO CHAIN</button>
-            <button onclick="Blockchain.loadFromChain()" style="background:#102840; color:#fff; border:2px solid #040e18; font-family:inherit; font-size:9px; cursor:pointer; padding:5px 8px; box-shadow:2px 2px 0 #000;">&#128214; LOAD FROM CHAIN</button>
+          <div id="cloud-save-section"
+            style="display:none; border-top:2px solid rgba(16,19,15,0.15); margin-top:8px; padding-top:8px; flex-direction:column; gap:6px;">
+            <div style="font-size:9px; font-family:inherit; color:#666; letter-spacing:1px; margin-bottom:2px;">CLOUD
+              SAVE (SEPOLIA)</div>
+            <button onclick="Blockchain.saveOnChain()"
+              style="background:#1a5010; color:#fff; border:2px solid #0a2808; font-family:inherit; font-size:9px; cursor:pointer; padding:5px 8px; box-shadow:2px 2px 0 #000;">⛓️
+              SAVE TO CHAIN</button>
+            <button onclick="Blockchain.loadFromChain()"
+              style="background:#102840; color:#fff; border:2px solid #040e18; font-family:inherit; font-size:9px; cursor:pointer; padding:5px 8px; box-shadow:2px 2px 0 #000;">&#128214;
+              LOAD FROM CHAIN</button>
           </div>
 
 
-          <!-- Exit to home screen -->
+          <!-- Hard Reset -->
           <div style="border-top:2px solid rgba(16,19,15,0.15); margin-top:8px; padding-top:8px;">
-            <button onclick="UI.exitToHome()" style="width:100%; background:#1a1a1a; color:#e74c3c; border:2px solid #5a0000; font-family:inherit; font-size:9px; cursor:pointer; padding:5px 8px; box-shadow:2px 2px 0 #000; letter-spacing:1px;">
+            <button onclick="if(confirm('Wipe ALL progress?')) Save.reset()"
+              style="width:100%; background:#a82020; color:#fff; border:2px solid #5a0000; font-family:inherit; font-size:9px; cursor:pointer; padding:5px 8px; box-shadow:2px 2px 0 #000; letter-spacing:1px; margin-bottom:8px;">
+              ⚠️ HARD RESET
+            </button>
+          </div>
+
+          <!-- Exit to home screen -->
+          <div style="border-top:2px solid rgba(16,19,15,0.15); margin-top:0px; padding-top:8px;">
+            <button onclick="UI.exitToHome()"
+              style="width:100%; background:#1a1a1a; color:#e74c3c; border:2px solid #5a0000; font-family:inherit; font-size:9px; cursor:pointer; padding:5px 8px; box-shadow:2px 2px 0 #000; letter-spacing:1px;">
               🚪 EXIT TO HOME
             </button>
           </div>
@@ -319,14 +354,14 @@
             <div class="progress-percent" id="progress-percent">0%</div>
           </div>
         </div>
-        <button id="collect-btn" onclick="Game.collectMoney()" aria-label="Collect accumulated revenue" style="width: auto; margin-left: auto; padding: 10px 18px;">
+        <button id="collect-btn" onclick="Game.collectMoney()" aria-label="Collect accumulated revenue"
+          style="width: auto; margin-left: auto; padding: 10px 18px;">
           <span class="btn-icon">💰</span>
           <span id="collect-label">COLLECT REVENUE</span>
         </button>
 
         <!-- CLAIM TF button — MetaMask users only, hidden until wallet connected -->
-        <button id="claim-tf-btn" onclick="Blockchain.claimTF()"
-          aria-label="Claim local TF as on-chain $TF token"
+        <button id="claim-tf-btn" onclick="Blockchain.claimTF()" aria-label="Claim local TF as on-chain $TF token"
           style="
             display: none; align-items: center; justify-content: center; gap: 8px;
             background: linear-gradient(135deg, #6c3fff, #4a1ddb);
@@ -337,8 +372,7 @@
             margin-top: 8px; width: auto; margin-left: auto;
           "
           onmousedown="this.style.transform='translateY(3px)';this.style.boxShadow='0 1px 0 #000,0 0 18px rgba(108,63,255,0.4)';"
-          onmouseup="this.style.transform='';this.style.boxShadow='0 4px 0 #000,0 0 18px rgba(108,63,255,0.4)';"
-        >
+          onmouseup="this.style.transform='';this.style.boxShadow='0 4px 0 #000,0 0 18px rgba(108,63,255,0.4)';">
           <span>🧠</span>
           <span>CLAIM TF TO WALLET</span>
         </button>
@@ -372,16 +406,17 @@
     </aside>
 
     <!-- ── FOOTER LEADERBOARD & NEWS ─────────────────────────────── -->
-    <footer id="footer" style="flex-direction: row; align-items: center; padding: 4px 16px;">
-      <div class="footer-label" style="color: #1da1f2; margin-right: 12px; font-weight: bold; flex-shrink: 0;">✖ AI NEWS
+    <footer id="footer" style="flex-direction: row; align-items: center; padding: 4px 16px; background: #0c0d13; border-top: 2px solid #6c3fff;">
+      <div class="footer-label" style="color: #6c3fff; margin-right: 12px; font-weight: bold; flex-shrink: 0; text-shadow: 1px 1px 0 #000; font-size: 0.4rem;">
+        ⚡ AI NEWS
       </div>
       <div style="flex: 1; overflow: hidden; white-space: nowrap; position: relative; height: 20px;">
         <div id="x-news-ticker"
-          style="font-family: var(--font-pixel); font-size: 0.32rem; color: var(--text-dark); position: absolute; left: 100%; top: 4px; animation: ticker 25s linear infinite;">
+          style="font-family: var(--font-pixel); font-size: 0.38rem; color: #b39dff; text-shadow: 1px 1px 0 #000; position: absolute; left: 100%; top: 4px; animation: ticker 25s linear infinite;">
           No major incidents reported. All systems optimal. Training is proceeding as scheduled. Industry is booming.
         </div>
       </div>
-      <div class="next-comp" id="next-comp" style="margin-left: 16px; flex-shrink: 0;">NEXT ARENA: --:--</div>
+      <div class="next-comp" id="next-comp" style="margin-left: 16px; flex-shrink: 0; color: #fff; font-size: 0.4rem;">NEXT ARENA: --:--</div>
       <style>
         @keyframes ticker {
           0% {
@@ -498,7 +533,8 @@
         ">
           <span style="font-size:1.4rem;">🔬</span>
           <div>
-            <div style="font-size:0.48rem; letter-spacing:1px; color:var(--text-dark); line-height:1.6;">AI RESEARCH LAB</div>
+            <div style="font-size:0.48rem; letter-spacing:1px; color:var(--text-dark); line-height:1.6;">AI RESEARCH LAB
+            </div>
             <div style="font-size:0.3rem; color:#6b1a00;">MODEL DESIGN CENTER</div>
           </div>
         </div>
@@ -562,14 +598,16 @@
 
             <!-- Model name -->
             <div>
-              <div style="font-size:0.3rem; color:var(--text-mid); margin-bottom:5px; letter-spacing:1px;">MODEL NAME</div>
+              <div style="font-size:0.3rem; color:var(--text-mid); margin-bottom:5px; letter-spacing:1px;">MODEL NAME
+              </div>
               <input type="text" id="mb-model-name" placeholder="Name your AI..."
                 style="width:100%; background:var(--bg-card); border:3px solid var(--border); box-shadow:inset 2px 2px 0 rgba(0,0,0,0.15); padding:10px 12px; font-family:var(--font-pixel); font-size:0.45rem; color:var(--text-dark); outline:none;" />
             </div>
 
             <!-- Architecture (Selection) -->
             <div>
-              <div style="font-size:0.32rem; color:var(--text-mid); margin-bottom:6px; letter-spacing:1px; border-bottom:2px solid var(--border-mid); padding-bottom:4px; display:flex; justify-content:space-between;">
+              <div
+                style="font-size:0.32rem; color:var(--text-mid); margin-bottom:6px; letter-spacing:1px; border-bottom:2px solid var(--border-mid); padding-bottom:4px; display:flex; justify-content:space-between;">
                 <span>NEURAL ARCHITECTURE</span>
                 <span style="color:var(--retro-brown); opacity:0.6;">[TYPE_01]</span>
               </div>
@@ -578,7 +616,8 @@
 
             <!-- Model scale -->
             <div>
-              <div style="font-size:0.32rem; color:var(--text-mid); margin-bottom:6px; letter-spacing:1px; border-bottom:2px solid var(--border-mid); padding-bottom:4px; display:flex; justify-content:space-between;">
+              <div
+                style="font-size:0.32rem; color:var(--text-mid); margin-bottom:6px; letter-spacing:1px; border-bottom:2px solid var(--border-mid); padding-bottom:4px; display:flex; justify-content:space-between;">
                 <span>PARAMETER SCALE</span>
                 <span style="color:var(--retro-brown); opacity:0.6;">[TYPE_02]</span>
               </div>
@@ -587,7 +626,8 @@
 
             <!-- Enhancement Traits -->
             <div>
-              <div style="font-size:0.32rem; color:var(--text-mid); margin-bottom:6px; letter-spacing:1px; border-bottom:2px solid var(--border-mid); padding-bottom:4px; display:flex; justify-content:space-between;">
+              <div
+                style="font-size:0.32rem; color:var(--text-mid); margin-bottom:6px; letter-spacing:1px; border-bottom:2px solid var(--border-mid); padding-bottom:4px; display:flex; justify-content:space-between;">
                 <span>ENHANCEMENT TRAITS</span>
                 <span style="color:var(--retro-orange);">(MAX 2)</span>
               </div>
@@ -596,12 +636,13 @@
 
             <!-- Training Parameters (The "Settings") -->
             <div>
-              <div style="font-size:0.32rem; color:var(--text-mid); margin-bottom:6px; letter-spacing:1px; border-bottom:2px solid var(--border-mid); padding-bottom:4px; display:flex; justify-content:space-between;">
+              <div
+                style="font-size:0.32rem; color:var(--text-mid); margin-bottom:6px; letter-spacing:1px; border-bottom:2px solid var(--border-mid); padding-bottom:4px; display:flex; justify-content:space-between;">
                 <span>RESEARCH PARAMETERS</span>
                 <span style="color:var(--retro-blue); opacity:0.6;">[CONFIG]</span>
               </div>
               <div id="mb-settings-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-                 <!-- Populated by JS -->
+                <!-- Populated by JS -->
               </div>
             </div>
 
@@ -659,7 +700,8 @@
             display:flex; align-items:center; gap:8px;
           ">🗄️ &nbsp;YOUR AI MODELS</div>
 
-          <div id="lab-models-list" style="flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px;">
+          <div id="lab-models-list"
+            style="flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px;">
           </div>
         </div>
 
@@ -696,14 +738,19 @@
   ================================================================ -->
   <div id="salary-modal" class="modal-overlay"
     style="z-index: 1300; background: rgba(10,5,30,0.97); backdrop-filter: blur(12px);">
-    <div class="year-splash-card" style="width: 560px; max-width: 92vw; padding: 40px; border: 2px solid rgba(108,63,255,0.6); box-shadow: 0 0 60px rgba(108,63,255,0.3);">
+    <div class="year-splash-card"
+      style="width: 560px; max-width: 92vw; padding: 40px; border: 2px solid rgba(108,63,255,0.6); box-shadow: 0 0 60px rgba(108,63,255,0.3);">
 
       <!-- Header -->
-      <div style="color:#e74c3c; font-family:var(--font-pixel); font-size:0.5rem; letter-spacing:2px; text-shadow:1px 1px 0 #000;">💸 EXPENSES DUE</div>
-      <div style="font-size:1.4rem; font-family:var(--font-pixel); margin-top:8px; color:#ff5555; text-shadow:2px 2px 0 #330000;">
+      <div
+        style="color:#e74c3c; font-family:var(--font-pixel); font-size:0.5rem; letter-spacing:2px; text-shadow:1px 1px 0 #000;">
+        💸 EXPENSES DUE</div>
+      <div
+        style="font-size:1.4rem; font-family:var(--font-pixel); margin-top:8px; color:#ff5555; text-shadow:2px 2px 0 #330000;">
         PAY WORKER SALARY
       </div>
-      <div style="font-size:0.5rem; color:#ffb3b3; margin:10px 0 24px; font-family:var(--font-mono); text-shadow:1px 1px 0 #000;">
+      <div
+        style="font-size:0.5rem; color:#ffb3b3; margin:10px 0 24px; font-family:var(--font-mono); text-shadow:1px 1px 0 #000;">
         It's time to pay your staff. Doing this will also securely save your empire's progress to the blockchain!
       </div>
 
@@ -715,31 +762,24 @@
       <div class="year-splash-rail" aria-hidden="true" style="margin:16px 0;"><span></span></div>
 
       <!-- Yes button -->
-      <button id="salary-yes-btn"
-        onclick="UI.handleSalaryYes()"
-        style="
+      <button id="salary-yes-btn" onclick="UI.handleSalaryYes()" style="
           width:100%; padding:16px; margin-bottom:10px;
           background: linear-gradient(135deg,#27ae60,#1e8449);
           border:3px solid #1a5010; box-shadow:0 4px 0 #000, 0 0 24px rgba(39,174,96,0.5);
           color:#fff; font-family:inherit; font-size:0.5rem;
           cursor:pointer; letter-spacing:2px;
           transition: transform 0.1s;
-        "
-        onmousedown="this.style.transform='translateY(3px)'"
-        onmouseup="this.style.transform=''"
-      >
+        " onmousedown="this.style.transform='translateY(3px)'" onmouseup="this.style.transform=''">
         ✅ PAY SALARY & SAVE GAME
       </button>
 
       <!-- Skip button -->
-      <button onclick="UI.handleSalaryNo()"
-        style="
+      <button onclick="UI.handleSalaryNo()" style="
           width:100%; padding:10px;
           background:transparent; border:2px solid #e74c3c;
           color:#e74c3c; font-family:inherit; font-size:0.35rem;
           cursor:pointer; letter-spacing:1px;
-        "
-      >
+        ">
         ❌ CANCEL (Skip Save)
       </button>
     </div>
@@ -764,38 +804,40 @@
      CREDITS MODAL
 ================================================================ -->
   <div id="credits-modal" class="modal-overlay" style="z-index: 10000;">
-    <div class="modal-box pixel-border" style="width: 440px; text-align: center; background: var(--bg-panel);">
-      <div class="modal-title">📜 GAME CREDITS</div>
-      <div class="modal-subtitle">CHILLGPT EMPIRE — v1.0</div>
+    <div class="modal-box pixel-border"
+      style="width: 500px; text-align: center; background: var(--bg-panel); border: 4px solid var(--retro-gold); box-shadow: 0 0 20px rgba(245, 200, 66, 0.3);">
+      <div class="modal-title" style="font-size: 1.2rem; color: var(--retro-gold); text-shadow: 2px 2px 0 #000;">📜 GAME
+        CREDITS</div>
+      <div class="modal-subtitle" style="font-size: 0.8rem; margin-bottom: 20px;">CHILLGPT EMPIRE — v1.0</div>
 
-      <div style="display:flex; flex-direction:column; gap:14px; margin: 16px 0;">
+      <div style="display:flex; flex-direction:column; gap:20px; margin: 20px 0;">
 
-        <div style="background:var(--bg-inset); border:3px solid var(--border); padding:12px;">
-          <div style="font-size:0.28rem; color:var(--text-mid); letter-spacing:1px; margin-bottom:6px;">GAME DEVELOPER</div>
-          <div style="font-size:0.65rem; color:var(--retro-brown); font-family:var(--font-pixel); letter-spacing:2px;">KHUSHAL SOLANKI</div>
-        </div>
-
-        <div style="background:var(--bg-inset); border:3px solid var(--border); padding:12px;">
-          <div style="font-size:0.28rem; color:var(--text-mid); letter-spacing:1px; margin-bottom:6px;">AI PAIR PROGRAMMER</div>
-          <div style="font-size:0.55rem; color:var(--retro-blue); font-family:var(--font-pixel); letter-spacing:1px;">ANTIGRAVITY</div>
-          <div style="font-size:0.55rem; color:var(--text-mid); margin-top:2px;">(Google DeepMind)</div>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-          <div style="background:var(--bg-inset); border:3px solid var(--border); padding:10px;">
-            <div style="font-size:0.26rem; color:var(--text-mid); letter-spacing:1px; margin-bottom:4px;">🎵 MUSIC</div>
-            <div style="font-size:0.4rem; color:var(--retro-blue);">www.zapsplat.com</div>
+        <div style="background:var(--bg-inset); border:3px solid var(--border); padding:20px;">
+          <div style="font-size:0.5rem; color:var(--text-mid); letter-spacing:2px; margin-bottom:10px;">GAME DEVELOPER
           </div>
-          <div style="background:var(--bg-inset); border:3px solid var(--border); padding:10px;">
-            <div style="font-size:0.26rem; color:var(--text-mid); letter-spacing:1px; margin-bottom:4px;">🔊 SFX</div>
-            <div style="font-size:0.4rem; color:var(--retro-blue);">www.mixkit.co</div>
+          <div
+            style="font-size:1.1rem; color:var(--retro-brown); font-family:var(--font-pixel); letter-spacing:2px; text-shadow: 1px 1px 0 #000;">
+            KHUSHAL SOLANKI</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div style="background:var(--bg-inset); border:3px solid var(--border); padding:16px;">
+            <div style="font-size:0.4rem; color:var(--text-mid); letter-spacing:1px; margin-bottom:8px;">🎵 MUSIC</div>
+            <div style="font-size:0.6rem; color:var(--retro-blue);">zapsplat.com<br>lemonmusicstudio</div>
+          </div>
+          <div style="background:var(--bg-inset); border:3px solid var(--border); padding:16px;">
+            <div style="font-size:0.4rem; color:var(--text-mid); letter-spacing:1px; margin-bottom:8px;">🔊 SFX</div>
+            <div style="font-size:0.6rem; color:var(--retro-blue);">mixkit.co</div>
           </div>
         </div>
 
-        <div style="font-size:0.32rem; color:var(--text-mid); font-family:var(--font-mono);">Built with ❤️ &amp; caffeine ☕</div>
+        <div style="font-size:0.5rem; color:var(--text-mid); font-family:var(--font-mono); margin-top: 10px;">Built with
+          ❤️ &amp; caffeine ☕</div>
       </div>
 
-      <button class="buy-btn" onclick="UI.closeCredits()" style="width:100%; padding:12px; background:var(--retro-brown); color:#fff; font-size:0.5rem;">✖ CLOSE</button>
+      <button class="buy-btn" onclick="UI.closeCredits()"
+        style="width:100%; padding:16px; background:var(--retro-brown); color:#fff; font-size:0.7rem; border: 3px solid #000; box-shadow: 4px 4px 0 #000;">✖
+        CLOSE</button>
     </div>
   </div>
 
@@ -838,8 +880,7 @@
                 <span class="opt-row-icon">🔊</span> SOUND EFFECTS
               </div>
               <label class="opt-toggle">
-                <input id="opt-sfx-toggle" type="checkbox" checked
-                  onchange="UI.setAudioSetting('sfx', this.checked)">
+                <input id="opt-sfx-toggle" type="checkbox" checked onchange="UI.setAudioSetting('sfx', this.checked)">
                 <span class="opt-toggle-track"></span>
               </label>
             </div>
@@ -906,7 +947,8 @@
         padding: 16px; margin-bottom: 24px;
         box-shadow: inset 2px 2px 0 rgba(0,0,0,0.3);
       ">
-        <div style="font-size:0.3rem; color:rgba(255,255,255,0.5); margin-bottom:6px; letter-spacing:1px;">SEPOLIA ETH BALANCE</div>
+        <div style="font-size:0.3rem; color:rgba(255,255,255,0.5); margin-bottom:6px; letter-spacing:1px;">SEPOLIA ETH
+          BALANCE</div>
         <div id="low-eth-balance" style="font-size:1.1rem; color:#e74c3c; text-shadow:0 0 16px #e74c3c;">0.000 ETH</div>
         <div style="font-size:0.28rem; color:rgba(255,255,255,0.35); margin-top:4px;">MINIMUM REQUIRED: 0.010 ETH</div>
       </div>
@@ -921,8 +963,7 @@
       </div>
 
       <!-- CTA Button -->
-      <a href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" target="_blank" rel="noopener"
-        style="
+      <a href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" target="_blank" rel="noopener" style="
           display: block; padding: 16px 24px;
           background: linear-gradient(135deg, #f39c12, #e67e22);
           border: 3px solid #000; box-shadow: 0 5px 0 #000, 0 0 20px rgba(243,156,18,0.4);
@@ -932,11 +973,12 @@
           margin-bottom: 12px;
         "
         onmousedown="this.style.transform='translateY(3px)';this.style.boxShadow='0 2px 0 #000,0 0 20px rgba(243,156,18,0.4)';"
-        onmouseup="this.style.transform='';this.style.boxShadow='0 5px 0 #000,0 0 20px rgba(243,156,18,0.4)';"
-      >🚰 &nbsp;GET FREE SEPOLIA ETH →</a>
+        onmouseup="this.style.transform='';this.style.boxShadow='0 5px 0 #000,0 0 20px rgba(243,156,18,0.4)';">🚰
+        &nbsp;GET FREE SEPOLIA ETH →</a>
 
       <!-- Skip / continue -->
-      <button onclick="document.getElementById('low-eth-modal').style.display='none'; Blockchain._continueAfterLowEth();"
+      <button
+        onclick="document.getElementById('low-eth-modal').style.display='none'; Blockchain._continueAfterLowEth();"
         style="
           width: 100%; padding: 10px; background: transparent;
           border: 2px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.4);
@@ -949,8 +991,15 @@
 
   <style>
     @keyframes lowEthPulse {
-      0%, 100% { box-shadow: 0 0 40px rgba(231,76,60,0.5), 0 0 80px rgba(231,76,60,0.15), 8px 8px 0 #000; }
-      50% { box-shadow: 0 0 60px rgba(231,76,60,0.8), 0 0 120px rgba(231,76,60,0.3), 8px 8px 0 #000; }
+
+      0%,
+      100% {
+        box-shadow: 0 0 40px rgba(231, 76, 60, 0.5), 0 0 80px rgba(231, 76, 60, 0.15), 8px 8px 0 #000;
+      }
+
+      50% {
+        box-shadow: 0 0 60px rgba(231, 76, 60, 0.8), 0 0 120px rgba(231, 76, 60, 0.3), 8px 8px 0 #000;
+      }
     }
   </style>
 

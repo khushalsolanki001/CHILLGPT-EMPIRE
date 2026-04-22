@@ -95,20 +95,29 @@ class BaseTycoonScene extends Phaser.Scene {
     return !window.GameAudio || window.GameAudio.isSfxEnabled();
   }
 
+  _isGameStarted() {
+    return !!window.__gameStarted;
+  }
+
   _listenForAudioSettings() {
     const apply = () => this._applyAudioSettings();
     window.addEventListener('AUDIO_SETTINGS_CHANGED', apply);
-    this.events.once('shutdown', () => window.removeEventListener('AUDIO_SETTINGS_CHANGED', apply));
+    window.addEventListener('GAME_STARTED', apply);
+    this.events.once('shutdown', () => {
+      window.removeEventListener('AUDIO_SETTINGS_CHANGED', apply);
+      window.removeEventListener('GAME_STARTED', apply);
+    });
     apply();
   }
 
   _applyAudioSettings() {
+    const gameStarted = this._isGameStarted();
     const bgm = this.sound?.get?.('bgm');
     if (bgm) {
-      bgm.setMute(!this._musicEnabled());
-      bgm.setVolume(this._musicEnabled() ? 0.25 : 0);
-      if (!this._musicEnabled() && bgm.isPlaying) bgm.pause();
-      if (this._musicEnabled() && this.scene.isActive() && !bgm.isPlaying) {
+      bgm.setMute(!this._musicEnabled() || !gameStarted);
+      bgm.setVolume(this._musicEnabled() && gameStarted ? 0.25 : 0);
+      if ((!this._musicEnabled() || !gameStarted) && bgm.isPlaying) bgm.pause();
+      if (this._musicEnabled() && gameStarted && this.scene.isActive() && !bgm.isPlaying) {
         try {
           if (bgm.isPaused) bgm.resume();
           else bgm.play();
@@ -116,10 +125,10 @@ class BaseTycoonScene extends Phaser.Scene {
       }
     }
     if (this._sndKeyboard) {
-      this._sndKeyboard.setMute(!this._sfxEnabled());
-      this._sndKeyboard.setVolume(this._sfxEnabled() ? 0.35 : 0);
-      if (!this._sfxEnabled() && this._sndKeyboard.isPlaying) this._sndKeyboard.stop();
-      if (this._sfxEnabled() && this.scene.isActive() && !this._sndKeyboard.isPlaying) {
+      this._sndKeyboard.setMute(!this._sfxEnabled() || !gameStarted);
+      this._sndKeyboard.setVolume(this._sfxEnabled() && gameStarted ? 0.35 : 0);
+      if ((!this._sfxEnabled() || !gameStarted) && this._sndKeyboard.isPlaying) this._sndKeyboard.stop();
+      if (this._sfxEnabled() && gameStarted && this.scene.isActive() && !this._sndKeyboard.isPlaying) {
         try { this._sndKeyboard.play(); } catch (e) { }
       }
     }
@@ -227,6 +236,7 @@ class BaseTycoonScene extends Phaser.Scene {
     container.setInteractive(rect, Phaser.Geom.Rectangle.Contains);
 
     container.on('pointerover', () => {
+      if (window.GameAudio && window.GameAudio.playHover) window.GameAudio.playHover();
       drawBg(true);
       this.tweens.add({ targets: container, scale: 1.05, duration: 200, ease: 'Back.easeOut' });
       arrow.setColor('#ffffff');
@@ -300,13 +310,13 @@ class GameDevStoryScene extends BaseTycoonScene {
     const unlockAudio = () => {
       if (this.sound.context.state === 'suspended') {
         this.sound.context.resume().then(() => {
-          if (this._musicEnabled() && !this._sndBGM.isPlaying) this._sndBGM.play();
-          if (this._sfxEnabled() && this.scene.isActive() && !this._sndKeyboard.isPlaying) this._sndKeyboard.play();
+          if (this._musicEnabled() && this._isGameStarted() && !this._sndBGM.isPlaying) this._sndBGM.play();
+          if (this._sfxEnabled() && this._isGameStarted() && this.scene.isActive() && !this._sndKeyboard.isPlaying) this._sndKeyboard.play();
           this._applyAudioSettings();
         });
       } else {
-        if (this._musicEnabled() && !this._sndBGM.isPlaying) this._sndBGM.play();
-        if (this._sfxEnabled() && this.scene.isActive() && !this._sndKeyboard.isPlaying) this._sndKeyboard.play();
+        if (this._musicEnabled() && this._isGameStarted() && !this._sndBGM.isPlaying) this._sndBGM.play();
+        if (this._sfxEnabled() && this._isGameStarted() && this.scene.isActive() && !this._sndKeyboard.isPlaying) this._sndKeyboard.play();
         this._applyAudioSettings();
       }
     };
@@ -316,8 +326,8 @@ class GameDevStoryScene extends BaseTycoonScene {
     this.events.on('sleep', () => this._sndKeyboard.stop());
 
     try {
-      if (this._sfxEnabled()) this._sndKeyboard.play();
-      if (this._musicEnabled()) this._sndBGM.play();
+      if (this._sfxEnabled() && this._isGameStarted()) this._sndKeyboard.play();
+      if (this._musicEnabled() && this._isGameStarted()) this._sndBGM.play();
     } catch (e) { }
     this._listenForAudioSettings();
 
@@ -506,7 +516,7 @@ class GPUClusterRoomScene extends BaseTycoonScene {
   _startGpuAmbient() {
     this._stopGpuAmbient();
     const clusterCount = Game.state.hardware?.cluster || 0;
-    if (clusterCount <= 0 || !this._sfxEnabled()) return;
+    if (clusterCount <= 0 || !this._sfxEnabled() || !this._isGameStarted()) return;
     const playNext = () => {
       const delay = Phaser.Math.Between(3000, 8000);
       this._gpuTimer = this.time.delayedCall(delay, () => {

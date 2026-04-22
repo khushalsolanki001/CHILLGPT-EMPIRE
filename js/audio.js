@@ -60,6 +60,10 @@ const GameAudio = (() => {
     const ctx = _getCtx();
     if (!ctx) return;
 
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
     const osc = ctx.createOscillator();
     const vol = ctx.createGain();
 
@@ -87,6 +91,12 @@ const GameAudio = (() => {
   function playClick() {
     if (!_settings.sfx) return;
     _beep(440, 0.08, 'square', 0.1);
+  }
+
+  /** Soft hover sound */
+  function playHover() {
+    if (!_settings.sfx) return;
+    _beep(660, 0.04, 'sine', 0.03);
   }
 
   /** Ascending chime for big AI upgrade */
@@ -135,6 +145,7 @@ const GameAudio = (() => {
     setSfxEnabled,
     playCoin,
     playClick,
+    playHover,
     playUpgrade,
     playYearChange,
   };
