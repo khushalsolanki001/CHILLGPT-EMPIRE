@@ -587,7 +587,11 @@ function initPhaserGame() {
     scene: [GameDevStoryScene, ServerRoomScene, GPUClusterRoomScene],
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
     render: { antialias: true, pixelArt: false, roundPixels: true },
-    loader: { baseURL: './' },
+    loader: { baseURL: (function() {
+      // Use absolute base URL so assets load correctly inside iframes (e.g. Wavedash)
+      var base = document.baseURI || window.location.href;
+      return base.substring(0, base.lastIndexOf('/') + 1);
+    })() },
   });
 }
 

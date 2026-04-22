@@ -106,4 +106,23 @@
     }
   }, 500);
 
+  // ── WAVEDASH SDK INTEGRATION ────────────────────────────────────
+  // Wavedash injects window.WavedashJS as a Promise.
+  // We MUST call WavedashJS.init() or the 0% loading screen never dismisses.
+  // This safely no-ops on localhost / Itch.io where WavedashJS is undefined.
+  (async function initWavedash() {
+    try {
+      if (typeof window.WavedashJS !== 'undefined') {
+        const sdk = await window.WavedashJS;
+        // Signal that the game has loaded (fills + dismisses the loading bar)
+        sdk.updateLoadProgressZeroToOne(1);
+        sdk.init();
+        console.log('[Wavedash] SDK initialised successfully');
+      }
+    } catch (e) {
+      // Not running on Wavedash — silently ignore
+      console.log('[Wavedash] Not on Wavedash platform, skipping SDK init');
+    }
+  })();
+
 })();

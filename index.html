@@ -2,6 +2,15 @@
 <html lang="en">
 
 <head>
+
+  <!-- ================================================================
+     🔧 DEV CONFIG — toggle features here
+  ================================================================ -->
+  <script>
+    // Set to true  → show MetaMask connect button (Web3 / crypto players)
+    // Set to false → hide it    (normal players, e.g. on Wavedash)
+    const METAMASK_ENABLED = false;
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ChillGPT Empire – Build the Chillest AI</title>
@@ -19,8 +28,8 @@
 
   <!-- Phaser 3 — loaded before game scripts -->
   <script src="js/phaser.min.js"></script>
-  <!-- ethers.js — Ethereum wallet integration -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+  <!-- ethers.js — loaded locally to avoid CDN/CSP issues on platforms like Wavedash -->
+  <script src="js/ethers.umd.min.js"></script>
 </head>
 
 <body>
@@ -40,7 +49,8 @@
       <button class="start-btn" onclick="UI.openOptions()">OPTIONS</button>
       <button class="start-btn" onclick="UI.openCredits()">CREDITS</button>
 
-      <div class="wallet-section">
+      <!-- MetaMask section — visibility controlled by METAMASK_ENABLED flag above -->
+      <div class="wallet-section" id="wallet-section-wrapper">
         <!-- Status LED -->
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
           <div id="wallet-indicator"
@@ -50,7 +60,7 @@
             style="font-family:var(--font-mono); font-size:0.28rem; color:rgba(255,255,255,0.4); letter-spacing:1px;">
             NOT CONNECTED</div>
         </div>
-        <img class="metamask-icon" src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
+        <img class="metamask-icon" src="assets/images/metamask-fox.svg"
           alt="MetaMask" onclick="Blockchain.connect()">
         <button id="signin-btn" onclick="Blockchain.connect()">🦊 CONNECT & START</button>
         <!-- Bonus teaser badge -->
@@ -86,6 +96,14 @@
       </div>
     </div>
   </div>
+
+  <!-- Apply the METAMASK_ENABLED flag to show/hide the connect button -->
+  <script>
+    (function () {
+      var el = document.getElementById('wallet-section-wrapper');
+      if (el) el.style.display = METAMASK_ENABLED ? '' : 'none';
+    })();
+  </script>
 
   <!-- ================================================================
      ROOT APP LAYOUT
@@ -406,8 +424,10 @@
     </aside>
 
     <!-- ── FOOTER LEADERBOARD & NEWS ─────────────────────────────── -->
-    <footer id="footer" style="flex-direction: row; align-items: center; padding: 4px 16px; background: #0c0d13; border-top: 2px solid #6c3fff;">
-      <div class="footer-label" style="color: #6c3fff; margin-right: 12px; font-weight: bold; flex-shrink: 0; text-shadow: 1px 1px 0 #000; font-size: 0.4rem;">
+    <footer id="footer"
+      style="flex-direction: row; align-items: center; padding: 4px 16px; background: #0c0d13; border-top: 2px solid #6c3fff;">
+      <div class="footer-label"
+        style="color: #6c3fff; margin-right: 12px; font-weight: bold; flex-shrink: 0; text-shadow: 1px 1px 0 #000; font-size: 0.4rem;">
         ⚡ AI NEWS
       </div>
       <div style="flex: 1; overflow: hidden; white-space: nowrap; position: relative; height: 20px;">
@@ -416,7 +436,8 @@
           No major incidents reported. All systems optimal. Training is proceeding as scheduled. Industry is booming.
         </div>
       </div>
-      <div class="next-comp" id="next-comp" style="margin-left: 16px; flex-shrink: 0; color: #fff; font-size: 0.4rem;">NEXT ARENA: --:--</div>
+      <div class="next-comp" id="next-comp" style="margin-left: 16px; flex-shrink: 0; color: #fff; font-size: 0.4rem;">
+        NEXT ARENA: --:--</div>
       <style>
         @keyframes ticker {
           0% {

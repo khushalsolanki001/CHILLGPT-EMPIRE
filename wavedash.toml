@@ -1,0 +1,13 @@
+# Wavedash configuration for ChillGPT Empire
+# Docs: https://docs.wavedash.com/cli/configuration
+
+# Replace this with your actual Game ID from the Wavedash Developer Portal
+# You'll get this after running: wavedash init
+game_id = "j97ccvpvc9g81454c834tn5b8585bzxc"
+
+# The folder containing your game's built files
+# Using dist/ to avoid uploading node_modules (keeps build small & clean)
+upload_dir = "./dist"
+
+# The entry point HTML file relative to upload_dir
+entrypoint = "index.html"
