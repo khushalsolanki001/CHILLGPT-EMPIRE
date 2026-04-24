@@ -92,14 +92,7 @@ Install the **Live Server** extension → right-click `index.html` → *Open wit
 
 ---
 
-## 🖼️ Suggested Free Pixel Art Assets
 
-| Asset | Source |
-|-------|--------|
-| GPU / Server sprites | [itch.io: kenney.nl assets](https://kenney.nl/assets) |
-| Robot / character | [OpenGameArt.org – RPG characters](https://opengameart.org) |
-| Sci-fi UI elements | [itch.io: free sci-fi UI pack](https://itch.io/c/2124368/free-pixel-art) |
-| Backgrounds | [Ansimuz on itch.io](https://ansimuz.itch.io/) |
 
 Place `.png` files in `assets/images/` and reference them in `css/style.css` or `js/ui.js`.
 
