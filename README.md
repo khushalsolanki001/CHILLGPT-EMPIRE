@@ -1,139 +1,95 @@
 # ⚡ ChillGPT Empire
 
-> *Build the world's chillest and most powerful AI — from a garage in 2016 to global domination by 2026.*
+![ChillGPT Empire Banner](chillgpt_empire_banner_1777124424811.png)
 
-A browser-based idle tycoon game built with **pure vanilla HTML + CSS + JavaScript** — no frameworks, no libraries.
+> **"Build the world's chillest and most powerful AI — from a garage in 2016 to global domination by 2026."**
 
----
-
-## 🎮 How to Play
-
-1. **Buy GPUs** in the Hardware shop to generate compute
-2. Compute → Users → Money (auto-idle income)
-3. **Click Collect Revenue** to bank your pending earnings
-4. Buy **AI Tech upgrades** to multiply your income or cut electricity costs
-5. Each year (3.5 min real-time) triggers a **Global AI Arena** competition
-6. Survive the electricity bill — too many machines without upgrades = losing money
-7. Reach **2026** as the #1 AI company to win
-
-### Keyboard Shortcut
-| Key | Action |
-|-----|--------|
-| `C` | Collect Revenue |
+**ChillGPT Empire** is a deep-tech idle tycoon game built for the **Gamedev.js Jam 2026**. Experience the evolution of artificial intelligence, manage massive GPU clusters, survive the electricity bills of a national data center, and dominate the Global AI Arena.
 
 ---
 
-## 🗂️ Project Structure
+## 🏆 Gamedev.js Jam 2026 Challenges
 
-```
-CHILLGPT-EMPIRE/
-├── index.html              ← Entry point (HTML skeleton only)
-├── css/
-│   └── style.css           ← Full styling: pixel font, CRT, neon glow
-├── js/
-│   ├── main.js             ← Bootstrap: init + game loop + auto-save
-│   ├── game.js             ← Core logic: state, tick, buy actions, calculations
-│   ├── ui.js               ← All DOM: shop, machines, effects, mascot, modals
-│   ├── upgrades.js         ← Static data: hardware, AI upgrades, competitors
-│   ├── save.js             ← localStorage save/load + offline progress
-│   └── audio.js            ← (Optional) Web Audio API sound effects
-├── assets/
-│   ├── images/             ← Pixel art assets (add your own PNGs here)
-│   └── fonts/              ← Custom pixel fonts (optional)
-└── README.md
-```
+This project is a proud entry for the **Gamedev.js Jam 2026** under the theme **"MACHINES"**. We have integrated several cutting-edge technologies to participate in the following challenges:
 
-### Module Responsibilities
+### 📖 [Open Source Challenge by GitHub](https://gamedevjs.com/jam/2026/#challenge-opensource)
+The entire source code for **ChillGPT Empire** is open-source and available on GitHub. We believe in the "Open AI" philosophy (the real kind) where the community can audit, learn from, and contribute to the world's chillest machine intelligence.
+*   **Repository:** [github.com/khushalsolanki001/chillgpt-empire](https://github.com/khushalsolanki001/chillgpt-empire)
 
-| File | Owns |
-|------|------|
-| `upgrades.js` | Static data (no logic) — loaded first |
-| `save.js` | Read/write localStorage |
-| `game.js` | Game state, math, buy actions, tick |
-| `ui.js` | All DOM ops, visual effects, modals |
-| `main.js` | Wires everything together, starts loop |
+### 🕹️ [Build it with Phaser Challenge](https://gamedevjs.com/jam/2026/#challenge-phaser)
+The core game engine is built using **Phaser 3**. We utilized Phaser's powerful scene management, physics, and asset loading to create a seamless tycoon experience that scales from a small garage to a galactic HQ.
+*   **Engine:** Phaser v3.80+
+
+### ⛓️ [Ethereum Challenge by OP Guild](https://gamedevjs.com/jam/2026/#challenge-ethereum)
+ChillGPT Empire features a robust **Web3 integration** on the **Ethereum Sepolia Testnet**.
+*   **On-Chain Saves:** Players can save their full game state to the blockchain, ensuring their empire is immutable and accessible from any device.
+*   **$TF Token Economy:** Collect "Thought Frequency" ($TF) in-game and claim it as a real on-chain token. Use $TF to buy exclusive AI Tech upgrades or trade on the in-game exchange.
+*   **MetaMask Bonus:** Connect your wallet for an immediate +$500K cash boost and a permanent +20% TF generation rate.
+*   **Contact/Reward Address:** `0xeF21263D9AA5392315464894c09d4962642D8bfA`
+
+### 🚀 [Deploy to Wavedash Challenge](https://gamedevjs.com/jam/2026/#challenge-wavedash)
+Optimized for the Wavedash platform, ChillGPT Empire is fully playable with SDK integration for seamless loading and performance.
+*   **Play on Wavedash:** [wavedash.com/games/chillgpt-empire](https://wavedash.com/games/chillgpt-empire)
+
+---
+
+## 🎮 Play Now
+*   **Itch.io:** [khushalsolanki001.itch.io/chillgpt-empire](https://khushalsolanki001.itch.io/chillgpt-empire)
+*   **Wavedash:** [wavedash.com/games/chillgpt-empire](https://wavedash.com/games/chillgpt-empire)
+
+---
+
+## 🛠️ Key Features
+
+*   **10-Year Progression:** Start in a garage in 2016 and work your way up to a Galactic HQ by 2026.
+*   **Dynamic Economy:** Manage hardware costs, electricity consumption, and staff salaries.
+*   **AI Lab:** Design your own AI models with custom architectures, scales, and enhancement traits.
+*   **Global AI Arena:** Compete against industry giants like LuminaAI and AetherMind in yearly rankings.
+*   **Retro Aesthetics:** A premium pixel-art design with CRT scanlines, neon glows, and a "chilled out" mascot.
+
+---
+
+## 🗂️ Tech Stack
+- **Framework:** [Phaser 3](https://phaser.io/)
+- **Blockchain:** [Ethers.js](https://docs.ethers.org/) (Sepolia Testnet)
+- **Styling:** Vanilla CSS3 (Custom CRT & Glow system)
+- **Structure:** Modular Vanilla JavaScript
 
 ---
 
 ## 🚀 Running Locally
 
-### Option A — Python (simplest)
+### 1. Clone the repo
 ```bash
+git clone https://github.com/khushalsolanki001/chillgpt-empire.git
 cd "CHILLGPT EMPIRE"
+```
+
+### 2. Start a server
+Since the game uses modules and local assets, it requires an HTTP server.
+
+**Using Node.js:**
+```bash
+npm run dev
+```
+
+**Using Python:**
+```bash
 python -m http.server 8080
-# Open http://localhost:8080
 ```
 
-### Option B — Node.js
-```bash
-npx -y serve .
-# Opens automatically in browser
-```
-### Option C — Node.js
-```bash
-npm run dev .
-# Opens automatically in browser
-```
-
-### Option D — VS Code
-Install the **Live Server** extension → right-click `index.html` → *Open with Live Server*
-
-> **⚠️ Do NOT open `index.html` directly as a `file://` URL.**  
-> The Google Fonts import requires a real HTTP server.
-
----
-
-## 🎨 Visual Style
-
-- **Font**: [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) (pixel/retro)
-- **Secondary**: [Share Tech Mono](https://fonts.google.com/specimen/Share+Tech+Mono)
-- **Theme**: Dark cyber-industrial with CRT scanlines
-- **Colors**: Neon blue `#00d4ff` · Neon green `#39ff85` · Neon purple `#b44fff`
-
----
-
-
-
-Place `.png` files in `assets/images/` and reference them in `css/style.css` or `js/ui.js`.
-
----
-
-## 🗺️ Progression Overview
-
-| Year | Location | Unlocks |
-|------|----------|---------|
-| 2016 | 🏠 Garage | GPU, Advanced Text AI |
-| 2017 | 🏢 Office | GPU Cluster |
-| 2018 | 🏗️ Startup Floor | Server Rack, Image Gen |
-| 2019 | 🖥️ Server Room | Efficient Power |
-| 2020 | 🏭 Micro DC | Mega Data Center |
-| 2021 | ⚙️ Regional DC | Video Generation |
-| 2022 | 🌐 National DC | Voice Mode |
-| 2023 | 🌍 Mega DC | Quantum DC, Multimodal |
-| 2024 | 🚀 Galactic HQ | AI Agents |
-| 2025 | 🌌 Mothership | Final push |
-| 2026 | 👑 Empire | Win condition |
-
----
-
-## 🏆 Competitors in the Global AI Arena
-
-| Company | Growth Rate | Difficulty |
-|---------|-------------|------------|
-| LuminaAI | 1.38× / year | ⭐⭐⭐ |
-| AetherMind | 1.45× / year | ⭐⭐⭐⭐ |
-| QuantumForge | 1.52× / year | ⭐⭐⭐⭐⭐ |
+### 3. Open in Browser
+Visit `http://localhost:8080` (or the port specified by your server).
 
 ---
 
 ## 🔧 Developer Notes
-
-- **Save key**: `chillgpt_empire_v3` in localStorage
-- **Year duration**: 210 real seconds (3.5 min) — change `yearDuration` in `game.js`
-- **Adding hardware**: Add an entry to the `HARDWARE` array in `upgrades.js`
-- **Adding AI upgrades**: Add an entry to `AI_UPGRADES` in `upgrades.js`
-- **Sound effects**: Enable in `audio.js` and call `Audio.playCoin()` etc. from `ui.js`
+- **Save Key:** `chillgpt_empire_v3` (LocalStorage)
+- **Contracts:**
+  - `ChillGPTSave`: [0xeF21263D9AA5392315464894c09d4962642D8bfA](https://sepolia.etherscan.io/address/0xeF21263D9AA5392315464894c09d4962642D8bfA)
+  - `$TF Token`: [0x94750697819A66A032e2e2953bD2A3249213D87D](https://sepolia.etherscan.io/address/0x94750697819A66A032e2e2953bD2A3249213D87D)
 
 ---
 
-*Built for GameDev.js 2026 – Theme: MACHINES*
+*Built for Gamedev.js Jam 2026 – Theme: MACHINES*
+*Created by Khushal Solanki*
