@@ -1,6 +1,6 @@
 # ⚡ ChillGPT Empire
 
-![ChillGPT Empire Banner](chillgpt_empire_banner_1777124424811.png)
+![ChillGPT Empire Banner](ChillGPTEmpir_logo.png)
 
 > **"Build the world's chillest and most powerful AI — from a garage in 2016 to global domination by 2026."**
 
