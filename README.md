@@ -79,7 +79,7 @@ python -m http.server 8080
 ```
 
 ### 3. Open in Browser
-Visit `http://localhost:8080` (or the port specified by your server).
+Visit `http://localhost:3000` (or the port specified by your server).
 
 ---
 
