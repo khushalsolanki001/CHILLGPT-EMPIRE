@@ -75,7 +75,7 @@ npm run dev
 
 **Using Python:**
 ```bash
-python -m http.server 8080
+python -m http.server 3000
 ```
 
 ### 3. Open in Browser
