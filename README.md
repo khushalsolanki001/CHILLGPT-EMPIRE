@@ -62,7 +62,7 @@ Optimized for the Wavedash platform, ChillGPT Empire is fully playable with SDK 
 ### 1. Clone the repo
 ```bash
 git clone https://github.com/khushalsolanki001/chillgpt-empire.git
-cd "CHILLGPT EMPIRE"
+cd "CHILLGPT-EMPIRE"
 ```
 
 ### 2. Start a server
