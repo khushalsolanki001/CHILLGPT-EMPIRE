@@ -25,7 +25,7 @@ ChillGPT Empire features a robust **Web3 integration** on the **Ethereum Sepolia
 *   **On-Chain Saves:** Players can save their full game state to the blockchain, ensuring their empire is immutable and accessible from any device.
 *   **$TF Token Economy:** Collect "Thought Frequency" ($TF) in-game and claim it as a real on-chain token. Use $TF to buy exclusive AI Tech upgrades or trade on the in-game exchange.
 *   **MetaMask Bonus:** Connect your wallet for an immediate +$500K cash boost and a permanent +20% TF generation rate.
-*   **Contact/Reward Address:** `0xeF21263D9AA5392315464894c09d4962642D8bfA`
+*   **Contact Address:** `0xeF21263D9AA5392315464894c09d4962642D8bfA`
 
 ### 🚀 [Deploy to Wavedash Challenge](https://gamedevjs.com/jam/2026/#challenge-wavedash)
 Optimized for the Wavedash platform, ChillGPT Empire is fully playable with SDK integration for seamless loading and performance.
