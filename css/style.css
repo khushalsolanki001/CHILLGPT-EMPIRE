@@ -379,7 +379,7 @@ body {
 }
 
 /* ================================================================
-   FACTORY AREA — transparent, lets Phaser canvas show through
+   FACTORY AREA — transparent, lets Phaser canvas show through it
 ================================================================ */
 #factory {
   grid-area: factory;
