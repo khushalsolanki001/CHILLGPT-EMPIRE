@@ -1,6 +1,6 @@
 # ⚡ ChillGPT Empire
 
-![ChillGPT Empire Banner](chillgpt_empire_banner_1777124424811.png)
+![ChillGPT Empire Banner](ChillGPTEmpir_logo.png)
 
 > **"Build the world's chillest and most powerful AI — from a garage in 2016 to global domination by 2026."**
 
@@ -25,7 +25,7 @@ ChillGPT Empire features a robust **Web3 integration** on the **Ethereum Sepolia
 *   **On-Chain Saves:** Players can save their full game state to the blockchain, ensuring their empire is immutable and accessible from any device.
 *   **$TF Token Economy:** Collect "Thought Frequency" ($TF) in-game and claim it as a real on-chain token. Use $TF to buy exclusive AI Tech upgrades or trade on the in-game exchange.
 *   **MetaMask Bonus:** Connect your wallet for an immediate +$500K cash boost and a permanent +20% TF generation rate.
-*   **Contact/Reward Address:** `0xeF21263D9AA5392315464894c09d4962642D8bfA`
+*   **Contact Address:** `0xeF21263D9AA5392315464894c09d4962642D8bfA`
 
 ### 🚀 [Deploy to Wavedash Challenge](https://gamedevjs.com/jam/2026/#challenge-wavedash)
 Optimized for the Wavedash platform, ChillGPT Empire is fully playable with SDK integration for seamless loading and performance.
@@ -62,7 +62,7 @@ Optimized for the Wavedash platform, ChillGPT Empire is fully playable with SDK 
 ### 1. Clone the repo
 ```bash
 git clone https://github.com/khushalsolanki001/chillgpt-empire.git
-cd "CHILLGPT EMPIRE"
+cd "CHILLGPT-EMPIRE-main"
 ```
 
 ### 2. Start a server
@@ -75,11 +75,11 @@ npm run dev
 
 **Using Python:**
 ```bash
-python -m http.server 8080
+python -m http.server 3000
 ```
 
 ### 3. Open in Browser
-Visit `http://localhost:8080` (or the port specified by your server).
+Visit `http://localhost:3000` (or the port specified by your server).
 
 ---
 
