@@ -30,7 +30,7 @@ ChillGPT Empire features a robust **Web3 integration** on the **Ethereum Sepolia
 ### 🚀 [Deploy to Wavedash Challenge](https://gamedevjs.com/jam/2026/#challenge-wavedash)
 Optimized for the Wavedash platform, ChillGPT Empire is fully playable with SDK integration for seamless loading and performance.
 *   **Play on Wavedash:** [wavedash.com/games/chillgpt-empire](https://wavedash.com/games/chillgpt-empire)
-
+also it has achievements.
 ---
 
 ## 🎮 Play Now
