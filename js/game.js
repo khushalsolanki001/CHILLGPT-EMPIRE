@@ -42,7 +42,7 @@ const Game = (() => {
       mult: {
         moneyPerUser: 0.01,   // $ per user per second
         computeToUsers: 0.5,    // users gained per TF/s of compute
-        elecReduction: 1.0,    // multiplied onto electricity (lower = cheaper)
+        elecReduction: 0.6,    // multiplied onto electricity (lower = cheaper)
         workerIncome: 2.0,    // $ earned per worker per second
       },
 
