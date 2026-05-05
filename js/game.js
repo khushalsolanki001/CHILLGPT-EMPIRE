@@ -278,6 +278,11 @@ const Game = (() => {
   function acceptContract(c) {
      if(!state.acceptedContracts) state.acceptedContracts = [];
      if(state.acceptedContracts.find(x => x.id === c.id)) return {ok: false, message: 'Already accepted.'};
+     
+     if (state.marketState && state.marketState.availableContracts) {
+         state.marketState.availableContracts = state.marketState.availableContracts.filter(x => x.id !== c.id);
+     }
+
      c.deadlineYear = state.year + 2; // 2 years to complete
      state.acceptedContracts.push(c);
      if (typeof Save !== 'undefined') Save.save();
