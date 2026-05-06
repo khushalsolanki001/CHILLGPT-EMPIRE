@@ -167,7 +167,7 @@ const Game = (() => {
     const m = state.marketing || { hackathon: 0, gamejam: 0, xCampaign: 0 };
     let marketMult = 1 + (m.hackathon * 0.05) + (m.gamejam * 0.05) + (m.xCampaign * 0.1);
     if (state.buffs && state.buffs.marketingHype) {
-        marketMult *= state.buffs.marketingHype;
+      marketMult *= state.buffs.marketingHype;
     }
     baseUsers *= marketMult;
 
@@ -276,54 +276,54 @@ const Game = (() => {
   }
 
   function acceptContract(c) {
-     if(!state.acceptedContracts) state.acceptedContracts = [];
-     if(state.acceptedContracts.find(x => x.id === c.id)) return {ok: false, message: 'Already accepted.'};
-     
-     if (state.marketState && state.marketState.availableContracts) {
-         state.marketState.availableContracts = state.marketState.availableContracts.filter(x => x.id !== c.id);
-     }
+    if (!state.acceptedContracts) state.acceptedContracts = [];
+    if (state.acceptedContracts.find(x => x.id === c.id)) return { ok: false, message: 'Already accepted.' };
 
-     c.deadlineYear = state.year + 2; // 2 years to complete
-     state.acceptedContracts.push(c);
-     if (typeof Save !== 'undefined') Save.save();
-     return {ok: true, message: 'Contract accepted!'};
+    if (state.marketState && state.marketState.availableContracts) {
+      state.marketState.availableContracts = state.marketState.availableContracts.filter(x => x.id !== c.id);
+    }
+
+    c.deadlineYear = state.year + 2; // 2 years to complete
+    state.acceptedContracts.push(c);
+    if (typeof Save !== 'undefined') Save.save();
+    return { ok: true, message: 'Contract accepted!' };
   }
 
   function fulfillContract(contractId, model) {
-      if(!state.acceptedContracts) state.acceptedContracts = [];
-      const c = state.acceptedContracts.find(x => x.id === contractId);
-      if(!c) return {ok: false, message: 'Contract not found.'};
-      
-      if(c.req.archId && model.archId !== c.req.archId) return {ok: false, message: 'Wrong architecture.'};
-      const sizes = ['mini', 'mid', 'large', 'giant'];
-      if(c.req.maxSizeId && sizes.indexOf(model.sizeId) > sizes.indexOf(c.req.maxSizeId)) return {ok: false, message: 'Model too large.'};
-      if(c.req.minSizeId && sizes.indexOf(model.sizeId) < sizes.indexOf(c.req.minSizeId)) return {ok: false, message: 'Model too small.'};
-      if(c.req.minScore && model.perfScore < c.req.minScore) return {ok: false, message: 'Score too low.'};
-      if(c.req.requiresOpenSource && state.modelType !== 'opensource') return {ok: false, message: 'Must be Open Source.'};
-      
-      state.acceptedContracts = state.acceptedContracts.filter(x => x.id !== contractId);
-      state.money += c.rewardOptions.cash;
-      if (typeof Save !== 'undefined') Save.save();
-      return {ok: true, message: `Contract fulfilled! Earned ${Fmt.money(c.rewardOptions.cash)}.`};
+    if (!state.acceptedContracts) state.acceptedContracts = [];
+    const c = state.acceptedContracts.find(x => x.id === contractId);
+    if (!c) return { ok: false, message: 'Contract not found.' };
+
+    if (c.req.archId && model.archId !== c.req.archId) return { ok: false, message: 'Wrong architecture.' };
+    const sizes = ['mini', 'mid', 'large', 'giant'];
+    if (c.req.maxSizeId && sizes.indexOf(model.sizeId) > sizes.indexOf(c.req.maxSizeId)) return { ok: false, message: 'Model too large.' };
+    if (c.req.minSizeId && sizes.indexOf(model.sizeId) < sizes.indexOf(c.req.minSizeId)) return { ok: false, message: 'Model too small.' };
+    if (c.req.minScore && model.perfScore < c.req.minScore) return { ok: false, message: 'Score too low.' };
+    if (c.req.requiresOpenSource && state.modelType !== 'opensource') return { ok: false, message: 'Must be Open Source.' };
+
+    state.acceptedContracts = state.acceptedContracts.filter(x => x.id !== contractId);
+    state.money += c.rewardOptions.cash;
+    if (typeof Save !== 'undefined') Save.save();
+    return { ok: true, message: `Contract fulfilled! Earned ${Fmt.money(c.rewardOptions.cash)}.` };
   }
 
   function tickContracts() {
-      if(!state.acceptedContracts) return;
-      let expired = false;
-      state.acceptedContracts = state.acceptedContracts.filter(c => {
-          if(state.year > c.deadlineYear) {
-              if(c.penalty && c.penalty.rep) {
-                  state.reputation = Math.max(0.1, (state.reputation || 1.0) + c.penalty.rep);
-                  if (typeof UI !== 'undefined') UI.toast(`Contract Failed: Lost reputation!`, 't-red');
-              } else {
-                  if (typeof UI !== 'undefined') UI.toast(`Contract Expired: ${c.title}`, 't-red');
-              }
-              expired = true;
-              return false;
-          }
-          return true;
-      });
-      if(expired && typeof Save !== 'undefined') Save.save();
+    if (!state.acceptedContracts) return;
+    let expired = false;
+    state.acceptedContracts = state.acceptedContracts.filter(c => {
+      if (state.year > c.deadlineYear) {
+        if (c.penalty && c.penalty.rep) {
+          state.reputation = Math.max(0.1, (state.reputation || 1.0) + c.penalty.rep);
+          if (typeof UI !== 'undefined') UI.toast(`Contract Failed: Lost reputation!`, 't-red');
+        } else {
+          if (typeof UI !== 'undefined') UI.toast(`Contract Expired: ${c.title}`, 't-red');
+        }
+        expired = true;
+        return false;
+      }
+      return true;
+    });
+    if (expired && typeof Save !== 'undefined') Save.save();
   }
 
 
