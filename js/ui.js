@@ -70,27 +70,27 @@ const UI = (() => {
         if (!Game.state.buffs) Game.state.buffs = { serverDiscount: 1.0, marketingHype: 1.0 };
 
         if (event.type === 'income') {
-            Game.state.mult.workerIncome *= event.val; 
-            Game.state.mult.moneyPerUser *= event.val;
-            setTimeout(() => {
-              Game.state.mult.workerIncome /= event.val;
-              Game.state.mult.moneyPerUser /= event.val;
-            }, 60000);
+          Game.state.mult.workerIncome *= event.val;
+          Game.state.mult.moneyPerUser *= event.val;
+          setTimeout(() => {
+            Game.state.mult.workerIncome /= event.val;
+            Game.state.mult.moneyPerUser /= event.val;
+          }, 60000);
         } else if (event.type === 'cost') {
-            Game.state.buffs.serverDiscount = event.val;
-            setTimeout(() => {
-              Game.state.buffs.serverDiscount = 1.0;
-            }, 60000);
+          Game.state.buffs.serverDiscount = event.val;
+          setTimeout(() => {
+            Game.state.buffs.serverDiscount = 1.0;
+          }, 60000);
         } else if (event.type === 'hype') {
-            Game.state.buffs.marketingHype = event.val;
-            setTimeout(() => {
-              Game.state.buffs.marketingHype = 1.0;
-            }, 60000);
+          Game.state.buffs.marketingHype = event.val;
+          setTimeout(() => {
+            Game.state.buffs.marketingHype = 1.0;
+          }, 60000);
         } else if (event.type === 'elec') {
-            Game.state.mult.elecReduction *= event.val;
-            setTimeout(() => {
-              Game.state.mult.elecReduction /= event.val;
-            }, 60000);
+          Game.state.mult.elecReduction *= event.val;
+          setTimeout(() => {
+            Game.state.mult.elecReduction /= event.val;
+          }, 60000);
         }
       }
     }
@@ -646,11 +646,11 @@ const UI = (() => {
   function openLabModal() {
     const modal = $('model-builder-modal');
     if (modal) modal.classList.add('show');
-    
+
     // Initialize the builder grids
     _renderMbGrids();
     _updateMbPreview();
-    
+
     // Render the models on the right side
     _renderAILabTab($('lab-models-list'));
 
@@ -666,7 +666,7 @@ const UI = (() => {
   function _renderAILabTab(container) {
     if (!container) return;
     container.innerHTML = '';
-    
+
     const training = ModelBuilder.getTrainingJob();
     if (training) {
       // Training progress — use native shop-card style
@@ -750,7 +750,7 @@ const UI = (() => {
 
   function _renderMbGrids() {
     _updateMbPreview();
-    
+
     // Arch Grid — full-width shop-card style rows
     const archGrid = $('mb-arch-grid');
     if (archGrid) {
@@ -848,16 +848,16 @@ const UI = (() => {
   function _updateMbPreview() {
     const prev = $('mb-preview-content');
     if (!prev) return;
-    
+
     const arch = ModelBuilder.getArchitectures().find(a => a.id === _mbSelectedArch);
     const sz = ModelBuilder.getModelSizes().find(s => s.id === _mbSelectedSize);
-    
+
     if (arch && sz) {
       const tfNeeded = Math.floor(sz.tfBase * arch.tfMult);
       const globalPerfMult = Game.state.mult?.perfBonus || 1.0;
       const perfScore = Math.floor((sz.perfBase + arch.perfBonus) * (1 + _mbSelectedTraits.length * 0.1) * globalPerfMult);
       const canAfford = Game.state.tf >= tfNeeded;
-      
+
       prev.innerHTML = `
         <!-- Architecture summary — native shop-card style -->
         <div class="shop-card ai" style="align-items:center;">
@@ -899,7 +899,7 @@ const UI = (() => {
             <span class="pill-icon">📈</span>
             <div class="pill-body">
               <span class="pill-label">ERA BONUS</span>
-              <span class="pill-value" style="color:var(--retro-gold);">+${Math.round((globalPerfMult-1)*100)}%</span>
+              <span class="pill-value" style="color:var(--retro-gold);">+${Math.round((globalPerfMult - 1) * 100)}%</span>
             </div>
           </div>
         </div>
@@ -924,11 +924,11 @@ const UI = (() => {
 
   function handleDesignModel() {
     const nameEl = $('mb-model-name');
-    const result = ModelBuilder.designModel({ 
-      name: nameEl ? nameEl.value : '', 
-      archId: _mbSelectedArch, 
-      sizeId: _mbSelectedSize, 
-      traitIds: _mbSelectedTraits 
+    const result = ModelBuilder.designModel({
+      name: nameEl ? nameEl.value : '',
+      archId: _mbSelectedArch,
+      sizeId: _mbSelectedSize,
+      traitIds: _mbSelectedTraits
     });
     if (result.ok) {
       toast(result.message, 't-green');
@@ -942,10 +942,10 @@ const UI = (() => {
 
   function handleStartTraining(modelId) {
     const result = ModelBuilder.startTraining(modelId);
-    if (result.ok) { 
-      toast(result.message, 't-blue'); 
+    if (result.ok) {
+      toast(result.message, 't-blue');
       _renderAILabTab($('lab-models-list'));
-      renderShop(); 
+      renderShop();
     }
     else { toast(result.message, 't-red'); }
   }
@@ -967,54 +967,54 @@ const UI = (() => {
   function handleReleaseModel(modelId, marketId) {
     document.getElementById('release-overlay')?.remove();
     const result = ModelBuilder.releaseModel(modelId, marketId);
-    if (result.ok) { 
-      toast(result.message, 't-green'); 
-      if (typeof flashScreen === 'function') flashScreen(true); 
-      mascotHappy(true); 
+    if (result.ok) {
+      toast(result.message, 't-green');
+      if (typeof flashScreen === 'function') flashScreen(true);
+      mascotHappy(true);
       _renderAILabTab($('lab-models-list'));
-      renderShop(); 
+      renderShop();
     }
     else { toast(result.message, 't-red'); }
   }
 
   function handleAcceptContract(id) {
-     const c = Market.getAvailableContracts().find(x => x.id === id);
-     if(c) {
-         const res = Game.acceptContract(c);
-         if(res.ok) { toast(res.message, 't-green'); renderShop(); }
-         else toast(res.message, 't-red');
-     }
+    const c = Market.getAvailableContracts().find(x => x.id === id);
+    if (c) {
+      const res = Game.acceptContract(c);
+      if (res.ok) { toast(res.message, 't-green'); renderShop(); }
+      else toast(res.message, 't-red');
+    }
   }
 
   function handleFulfillContract(contractId, modelId) {
-     const m = ModelBuilder.getAllModels().find(x => x.id === parseInt(modelId));
-     const res = Game.fulfillContract(contractId, m);
-     if(res.ok) {
-         toast(res.message, 't-green');
-         document.getElementById('fulfill-overlay')?.remove();
-         renderShop();
-     } else {
-         toast(res.message, 't-red');
-     }
+    const m = ModelBuilder.getAllModels().find(x => x.id === parseInt(modelId));
+    const res = Game.fulfillContract(contractId, m);
+    if (res.ok) {
+      toast(res.message, 't-green');
+      document.getElementById('fulfill-overlay')?.remove();
+      renderShop();
+    } else {
+      toast(res.message, 't-red');
+    }
   }
 
   function openFulfillModal(contractId) {
-      const existing = document.getElementById('fulfill-overlay');
-      if (existing) existing.remove();
-      
-      const models = ModelBuilder.getAllModels().filter(m => m.status === 'trained' || m.status === 'released');
-      
-      let choices = models.map(m =>
-        `<button class="buy-btn" style="margin:4px; padding:8px 12px; font-size:0.4rem;" onclick="UI.handleFulfillContract(${contractId}, ${m.id})">📂 ${m.name}<br><small>Score: ${m.perfScore}</small></button>`
-      ).join('');
-      
-      if(choices === '') choices = `<div style="color:#aaa;">No trained models available.</div>`;
-      
-      const overlay = document.createElement('div');
-      overlay.id = 'fulfill-overlay';
-      overlay.style.cssText = 'position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:1800;';
-      overlay.innerHTML = `<div class="modal-box pixel-border" style="width:500px;"><div class="modal-title">📦 FULFILL CONTRACT</div><div class="modal-subtitle">Submit a trained/released model</div><div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin:12px 0;">${choices}</div><button class="modal-close-btn" style="background:#333;" onclick="document.getElementById('fulfill-overlay')?.remove()">CANCEL</button></div>`;
-      document.body.appendChild(overlay);
+    const existing = document.getElementById('fulfill-overlay');
+    if (existing) existing.remove();
+
+    const models = ModelBuilder.getAllModels().filter(m => m.status === 'trained' || m.status === 'released');
+
+    let choices = models.map(m =>
+      `<button class="buy-btn" style="margin:4px; padding:8px 12px; font-size:0.4rem;" onclick="UI.handleFulfillContract(${contractId}, ${m.id})">📂 ${m.name}<br><small>Score: ${m.perfScore}</small></button>`
+    ).join('');
+
+    if (choices === '') choices = `<div style="color:#aaa;">No trained models available.</div>`;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'fulfill-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:1800;';
+    overlay.innerHTML = `<div class="modal-box pixel-border" style="width:500px;"><div class="modal-title">📦 FULFILL CONTRACT</div><div class="modal-subtitle">Submit a trained/released model</div><div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin:12px 0;">${choices}</div><button class="modal-close-btn" style="background:#333;" onclick="document.getElementById('fulfill-overlay')?.remove()">CANCEL</button></div>`;
+    document.body.appendChild(overlay);
   }
 
   function showAwards(year) {
@@ -1030,15 +1030,15 @@ const UI = (() => {
       awards.forEach((award, i) => {
         const row = _el('div', 'award-row');
         row.style.cssText = `display:flex;align-items:center;padding:12px 0;border-bottom:1px solid #333;font-family:var(--font-pixel);gap:10px;flex-wrap:wrap; animation-delay: ${i * 1.5}s; opacity: 0;`;
-        
-        const win = award.playerWins 
-            ? `<span style="color:#39d87e; font-size:0.8rem; display:block; margin-top: 4px;">🏆 YOU WIN — <span style="color:#fff;">${award.modelName}</span></span>` 
-            : `<span style="color:var(--text-mid); font-size:0.7rem; display:block; margin-top: 4px;">WON BY: <span style="color:#e74c3c;">${award.modelName}</span></span>`;
-            
-        const rew = (award.playerWins && award.reward) 
-            ? `<span style="color:#f5c842; font-size:0.6rem; margin-top:6px; display:inline-block;">+${Fmt.money(award.reward.cash)}</span>` 
-            : '';
-            
+
+        const win = award.playerWins
+          ? `<span style="color:#39d87e; font-size:0.8rem; display:block; margin-top: 4px;">🏆 YOU WIN — <span style="color:#fff;">${award.modelName}</span></span>`
+          : `<span style="color:var(--text-mid); font-size:0.7rem; display:block; margin-top: 4px;">WON BY: <span style="color:#e74c3c;">${award.modelName}</span></span>`;
+
+        const rew = (award.playerWins && award.reward)
+          ? `<span style="color:#f5c842; font-size:0.6rem; margin-top:6px; display:inline-block;">+${Fmt.money(award.reward.cash)}</span>`
+          : '';
+
         row.innerHTML = `<div style="width:100%; text-align: left;">
           <div style="color:var(--text-mid); font-size:0.9rem; margin-bottom:10px;">${award.category}</div>
           ${win}
@@ -1046,8 +1046,8 @@ const UI = (() => {
         </div>`;
         body.appendChild(row);
         if (award.playerWins && award.reward) {
-           bonus += award.reward.cash;
-           if(award.reward.buff) Game.applyBuff(award.reward.buff);
+          bonus += award.reward.cash;
+          if (award.reward.buff) Game.applyBuff(award.reward.buff);
         }
       });
       if (bonus > 0) {
@@ -1077,7 +1077,7 @@ const UI = (() => {
     try {
       // Prompt MetaMask to save the game
       const saved = await Blockchain.saveOnChain();
-      
+
       if (saved) {
         if (btn) { btn.textContent = '✅ SAVED!'; }
         setTimeout(() => _closeSalaryModal(), 1500);
@@ -1169,8 +1169,8 @@ const UI = (() => {
       _sectionTitle(container, '🏢 VIP CONTRACTS & B2B');
       const available = Market.getAvailableContracts();
       const accepted = Game.state.acceptedContracts || [];
-      
-      let allContracts = [...accepted.map(c => ({...c, accepted: true})), ...available];
+
+      let allContracts = [...accepted.map(c => ({ ...c, accepted: true })), ...available];
       if (allContracts.length === 0) {
         const noC = _el('div', 'shop-card info-card');
         noC.innerHTML = `<div class="card-body"><div class="card-desc" style="font-size:0.4rem;">No contracts currently available. Built a reputation and check back later!</div></div>`;
@@ -1190,10 +1190,10 @@ const UI = (() => {
             </div>
           </div>
           <div class="card-right" style="justify-content:center;">
-            ${c.accepted 
-              ? `<button class="buy-btn" style="min-width: 90px; padding: 6px;" onclick="UI.openFulfillModal(${c.id})">FULFILL</button>`
-              : `<button class="buy-btn" style="min-width: 90px; padding: 6px;" onclick="UI.handleAcceptContract(${c.id})">ACCEPT</button>`
-            }
+            ${c.accepted
+            ? `<button class="buy-btn" style="min-width: 90px; padding: 6px;" onclick="UI.openFulfillModal(${c.id})">FULFILL</button>`
+            : `<button class="buy-btn" style="min-width: 90px; padding: 6px;" onclick="UI.handleAcceptContract(${c.id})">ACCEPT</button>`
+          }
           </div>
         `;
         container.appendChild(card);
@@ -1478,7 +1478,7 @@ const UI = (() => {
 
   function showArena(completedYear, nextYear, isManual = false) {
     $('arena-year-label').textContent = `YEAR ${completedYear} RANKINGS`;
-    
+
     const closeBtn = $('arena-close-btn');
     if (isManual) {
       closeBtn.innerHTML = 'CLOSE';
@@ -1492,7 +1492,7 @@ const UI = (() => {
     const body = $('arena-body');
     const spotlight = $('arena-spotlight');
     const winner = entries[0];
-    
+
     if (spotlight) {
       spotlight.innerHTML = `
         <div class="arena-winner-medal"><img src="${winner.icon}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; image-rendering: auto;"></div>
@@ -1503,14 +1503,14 @@ const UI = (() => {
         </div>
       `;
     }
-    
+
     const rEmoji = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣'];
     const maxScore = winner.score || 1;
 
     body.innerHTML = entries.map((e, i) => {
       const pct = Math.max(8, Math.floor((e.score / maxScore) * 100)); // Give it a min-width of 8% to fit the number
       const color = e.isYou ? '#39d87e' : (i === 0 ? '#f5c842' : '#a0b860');
-      
+
       return `
         <div class="arena-row-item" style="display:flex; align-items:center; gap: 10px; margin-bottom: 6px; animation: award-reveal 0.4s ease forwards; opacity:0; animation-delay:${i * 0.15}s;">
            <div style="width: 180px; text-align: right; display:flex; justify-content:flex-end; align-items:center; gap:10px;">
@@ -1539,7 +1539,7 @@ const UI = (() => {
   function closeArena() {
     $('arena-modal').classList.remove('show');
     if (Game.state.year >= 2026) _showEndgame();
-    
+
     if (window._pendingAwardsYear) {
       setTimeout(() => {
         showAwards(window._pendingAwardsYear);
@@ -1777,8 +1777,8 @@ const UI = (() => {
   async function handleBuyAI(upgradeId) {
     // ── MetaMask path: burn on-chain $TF, then apply upgrade ──────────
     const useChain = typeof Blockchain !== 'undefined'
-                     && Blockchain.isConnected()
-                     && Blockchain.hasTfContract();
+      && Blockchain.isConnected()
+      && Blockchain.hasTfContract();
 
     if (useChain) {
       const upg = AI_UPGRADES.find(u => u.id === upgradeId);
@@ -2010,8 +2010,8 @@ const UI = (() => {
 
   function stopHomeMusic() {
     if (_homeMusic) {
-      try { _homeMusic.pause(); } catch(e) {}
-      try { _homeMusic.src = ''; } catch(e) {}
+      try { _homeMusic.pause(); } catch (e) { }
+      try { _homeMusic.src = ''; } catch (e) { }
       _homeMusic = null;
     }
     _homeMusicFading = false;
@@ -2024,8 +2024,8 @@ const UI = (() => {
     const screen = $('start-screen');
     if (screen) {
       screen.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
-      screen.style.opacity    = '0';
-      screen.style.transform  = 'scale(1.1)';
+      screen.style.opacity = '0';
+      screen.style.transform = 'scale(1.1)';
       setTimeout(() => {
         screen.style.display = 'none';
         toast('Welcome to the Empire. Build something chill.', 't-green');
@@ -2046,7 +2046,7 @@ const UI = (() => {
       _homeMusic.loop = true;
       _homeMusic.volume = 0.5;
     }
-    
+
     // Check if music is globally enabled
     if (window.GameAudio && !window.GameAudio.isMusicEnabled()) {
       _homeMusic.pause();
@@ -2057,7 +2057,7 @@ const UI = (() => {
           const screen = $('start-screen');
           if (_homeMusic && !_homeMusicFading && screen && screen.style.display !== 'none' && !window.__gameStarted) {
             if (!window.GameAudio || window.GameAudio.isMusicEnabled()) {
-              _homeMusic.play().catch(()=>{});
+              _homeMusic.play().catch(() => { });
             }
           }
           document.removeEventListener('click', playOnInteraction);
@@ -2081,7 +2081,7 @@ const UI = (() => {
   window.addEventListener('AUDIO_SETTINGS_CHANGED', (e) => {
     const s = e.detail;
     if (_homeMusic && !_homeMusicFading && !window.__gameStarted) {
-      if (s.music) _homeMusic.play().catch(()=>{});
+      if (s.music) _homeMusic.play().catch(() => { });
       else _homeMusic.pause();
     }
   });
@@ -2316,7 +2316,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const target = e.target.tagName === 'BUTTON' ? e.target : e.target.closest('button');
       if (target._hovered) return;
       target._hovered = true;
-      target.addEventListener('mouseout', () => { target._hovered = false; }, {once: true});
+      target.addEventListener('mouseout', () => { target._hovered = false; }, { once: true });
       if (window.GameAudio && window.GameAudio.playHover) window.GameAudio.playHover();
     }
   });
