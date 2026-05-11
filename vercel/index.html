@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google-site-verification" content="SW6b4qiLVN7V8RoqeG5ynxXW9ysyHhlBnBgHSurKLM4" />
+    <title>CHILLGPT EMPIRE</title>
+    <meta name="description" content="Play CHILLGPT EMPIRE, the ultimate AI idle clicking adventure!">
+    
+    <!-- Google Fonts for Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #00ffcc;
+            --secondary: #9d00ff;
+            --bg-color: #0b0c10;
+            --text-color: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated Gradient Background */
+        .background {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(157, 0, 255, 0.15) 0%, rgba(0, 255, 204, 0.05) 30%, transparent 60%);
+            animation: rotateBg 20s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes rotateBg {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Subtle grid overlay */
+        .grid-overlay {
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(var(--glass-border) 1px, transparent 1px),
+                              linear-gradient(90deg, var(--glass-border) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.2;
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem 4rem;
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 
+                        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            transform: translateY(20px);
+            opacity: 0;
+            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideUp {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(157, 0, 255, 0.3);
+            line-height: 1.1;
+        }
+
+        p {
+            font-size: 1.1rem;
+            color: #a0aab2;
+            margin-bottom: 2.5rem;
+            font-weight: 300;
+            line-height: 1.5;
+        }
+
+        .play-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--bg-color);
+            background: linear-gradient(90deg, var(--primary), #00d4aa);
+            border: none;
+            border-radius: 50px;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
+            cursor: pointer;
+            z-index: 1;
+        }
+
+        .play-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: all 0.5s ease;
+            z-index: -1;
+        }
+
+        .play-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 255, 204, 0.6);
+            background: linear-gradient(90deg, #00d4aa, var(--primary));
+        }
+
+        .play-btn:hover::before {
+            left: 100%;
+        }
+
+        .play-btn:active {
+            transform: translateY(1px);
+        }
+
+        .logo-placeholder {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem auto;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 0 30px rgba(157, 0, 255, 0.4);
+            transform: rotate(-10deg);
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(-10deg); }
+            50% { transform: translateY(-10px) rotate(-5deg); }
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2.5rem; }
+            .container { padding: 2rem; }
+        }
+
+        /* Floating particles */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+            opacity: 0;
+            z-index: 2;
+            animation: rise 10s infinite linear;
+        }
+
+        @keyframes rise {
+            0% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.5;
+            }
+            90% {
+                opacity: 0.5;
+            }
+            100% {
+                transform: translateY(-10vh) scale(1);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background"></div>
+    <div class="grid-overlay"></div>
+    
+    <!-- Particles generation script -->
+    <script>
+        for(let i=0; i<15; i++) {
+            let particle = document.createElement('div');
+            particle.className = 'particle';
+            let size = Math.random() * 5 + 2;
+            particle.style.width = size + 'px';
+            particle.style.height = size + 'px';
+            particle.style.left = Math.random() * 100 + 'vw';
+            particle.style.animationDuration = (Math.random() * 10 + 5) + 's';
+            particle.style.animationDelay = Math.random() * 5 + 's';
+            document.body.appendChild(particle);
+        }
+    </script>
+
+    <div class="container">
+        <div class="logo-placeholder">💻</div>
+        <h1>CHILLGPT<br>EMPIRE</h1>
+        <p>Build the ultimate AI company from your bedroom to global domination. Manage servers, train models, and outcompete your rivals in this idle adventure.</p>
+        <a href="https://khushalsolanki001.itch.io/chillgpt-empire" class="play-btn">Play Now</a>
+    </div>
+
+    <!-- Optional: Add an automatic redirect after 5 seconds if you want
+    <script>
+        setTimeout(() => {
+            window.location.href = "https://khushalsolanki001.itch.io/chillgpt-empire";
+        }, 5000);
+    </script>
+    -->
+</body>
+</html>
