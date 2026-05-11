@@ -7,7 +7,6 @@
     <title>CHILLGPT EMPIRE</title>
     <meta name="description" content="Play CHILLGPT EMPIRE, the ultimate AI idle clicking adventure!">
     
-    <!-- Google Fonts for Modern Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -18,7 +17,7 @@
             --secondary: #9d00ff;
             --bg-color: #0b0c10;
             --text-color: #ffffff;
-            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-bg: rgba(11, 12, 16, 0.75);
             --glass-border: rgba(255, 255, 255, 0.1);
         }
 
@@ -30,7 +29,6 @@
 
         body {
             font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
             color: var(--text-color);
             min-height: 100vh;
             display: flex;
@@ -38,23 +36,38 @@
             justify-content: center;
             overflow: hidden;
             position: relative;
+            background-color: #000;
         }
 
-        /* Animated Gradient Background */
+        /* Banner Background Image with Overlay */
         .background {
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at center, rgba(157, 0, 255, 0.15) 0%, rgba(0, 255, 204, 0.05) 30%, transparent 60%);
-            animation: rotateBg 20s linear infinite;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('banner.jpg');
+            background-size: cover;
+            background-position: center;
             z-index: 0;
+            filter: blur(4px);
+            transform: scale(1.05); /* Prevents blur from creating white edges */
+            animation: slowZoom 20s infinite alternate ease-in-out;
         }
 
-        @keyframes rotateBg {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes slowZoom {
+            0% { transform: scale(1.05); }
+            100% { transform: scale(1.15); }
+        }
+
+        .background-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(15, 0, 30, 0.7) 100%);
+            z-index: 1;
         }
 
         /* Subtle grid overlay */
@@ -64,23 +77,23 @@
             background-image: linear-gradient(var(--glass-border) 1px, transparent 1px),
                               linear-gradient(90deg, var(--glass-border) 1px, transparent 1px);
             background-size: 50px 50px;
-            opacity: 0.2;
-            z-index: 1;
+            opacity: 0.15;
+            z-index: 2;
         }
 
         .container {
             position: relative;
             z-index: 10;
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 3rem 4rem;
+            border-radius: 30px;
+            padding: 3.5rem 4rem;
             text-align: center;
-            max-width: 600px;
+            max-width: 650px;
             width: 90%;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8), 
                         0 0 0 1px rgba(255, 255, 255, 0.05) inset;
             transform: translateY(20px);
             opacity: 0;
@@ -94,32 +107,51 @@
             }
         }
 
+        .logo {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 1.5rem auto;
+            border-radius: 25px;
+            object-fit: contain;
+            background: rgba(0,0,0,0.4);
+            padding: 10px;
+            box-shadow: 0 0 40px rgba(0, 255, 204, 0.2), 
+                        inset 0 0 20px rgba(157, 0, 255, 0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); box-shadow: 0 15px 50px rgba(0, 255, 204, 0.3), inset 0 0 20px rgba(157, 0, 255, 0.3); }
+        }
+
         h1 {
             font-size: 3.5rem;
             font-weight: 900;
             margin-bottom: 1rem;
             letter-spacing: -1px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            background: linear-gradient(135deg, #ffffff, #a0aab2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(157, 0, 255, 0.3);
+            text-shadow: 0 5px 15px rgba(0,0,0,0.5);
             line-height: 1.1;
         }
 
         p {
-            font-size: 1.1rem;
-            color: #a0aab2;
+            font-size: 1.15rem;
+            color: #d1d5db;
             margin-bottom: 2.5rem;
             font-weight: 300;
-            line-height: 1.5;
+            line-height: 1.6;
         }
 
         .play-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 1rem 3rem;
-            font-size: 1.2rem;
+            padding: 1.2rem 3.5rem;
+            font-size: 1.3rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -131,7 +163,7 @@
             position: relative;
             overflow: hidden;
             transition: all 0.3s ease;
-            box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
+            box-shadow: 0 0 25px rgba(0, 255, 204, 0.5);
             cursor: pointer;
             z-index: 1;
         }
@@ -143,14 +175,14 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
             transition: all 0.5s ease;
             z-index: -1;
         }
 
         .play-btn:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 10px 30px rgba(0, 255, 204, 0.6);
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: 0 15px 40px rgba(0, 255, 204, 0.7);
             background: linear-gradient(90deg, #00d4aa, var(--primary));
         }
 
@@ -162,92 +194,110 @@
             transform: translateY(1px);
         }
 
-        .logo-placeholder {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1.5rem auto;
-            background: linear-gradient(135deg, var(--secondary), var(--primary));
-            border-radius: 20px;
+        /* Music Toggle Button */
+        .music-toggle {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
-            box-shadow: 0 0 30px rgba(157, 0, 255, 0.4);
-            transform: rotate(-10deg);
-            animation: float 4s ease-in-out infinite;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(-10deg); }
-            50% { transform: translateY(-10px) rotate(-5deg); }
+        .music-toggle:hover {
+            background: rgba(255,255,255,0.1);
+            transform: scale(1.1);
         }
+
+        .music-toggle svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .music-playing .play-icon { display: none; }
+        .music-playing .pause-icon { display: block; }
+        
+        .music-paused .play-icon { display: block; }
+        .music-paused .pause-icon { display: none; }
 
         @media (max-width: 600px) {
             h1 { font-size: 2.5rem; }
             .container { padding: 2rem; }
+            .logo { width: 100px; height: 100px; }
         }
 
-        /* Floating particles */
-        .particle {
-            position: absolute;
-            border-radius: 50%;
-            background: var(--primary);
-            box-shadow: 0 0 10px var(--primary);
-            opacity: 0;
-            z-index: 2;
-            animation: rise 10s infinite linear;
-        }
-
-        @keyframes rise {
-            0% {
-                transform: translateY(100vh) scale(0);
-                opacity: 0;
-            }
-            10% {
-                opacity: 0.5;
-            }
-            90% {
-                opacity: 0.5;
-            }
-            100% {
-                transform: translateY(-10vh) scale(1);
-                opacity: 0;
-            }
-        }
     </style>
 </head>
 <body>
     <div class="background"></div>
+    <div class="background-overlay"></div>
     <div class="grid-overlay"></div>
     
-    <!-- Particles generation script -->
-    <script>
-        for(let i=0; i<15; i++) {
-            let particle = document.createElement('div');
-            particle.className = 'particle';
-            let size = Math.random() * 5 + 2;
-            particle.style.width = size + 'px';
-            particle.style.height = size + 'px';
-            particle.style.left = Math.random() * 100 + 'vw';
-            particle.style.animationDuration = (Math.random() * 10 + 5) + 's';
-            particle.style.animationDelay = Math.random() * 5 + 's';
-            document.body.appendChild(particle);
-        }
-    </script>
+    <audio id="bgm" loop>
+        <source src="music.mp3" type="audio/mpeg">
+    </audio>
 
     <div class="container">
-        <div class="logo-placeholder">💻</div>
+        <img src="logo.png" alt="ChillGPT Empire Logo" class="logo">
         <h1>CHILLGPT<br>EMPIRE</h1>
-        <p>Build the ultimate AI company from your bedroom to global domination. Manage servers, train models, and outcompete your rivals in this idle adventure.</p>
+        <p>Build the ultimate AI company from your bedroom to global domination. Manage servers, train models, and outcompete your rivals.</p>
         <a href="https://khushalsolanki001.itch.io/chillgpt-empire" class="play-btn">Play Now</a>
     </div>
 
-    <!-- Optional: Add an automatic redirect after 5 seconds if you want
+    <button class="music-toggle music-paused" id="musicBtn" aria-label="Toggle Music">
+        <!-- Play Icon -->
+        <svg class="play-icon" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z"/>
+        </svg>
+        <!-- Pause Icon -->
+        <svg class="pause-icon" viewBox="0 0 24 24">
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+        </svg>
+    </button>
+
     <script>
-        setTimeout(() => {
-            window.location.href = "https://khushalsolanki001.itch.io/chillgpt-empire";
-        }, 5000);
+        const audio = document.getElementById('bgm');
+        const musicBtn = document.getElementById('musicBtn');
+        let hasInteracted = false;
+
+        // Try to play audio on any interaction anywhere on the page
+        document.body.addEventListener('click', function() {
+            if(!hasInteracted) {
+                audio.volume = 0.5; // Start at 50% volume
+                audio.play().then(() => {
+                    musicBtn.classList.remove('music-paused');
+                    musicBtn.classList.add('music-playing');
+                    hasInteracted = true;
+                }).catch(e => console.log("Audio play blocked by browser:", e));
+            }
+        }, { once: true });
+
+        // Manual music toggle logic
+        musicBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent triggering the body click
+            hasInteracted = true;
+            if (audio.paused) {
+                audio.volume = 0.5;
+                audio.play();
+                musicBtn.classList.remove('music-paused');
+                musicBtn.classList.add('music-playing');
+            } else {
+                audio.pause();
+                musicBtn.classList.remove('music-playing');
+                musicBtn.classList.add('music-paused');
+            }
+        });
     </script>
-    -->
 </body>
 </html>
